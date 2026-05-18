@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="96" viewBox="0 0 160 96" role="img" aria-labelledby="t">
+  <title id="t">Outer Delhi Warriors</title>
+  <rect width="160" height="96" rx="6" fill="#0f172a"/>
+  <path d="M0 72 L160 72 L160 96 L0 96 Z" fill="#ca8a04"/>
+  <text x="80" y="34" text-anchor="middle" fill="#fbbf24" font-family="system-ui,Segoe UI,sans-serif" font-size="11" font-weight="800" letter-spacing="0.08em">OUTER DELHI</text>
+  <text x="80" y="54" text-anchor="middle" fill="#ffffff" font-family="system-ui,Segoe UI,sans-serif" font-size="15" font-weight="900" letter-spacing="0.06em">WARRIORS</text>
+  <text x="80" y="86" text-anchor="middle" fill="#0f172a" font-family="system-ui,Segoe UI,sans-serif" font-size="8" font-weight="700" letter-spacing="0.12em">DPL FRANCHISE</text>
+</svg>

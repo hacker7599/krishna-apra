@@ -1,0 +1,35 @@
+import { prisma } from "@/lib/prisma";
+import { sanitizeBannerCtaHrefForPublic, sanitizeTrialZoneNavUrl } from "@/lib/safe-public-href";
+
+export function getPublishedTeams() {
+  return prisma.team.findMany({
+    where: { published: true },
+    orderBy: { sortOrder: "asc" },
+  });
+}
+
+export function getPublishedTeamCount() {
+  return prisma.team.count({ where: { published: true } });
+}
+
+export async function getPublishedBanners() {
+  const rows = await prisma.heroBanner.findMany({
+    where: { published: true },
+    orderBy: { sortOrder: "asc" },
+  });
+  return rows.map((r) => ({
+    ...r,
+    ctaHref: sanitizeBannerCtaHrefForPublic(r.ctaHref),
+  }));
+}
+
+export async function getPublishedTrialZones() {
+  const rows = await prisma.trialZone.findMany({
+    where: { published: true },
+    orderBy: { sortOrder: "asc" },
+  });
+  return rows.map((r) => ({
+    ...r,
+    navigationUrl: sanitizeTrialZoneNavUrl(r.navigationUrl),
+  }));
+}
