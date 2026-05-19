@@ -203,6 +203,20 @@ export function RegisterForm() {
         {roles.size === 0 && <p className="mt-2 text-sm font-semibold text-slate-700">Select at least one role.</p>}
       </fieldset>
 
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">
+          Achievements &amp; awards <span className="font-semibold normal-case text-slate-500">(optional)</span>
+        </span>
+        <textarea
+          name="achievementsAndAwards"
+          rows={4}
+          maxLength={2000}
+          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+          placeholder="e.g. District U-14 best batter 2024, school tournament MVP, academy player of the year…"
+        />
+        <p className="mt-1.5 text-xs font-medium text-slate-600">List cricket honours, selections, and awards — helps scouts review your profile.</p>
+      </label>
+
       <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4">
         <p className="text-sm font-bold text-slate-900">Government ID proof (required)</p>
         <p className="mt-1 text-sm font-medium leading-relaxed text-slate-700">

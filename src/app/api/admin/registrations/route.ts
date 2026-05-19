@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       { fatherName: { contains: q } },
       { address: { contains: q } },
       { coachName: { contains: q } },
+      { achievementsAndAwards: { contains: q } },
     ];
   }
 

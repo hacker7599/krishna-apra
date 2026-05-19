@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { BTN_PRIMARY, BTN_SECONDARY, SITE_CONTAINER } from "@/lib/site-ui";
+import { cn } from "@/lib/cn";
 
 export type HeroBannerDTO = {
   id: string;
@@ -21,7 +23,7 @@ export function HeroBannersCarousel({ banners }: { banners: HeroBannerDTO[] }) {
 
   useEffect(() => {
     if (n <= 1) return;
-    const t = setInterval(next, 7500);
+    const t = setInterval(next, 8000);
     return () => clearInterval(t);
   }, [n, next]);
 
@@ -30,31 +32,46 @@ export function HeroBannersCarousel({ banners }: { banners: HeroBannerDTO[] }) {
   const b = banners[index]!;
 
   return (
-    <section className="relative border-b border-slate-200 bg-slate-900" aria-roledescription="carousel">
-      <div className="relative aspect-[21/9] min-h-[200px] w-full max-h-[420px] sm:min-h-[240px] md:max-h-[480px]">
+    <section className="relative border-b border-slate-200 bg-white" aria-roledescription="carousel">
+      <div className="relative w-full min-h-[min(68vh,560px)] sm:min-h-[min(72vh,640px)] lg:min-h-[min(78vh,820px)] max-h-[92vh]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={b.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-slate-950/20" />
-        <div className="absolute inset-0 flex flex-col justify-end px-4 pb-10 pt-16 sm:px-8 md:px-12">
-          <div className="mx-auto w-full max-w-5xl">
-            {b.title && <h2 className="text-2xl font-bold tracking-tight text-white drop-shadow sm:text-4xl md:text-5xl">{b.title}</h2>}
-            {b.subtitle && <p className="mt-2 max-w-2xl text-sm font-semibold text-orange-100 drop-shadow sm:text-lg">{b.subtitle}</p>}
-            {b.ctaHref && b.ctaLabel && (
-              <Link
-                href={b.ctaHref}
-                className="mt-5 inline-flex w-fit rounded-lg bg-orange-600 px-6 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg transition hover:bg-orange-500"
-              >
-                {b.ctaLabel}
-              </Link>
-            )}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 top-[38%] bg-gradient-to-t from-white/92 via-white/45 to-transparent sm:top-[42%]"
+          aria-hidden
+        />
+
+        <div className="absolute inset-0 flex flex-col justify-end pb-8 pt-24 sm:pb-12 sm:pt-28">
+          <div className={cn(SITE_CONTAINER, "w-full")}>
+            {b.title ? (
+              <h2 className="max-w-4xl font-[family-name:var(--font-barlow)] text-3xl font-bold italic leading-[1.05] tracking-tight text-slate-900 drop-shadow-[0_1px_3px_rgba(255,255,255,0.85)] sm:text-5xl lg:text-6xl">
+                {b.title}
+              </h2>
+            ) : null}
+            {b.subtitle ? (
+              <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-slate-800 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] sm:text-lg">
+                {b.subtitle}
+              </p>
+            ) : null}
+            {b.ctaHref && b.ctaLabel ? (
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link href={b.ctaHref} className={`${BTN_PRIMARY} w-full sm:w-auto`}>
+                  {b.ctaLabel}
+                </Link>
+                <Link href="/about" className={`${BTN_SECONDARY} w-full sm:w-auto`}>
+                  About the league
+                </Link>
+              </div>
+            ) : null}
           </div>
         </div>
+
         {n > 1 && (
           <>
             <button
               type="button"
               onClick={prev}
-              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-black/40 px-3 py-2 text-lg text-white backdrop-blur hover:bg-black/60 sm:left-4"
+              className="absolute left-3 top-1/2 z-10 flex min-h-12 min-w-12 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white/90 text-xl text-slate-800 shadow-md transition hover:bg-white sm:left-6"
               aria-label="Previous slide"
             >
               ‹
@@ -62,18 +79,21 @@ export function HeroBannersCarousel({ banners }: { banners: HeroBannerDTO[] }) {
             <button
               type="button"
               onClick={next}
-              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-black/40 px-3 py-2 text-lg text-white backdrop-blur hover:bg-black/60 sm:right-4"
+              className="absolute right-3 top-1/2 z-10 flex min-h-12 min-w-12 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white/90 text-xl text-slate-800 shadow-md transition hover:bg-white sm:right-6"
               aria-label="Next slide"
             >
               ›
             </button>
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+            <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-2 sm:bottom-7">
               {banners.map((_, i) => (
                 <button
                   key={banners[i]!.id}
                   type="button"
                   onClick={() => setIndex(i)}
-                  className={`h-2 rounded-full transition ${i === index ? "w-8 bg-orange-500" : "w-2 bg-white/50 hover:bg-white/80"}`}
+                  className={cn(
+                    "min-h-2.5 rounded-full transition-all",
+                    i === index ? "w-10 bg-orange-500" : "w-2.5 bg-slate-400/60 hover:bg-slate-500",
+                  )}
                   aria-label={`Go to slide ${i + 1}`}
                   aria-current={i === index}
                 />

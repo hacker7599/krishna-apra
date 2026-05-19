@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC } from "@/lib/branding";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export function AdminLoginForm() {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ username, password }),
       });
       const data = await res.json().catch(() => ({}));
@@ -40,49 +42,56 @@ export function AdminLoginForm() {
   }
 
   return (
-    <div className="grid w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:grid-cols-5">
-      <div className="relative hidden min-h-[280px] bg-slate-100 sm:col-span-2 sm:block">
-        <Image src="/branding/logo.png" alt="" fill className="object-contain p-6" sizes="240px" />
-      </div>
-      <form onSubmit={onSubmit} className="flex flex-col justify-center space-y-5 p-6 sm:col-span-3 sm:p-10">
-        <div className="flex justify-center sm:hidden">
-          <div className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-            <Image src="/branding/logo.png" alt="Future Star U15" fill className="object-cover" sizes="80px" />
+    <div className="w-full max-w-md">
+      <div className="mb-8 flex flex-col items-center text-center sm:items-start sm:text-left">
+        <div className="flex items-center gap-3">
+          <div className="relative h-12 w-12 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+            <Image src={LEAGUE_LOGO_SRC} alt="" fill className="object-contain" sizes="48px" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Future Star U-15</p>
+            <h1 className="text-xl font-semibold text-[#1B365D]">League desk</h1>
           </div>
         </div>
-        <div>
-          <h1 className="font-[family-name:var(--font-barlow)] text-3xl font-bold italic tracking-tight text-slate-900">Admin sign-in</h1>
-          <p className="mt-1 text-sm font-medium text-slate-600">Registrations dashboard (secure session cookie)</p>
+        <div className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <Image src={KRISHNA_APRA_LOGO_SRC} alt="Krishna Apra" width={320} height={128} unoptimized className="mx-auto h-20 w-auto max-w-full object-contain sm:mx-0 sm:h-24" />
         </div>
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Username</span>
-          <input
-            autoComplete="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-            required
-          />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Password</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-            required
-          />
-        </label>
-        {err && <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-900">{err}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-orange-600 py-3 text-sm font-bold uppercase tracking-wide text-white hover:bg-orange-700 disabled:opacity-60"
-        >
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
+        <p className="mt-3 text-sm text-slate-500">Authorized staff only</p>
+      </div>
+      <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/50">
+        <div className="space-y-5">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Username</span>
+            <input
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 focus:border-[#1B365D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
+              required
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Password</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 focus:border-[#1B365D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
+              required
+            />
+          </label>
+          {err && (
+            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{err}</p>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg bg-[#1B365D] py-2.5 text-sm font-semibold text-white transition hover:bg-[#152a4a] disabled:opacity-60"
+          >
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </div>
       </form>
     </div>
   );

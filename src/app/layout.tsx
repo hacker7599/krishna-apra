@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed, Bebas_Neue, DM_Sans } from "next/font/google";
 import "./globals.css";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
 import { LEAGUE_NAME, LEAGUE_SUBTITLE, REGION, TITLE_SPONSOR } from "@/lib/league";
 
 const display = Bebas_Neue({
@@ -40,9 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${display.variable} ${sans.variable} ${flash.variable} h-full`}>
       <body suppressHydrationWarning className="flex min-h-full flex-col antialiased text-slate-900">
-        <SiteHeader />
-        <main className="relative flex-1">{children}</main>
-        <SiteFooter />
+        {children}
       </body>
     </html>
   );

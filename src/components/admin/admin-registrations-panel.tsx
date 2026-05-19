@@ -25,6 +25,7 @@ type Row = {
   transactionRef: string | null;
   feeReceivedDate: string | null;
   coachName: string | null;
+  achievementsAndAwards: string | null;
 };
 
 function formatRoles(json: string) {
@@ -111,7 +112,7 @@ export function AdminRegistrationsPanel() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900"
-            placeholder="Player, academy, parent, address, email, phone…"
+            placeholder="Player, academy, parent, address, achievements, email, phone…"
           />
         </label>
         <label className="block w-full sm:w-40">
@@ -156,6 +157,7 @@ export function AdminRegistrationsPanel() {
                 <th className="px-3 py-3">Academy</th>
                 <th className="px-3 py-3">Address</th>
                 <th className="px-3 py-3">Roles</th>
+                <th className="px-3 py-3">Achievements</th>
                 <th className="px-3 py-3">Email</th>
                 <th className="px-3 py-3">Phone</th>
                 <th className="px-3 py-3">Pay</th>
@@ -179,6 +181,9 @@ export function AdminRegistrationsPanel() {
                     {r.address ?? "—"}
                   </td>
                   <td className="max-w-[140px] truncate px-3 py-3 text-xs">{formatRoles(r.roles)}</td>
+                  <td className="max-w-[200px] truncate px-3 py-3 text-xs" title={r.achievementsAndAwards ?? undefined}>
+                    {r.achievementsAndAwards?.trim() ? r.achievementsAndAwards : "—"}
+                  </td>
                   <td className="max-w-[140px] truncate px-3 py-3 text-xs">{r.email}</td>
                   <td className="whitespace-nowrap px-3 py-3 text-xs">{r.phone}</td>
                   <td className="px-3 py-3 text-xs">

@@ -23,9 +23,10 @@ model Registration {
   idDocumentType   String?
   idProofPath      String?
   paymentProofPath String?
-  transactionRef   String?
-  feeReceivedDate  String?
-  coachName        String?
+  transactionRef        String?
+  achievementsAndAwards String?
+  feeReceivedDate       String?
+  coachName             String?
 }
 
 model Team {

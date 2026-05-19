@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
-  if (pathname.startsWith("/admin/login")) {
+  if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/setup")) {
     return NextResponse.next();
   }
 

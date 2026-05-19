@@ -1,4 +1,5 @@
-import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, PLAYER_AGE_CUTOFF_DATE, ROLE_OPTIONS, SEASON_START, TAGLINE, TITLE_SPONSOR, TRIAL_FEE_INR, VENUE } from "@/lib/league";
+import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC } from "@/lib/branding";
+import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, PLAYER_AGE_CUTOFF_DATE, ROLE_OPTIONS, SEASON_START, TAGLINE, TRIAL_FEE_INR, VENUE } from "@/lib/league";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 
 function cutoffDisplay() {
@@ -42,7 +43,13 @@ export function OfflineTrialFormDocument() {
             <h1 className="mt-1 font-[family-name:var(--font-bebas)] text-2xl uppercase leading-none tracking-wide text-slate-900 sm:text-3xl print:text-[22pt]">
               Future Star U-15 Cricket Tournament
             </h1>
-            <p className="mt-1 text-xs font-bold text-orange-700 print:text-[10px]">Title sponsor · {TITLE_SPONSOR}</p>
+            <img
+              src={KRISHNA_APRA_LOGO_SRC}
+              alt="Krishna Apra — title sponsor"
+              width={220}
+              height={88}
+              className="mx-auto mt-2 h-14 w-auto max-w-[220px] object-contain print:h-[14mm]"
+            />
             <p className="mt-1 text-[11px] font-semibold text-slate-700 print:text-[9px]">
               {LEAGUE_NAME} · {LEAGUE_SUBTITLE}
             </p>
@@ -50,7 +57,7 @@ export function OfflineTrialFormDocument() {
           </div>
           <div className="flex shrink-0 justify-center sm:justify-end">
             <img
-              src="/branding/logo.png"
+              src={LEAGUE_LOGO_SRC}
               alt="Future Star U15 league logo"
               width={112}
               height={112}
@@ -111,6 +118,13 @@ export function OfflineTrialFormDocument() {
         </div>
       </section>
 
+      <div className="print-form-section mt-4 print:mt-3">
+        <FieldLine label="Achievements & awards (optional)" />
+        <p className="mt-1 text-[9px] font-medium text-slate-600 print:text-[8px]">
+          District / state selections, tournament awards, academy honours, etc.
+        </p>
+      </div>
+
       <section className="print-form-section mt-4 border-2 border-slate-900 p-2.5 print:mt-3 print:border-black print:p-2">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Government ID (one compulsory copy attached)</p>
         <p className="mt-1 text-[10px] font-medium leading-snug text-slate-700 print:text-[9px]">
@@ -130,6 +144,13 @@ export function OfflineTrialFormDocument() {
           Attach clear photocopy / printout of the selected ID to this form.
         </p>
       </section>
+
+      <div className="print-form-section mt-4 print:mt-3">
+        <FieldLine label="Achievements & awards (optional)" />
+        <p className="mt-1 text-[9px] font-medium text-slate-600 print:text-[8px]">
+          District / state selections, tournament awards, academy honours, etc.
+        </p>
+      </div>
 
       <section className="print-form-section mt-4 space-y-2 border-2 border-dashed border-slate-400 p-2.5 print:mt-3 print:p-2">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Payment (office / coordinator)</p>

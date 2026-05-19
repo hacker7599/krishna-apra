@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       shoeSize: String(form.get("shoeSize") ?? ""),
       idDocumentType: String(form.get("idDocumentType") ?? ""),
       transactionRef: form.get("transactionRef") ? String(form.get("transactionRef")) : undefined,
+      achievementsAndAwards: form.get("achievementsAndAwards") ? String(form.get("achievementsAndAwards")) : undefined,
     };
 
     const parsed = registrationSchema.safeParse(payload);
@@ -105,12 +106,23 @@ export async function POST(req: NextRequest) {
         idProofPath,
         paymentProofPath,
         transactionRef: parsed.data.transactionRef || null,
+        achievementsAndAwards: parsed.data.achievementsAndAwards?.trim() || null,
       },
     });
 
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "Could not save registration." }, { status: 500 });
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("no such table") || msg.includes("SQLITE") || msg.includes("Prisma")) {
+      return NextResponse.json(
+        {
+          error:
+            "Database is not ready on the server. Run: npx prisma db push — and ensure DATABASE_URL points to a writable SQLite file.",
+        },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: "Could not save registration. Please try again or contact the league desk." }, { status: 500 });
   }
 }

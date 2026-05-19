@@ -42,7 +42,10 @@ const imageUrl = z
   .string()
   .trim()
   .min(4)
-  .refine((u) => u.startsWith("/") || u.startsWith("https://"), "Image URL must start with / or https://");
+  .refine(
+    (u) => u.startsWith("/") || u.startsWith("https://"),
+    "Image must be uploaded or use a path starting with / or https://",
+  );
 
 export const bannerCreateSchema = z.object({
   title: z.string().max(120).optional(),

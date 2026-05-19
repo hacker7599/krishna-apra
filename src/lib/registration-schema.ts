@@ -36,6 +36,7 @@ export const registrationSchema = z
     shoeSize: z.string().trim().min(1).max(24),
     idDocumentType: idDocumentTypeEnum,
     transactionRef: z.string().trim().max(120).optional(),
+    achievementsAndAwards: z.string().trim().max(2000).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.dateOfBirth > PLAYER_AGE_CUTOFF_DATE) {
