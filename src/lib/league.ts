@@ -14,11 +14,14 @@ export const PLAYER_AGE_CUTOFF_DATE = "2010-08-01";
 /** First eligible date of birth (inclusive) — day after the cut-off. */
 export const PLAYER_AGE_MIN_BIRTH_DATE = "2010-08-02";
 
-/**
- * Latest date of birth for Under-15 on season start (inclusive).
- * Under 15 on SEASON_START (29 May 2026) → born on or after 30 May 2011.
- */
-export const PLAYER_AGE_MAX_BIRTH_DATE = "2011-05-29";
+/** Latest selectable DOB for the date picker (today — any year after the cut-off is allowed). */
+export function playerDateOfBirthMaxIso(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 export const VENUE =
   "Nawab Mansur Ali Khan Pataudi Sports Complex (Jamia Millia Islamia Cricket Ground), New Delhi";
 export const SEASON_START = "29 May 2026";

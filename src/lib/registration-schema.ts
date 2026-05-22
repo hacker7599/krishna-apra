@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PLAYER_AGE_CUTOFF_DATE, PLAYER_AGE_MAX_BIRTH_DATE, PLAYER_AGE_MIN_BIRTH_DATE } from "@/lib/league";
+import { PLAYER_AGE_CUTOFF_DATE } from "@/lib/league";
 
 const roleEnum = z.enum(["BATSMAN", "ALL_ROUNDER", "WICKET_KEEPER", "BOWLER", "SPINNER"]);
 
@@ -43,20 +43,6 @@ export const registrationSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `Players must be born after ${formatCutoffDisplay(PLAYER_AGE_CUTOFF_DATE)} (trial form age cut-off).`,
-        path: ["dateOfBirth"],
-      });
-    }
-    if (data.dateOfBirth < PLAYER_AGE_MIN_BIRTH_DATE) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Date of birth must be on or after ${formatCutoffDisplay(PLAYER_AGE_MIN_BIRTH_DATE)}.`,
-        path: ["dateOfBirth"],
-      });
-    }
-    if (data.dateOfBirth > PLAYER_AGE_MAX_BIRTH_DATE) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Players must be Under-15 for Season 1 (date of birth on or before ${formatCutoffDisplay(PLAYER_AGE_MAX_BIRTH_DATE)}).`,
         path: ["dateOfBirth"],
       });
     }

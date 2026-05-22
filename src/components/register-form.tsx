@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FORMAT, PLAYER_AGE_CUTOFF_DATE, PLAYER_AGE_MAX_BIRTH_DATE, PLAYER_AGE_MIN_BIRTH_DATE, ROLE_OPTIONS, TRIAL_FEE_INR } from "@/lib/league";
+import {
+  FORMAT,
+  PLAYER_AGE_CUTOFF_DATE,
+  PLAYER_AGE_MIN_BIRTH_DATE,
+  playerDateOfBirthMaxIso,
+  ROLE_OPTIONS,
+  TRIAL_FEE_INR,
+} from "@/lib/league";
 import type { RoleId } from "@/lib/league";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 import { openRazorpayCheckout } from "@/lib/open-razorpay-checkout";
@@ -265,12 +272,12 @@ export function RegisterForm() {
             type="date"
             required
             min={PLAYER_AGE_MIN_BIRTH_DATE}
-            max={PLAYER_AGE_MAX_BIRTH_DATE}
+            max={playerDateOfBirthMaxIso()}
             className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
           />
           <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-600">
-            Age cut-off per trial form: players must be born <span className="font-bold text-slate-900">after {cutoffNote()}</span> and be Under-15
-            for Season 1.
+            Age cut-off per trial form: players must be born <span className="font-bold text-slate-900">after {cutoffNote()}</span> (any later year is
+            allowed). Dates on or before that day are not accepted.
             Accepted age proof: Aadhaar, passport (3-year validity), or birth certificate — upload one below.
           </p>
         </label>
