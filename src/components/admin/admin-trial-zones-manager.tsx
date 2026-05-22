@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { adminFetch } from "@/components/admin/admin-session-provider";
+import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
+import { AdminPagination } from "@/components/admin/ui/admin-pagination";
 
 type TrialZone = {
   id: string;
@@ -30,7 +33,10 @@ export function AdminTrialZonesManager() {
     routerRef.current = router;
   }, [router]);
 
+  const PAGE_SIZE = 20;
   const [rows, setRows] = useState<TrialZone[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [published, setPublished] = useState<"all" | "true" | "false">("all");
   const [q, setQ] = useState("");
   const [appliedQ, setAppliedQ] = useState("");
@@ -43,12 +49,13 @@ export function AdminTrialZonesManager() {
     const p = new URLSearchParams();
     if (published !== "all") p.set("published", published);
     if (appliedQ) p.set("q", appliedQ);
-    const s = p.toString();
-    return s ? `?${s}` : "";
-  }, [published, appliedQ]);
+    p.set("limit", String(PAGE_SIZE));
+    p.set("offset", String(offset));
+    return `?${p.toString()}`;
+  }, [published, appliedQ, offset]);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/trial-zones${qs()}`, { credentials: "include" });
+    const res = await adminFetch(`/api/admin/trial-zones${qs()}`);
     if (res.status === 401) {
       routerRef.current.replace("/admin/login");
       return;
@@ -58,8 +65,14 @@ export function AdminTrialZonesManager() {
       return;
     }
     setErr("");
-    setRows((await res.json()) as TrialZone[]);
+    const data = (await res.json()) as { items: TrialZone[]; total: number };
+    setRows(data.items);
+    setTotal(data.total);
   }, [qs]);
+
+  useEffect(() => {
+    setOffset(0);
+  }, [published, appliedQ]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -82,10 +95,9 @@ export function AdminTrialZonesManager() {
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editing) return;
-    const res = await fetch(`/api/admin/trial-zones/${editing.id}`, {
+    const res = await adminFetch(`/api/admin/trial-zones/${editing.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify(toPayload()),
     });
     if (res.status === 401) {
@@ -105,10 +117,9 @@ export function AdminTrialZonesManager() {
 
   async function createZone(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch("/api/admin/trial-zones", {
+    const res = await adminFetch("/api/admin/trial-zones", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify(toPayload()),
     });
     if (res.status === 401) {
@@ -127,10 +138,9 @@ export function AdminTrialZonesManager() {
   }
 
   async function togglePublished(z: TrialZone) {
-    const res = await fetch(`/api/admin/trial-zones/${z.id}`, {
+    const res = await adminFetch(`/api/admin/trial-zones/${z.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ published: !z.published }),
     });
     if (res.status === 401) {
@@ -142,7 +152,7 @@ export function AdminTrialZonesManager() {
 
   async function removeZone(z: TrialZone) {
     if (!window.confirm(`Delete trial zone “${z.trialPlace}”? This cannot be undone.`)) return;
-    const res = await fetch(`/api/admin/trial-zones/${z.id}`, { method: "DELETE", credentials: "include" });
+    const res = await adminFetch(`/api/admin/trial-zones/${z.id}`, { method: "DELETE", credentials: "include" });
     if (res.status === 401) {
       routerRef.current.replace("/admin/login");
       return;
@@ -342,6 +352,9 @@ export function AdminTrialZonesManager() {
           ))}
         </ul>
       )}
+      {rows && rows.length > 0 ? (
+        <AdminPagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
+      ) : null}
     </div>
   );
 }

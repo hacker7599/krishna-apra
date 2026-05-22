@@ -6,8 +6,6 @@ import { useEffect, useState } from "react";
 type Status = {
   configured: boolean;
   setupAllowed: boolean;
-  fromFile: boolean;
-  jwtOk: boolean;
 };
 
 export function AdminSetupForm() {
@@ -66,18 +64,11 @@ export function AdminSetupForm() {
           <span className={status.configured ? "font-bold text-emerald-700" : "font-bold text-amber-700"}>
             {status.configured ? "Configured" : "Not configured"}
           </span>
-          {status.fromFile ? " (data/admin-credentials.json)" : ""}
         </li>
         <li>
           Setup page:{" "}
           <span className={status.setupAllowed ? "font-bold text-emerald-700" : "font-bold text-rose-700"}>
             {status.setupAllowed ? "Enabled" : "Disabled — set ADMIN_SETUP_SECRET in .env"}
-          </span>
-        </li>
-        <li>
-          JWT secret:{" "}
-          <span className={status.jwtOk ? "font-bold text-emerald-700" : "font-bold text-rose-700"}>
-            {status.jwtOk ? "OK" : "Missing or too short"}
           </span>
         </li>
       </ul>
@@ -87,6 +78,14 @@ export function AdminSetupForm() {
           On your server, add to <code className="rounded bg-slate-100 px-1">.env</code>:{" "}
           <code className="rounded bg-slate-100 px-1">ADMIN_SETUP_SECRET=your-long-random-secret</code> (at least 16 characters), then restart
           the app and reload this page.
+        </p>
+      ) : status.configured ? (
+        <p className="text-sm text-slate-700">
+          Admin is already configured. Sign in at{" "}
+          <Link href="/admin/login" className="font-semibold text-[#1B365D] underline">
+            /admin/login
+          </Link>
+          .
         </p>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
@@ -143,7 +142,7 @@ export function AdminSetupForm() {
             disabled={loading}
             className="w-full rounded-lg bg-[#1B365D] py-3 text-sm font-semibold text-white hover:bg-[#152a4a] disabled:opacity-60"
           >
-            {loading ? "Saving…" : status.configured ? "Update admin password" : "Create admin password"}
+            {loading ? "Saving…" : "Create admin password"}
           </button>
         </form>
       )}

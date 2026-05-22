@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireAdminMutation } from "@/lib/require-admin";
 import { trialZonePatchSchema } from "@/lib/admin-entity-schemas";
 
 export const runtime = "nodejs";
@@ -10,8 +10,8 @@ export const runtime = "nodejs";
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
-  const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdminMutation(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.status === 403 ? "Forbidden" : "Unauthorized" }, { status: auth.status });
 
   const { id } = await ctx.params;
 
@@ -51,9 +51,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   }
 }
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
-  const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function DELETE(req: NextRequest, ctx: Ctx) {
+  const auth = await requireAdminMutation(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.status === 403 ? "Forbidden" : "Unauthorized" }, { status: auth.status });
 
   const { id } = await ctx.params;
 

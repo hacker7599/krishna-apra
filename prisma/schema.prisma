@@ -7,26 +7,121 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model PaymentOrder {
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  razorpayOrderId   String    @unique
+  amountPaise       Int
+  currency          String    @default("INR")
+  status            String    @default("created")
+  razorpayPaymentId String?
+  email             String?
+  phone             String?
+  playerName        String?
+  receipt           String?
+  paidAt            DateTime?
+  paymentMethod     String?
+  registrationId    String?   @unique
+  logs              PaymentLog[]
+}
+
+model PaymentLog {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  source            String
+  eventType         String
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpayEventId   String?  @unique
+  amountPaise       Int?
+  currency          String?
+  status            String?
+  email             String?
+  phone             String?
+  playerName        String?
+  registrationId    String?
+  paymentOrderId    String?
+  paymentOrder      PaymentOrder? @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
+  clientIp          String?
+  success           Boolean  @default(true)
+  message           String?
+  metadata          String?
+
+  @@index([razorpayOrderId])
+  @@index([createdAt])
+  @@index([source])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  action     String
+  entityType String
+  entityId   String?
+  summary    String
+  metadata   String?
+  clientIp   String?
+
+  @@index([createdAt])
+  @@index([entityType])
+}
+
+model EmailLog {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  templateKey    String
+  toEmail        String
+  registrationId String?
+  success        Boolean  @default(false)
+  provider       String   @default("msg91")
+  providerMsgId  String?
+  error          String?
+  metadata       String?
+
+  @@index([createdAt])
+  @@index([toEmail])
+  @@index([templateKey])
+  @@index([registrationId])
+}
+
+model RegistrationAccessOtp {
+  id             String    @id @default(cuid())
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  email          String
+  otpHash        String
+  registrationId String
+  attempts       Int       @default(0)
+  usedAt         DateTime?
+
+  @@index([email, createdAt])
+  @@index([expiresAt])
+}
+
 model Registration {
-  id               String   @id @default(cuid())
-  createdAt        DateTime @default(now())
-  academyName      String
-  playerName       String
-  dateOfBirth      DateTime
-  roles            String
-  email            String
-  phone            String
-  fatherName       String?
-  address          String?
-  jerseySize       String?
-  shoeSize         String?
-  idDocumentType   String?
-  idProofPath      String?
-  paymentProofPath String?
+  id                    String   @id @default(cuid())
+  createdAt             DateTime @default(now())
+  academyName           String
+  playerName            String
+  dateOfBirth           DateTime
+  roles                 String
+  email                 String
+  phone                 String
+  fatherName            String?
+  address               String?
+  jerseySize            String?
+  shoeSize              String?
+  idDocumentType        String?
+  idProofPath           String?
+  paymentProofPath      String?
   transactionRef        String?
   achievementsAndAwards String?
   feeReceivedDate       String?
   coachName             String?
+  paymentStatus         String?
+  razorpayOrderId       String?  @unique
+  razorpayPaymentId     String?
 }
 
 model Team {
@@ -56,14 +151,14 @@ model HeroBanner {
 }
 
 model TrialZone {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  trialPlace      String
-  zone            String
-  address         String
-  navigationUrl   String
-  contactDetails  String
-  sortOrder       Int      @default(0)
-  published       Boolean  @default(true)
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  trialPlace     String
+  zone           String
+  address        String
+  navigationUrl  String
+  contactDetails String
+  sortOrder      Int      @default(0)
+  published      Boolean  @default(true)
 }

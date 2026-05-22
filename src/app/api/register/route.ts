@@ -5,6 +5,12 @@ import { getClientIp } from "@/lib/get-client-ip";
 import { registrationSchema } from "@/lib/registration-schema";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
 import { saveIdProof, savePaymentProof } from "@/lib/save-upload";
+import { confirmRazorpayPayment, linkPaymentOrderToRegistration } from "@/lib/confirm-razorpay-payment";
+import { isRazorpayConfigured } from "@/lib/razorpay-config";
+import { duplicateRegistrationMessage, findExistingRegistration } from "@/lib/registration-duplicate";
+import { normalizePhone } from "@/lib/normalize-phone";
+import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
+import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
 
 export const runtime = "nodejs";
 
@@ -19,6 +25,8 @@ export async function POST(req: NextRequest) {
     res.headers.set("Retry-After", String(limited.retryAfterSec));
     return res;
   }
+
+  const razorpayEnabled = isRazorpayConfigured();
 
   try {
     const form = await req.formData();
@@ -52,6 +60,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg, details: flat }, { status: 400 });
     }
 
+    const emailNorm = parsed.data.email.toLowerCase();
+    const phoneNorm = normalizePhone(parsed.data.phone);
+
+    const existing = await findExistingRegistration(emailNorm, phoneNorm);
+    if (existing) {
+      return NextResponse.json({ error: duplicateRegistrationMessage(existing), duplicate: true }, { status: 409 });
+    }
+
+    const razorpayOrderId = String(form.get("razorpayOrderId") ?? "").trim();
+    const razorpayPaymentId = String(form.get("razorpayPaymentId") ?? "").trim();
+    const razorpaySignature = String(form.get("razorpaySignature") ?? "").trim();
+
+    let paymentStatus: string;
+    let storedOrderId: string | null = null;
+    let storedPaymentId: string | null = null;
+
+    if (razorpayEnabled) {
+      if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+        return NextResponse.json({ error: "Trial fee payment is required. Please pay via Razorpay before submitting." }, { status: 400 });
+      }
+      const confirmed = await confirmRazorpayPayment(
+        { razorpayOrderId, razorpayPaymentId, razorpaySignature },
+        { email: emailNorm, phone: phoneNorm, playerName: parsed.data.playerName },
+        ip,
+      );
+      if (!confirmed.ok) {
+        return NextResponse.json({ error: confirmed.error }, { status: 400 });
+      }
+      paymentStatus = "paid";
+      storedOrderId = razorpayOrderId;
+      storedPaymentId = razorpayPaymentId;
+    } else {
+      paymentStatus = "manual";
+    }
+
     const idFile = form.get("idProof");
     if (!idFile || typeof idFile === "string" || idFile.size === 0) {
       return NextResponse.json({ error: "Government ID proof upload is required (Aadhaar, passport, or birth certificate)." }, { status: 400 });
@@ -73,7 +116,7 @@ export async function POST(req: NextRequest) {
 
     const payFile = form.get("paymentProof");
     let paymentProofPath: string | null = null;
-    if (payFile && typeof payFile !== "string" && payFile.size > 0) {
+    if (!razorpayEnabled && payFile && typeof payFile !== "string" && payFile.size > 0) {
       try {
         paymentProofPath = await savePaymentProof(payFile as File);
       } catch (e) {
@@ -90,14 +133,14 @@ export async function POST(req: NextRequest) {
 
     const dob = new Date(`${parsed.data.dateOfBirth}T00:00:00.000Z`);
 
-    await prisma.registration.create({
+    const registration = await prisma.registration.create({
       data: {
         academyName: parsed.data.academyName,
         playerName: parsed.data.playerName,
         dateOfBirth: dob,
         roles: JSON.stringify(parsed.data.roles),
-        email: parsed.data.email.toLowerCase(),
-        phone: parsed.data.phone.replace(/\s+/g, ""),
+        email: emailNorm,
+        phone: phoneNorm,
         fatherName: parsed.data.fatherName,
         address: parsed.data.address,
         jerseySize: parsed.data.jerseySize,
@@ -105,12 +148,41 @@ export async function POST(req: NextRequest) {
         idDocumentType: parsed.data.idDocumentType,
         idProofPath,
         paymentProofPath,
-        transactionRef: parsed.data.transactionRef || null,
+        transactionRef: razorpayEnabled ? storedPaymentId : parsed.data.transactionRef || null,
         achievementsAndAwards: parsed.data.achievementsAndAwards?.trim() || null,
+        paymentStatus,
+        razorpayOrderId: storedOrderId,
+        razorpayPaymentId: storedPaymentId,
       },
     });
 
-    return NextResponse.json({ ok: true });
+    if (storedOrderId && storedPaymentId) {
+      await linkPaymentOrderToRegistration(storedOrderId, storedPaymentId, registration.id);
+    }
+
+    let confirmationToken: string;
+    try {
+      confirmationToken = await signRegistrationConfirmationToken(registration.id);
+    } catch {
+      return NextResponse.json(
+        { error: "Registration saved but confirmation could not be issued. Contact the league desk with your payment reference." },
+        { status: 503 },
+      );
+    }
+
+    const emailResult = await sendRegistrationConfirmationEmail({
+      registrationId: registration.id,
+      email: emailNorm,
+      playerName: parsed.data.playerName,
+      confirmationToken,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      confirmationToken,
+      emailSent: emailResult.sent,
+      emailError: emailResult.sent ? undefined : emailResult.error,
+    });
   } catch (e) {
     console.error(e);
     const msg = e instanceof Error ? e.message : "";
@@ -121,6 +193,15 @@ export async function POST(req: NextRequest) {
             "Database is not ready on the server. Run: npx prisma db push — and ensure DATABASE_URL points to a writable SQLite file.",
         },
         { status: 503 },
+      );
+    }
+    if (msg.includes("Unique constraint")) {
+      if (msg.includes("razorpayOrderId")) {
+        return NextResponse.json({ error: "This payment has already been used for a registration." }, { status: 400 });
+      }
+      return NextResponse.json(
+        { error: "This email or mobile number is already registered.", duplicate: true },
+        { status: 409 },
       );
     }
     return NextResponse.json({ error: "Could not save registration. Please try again or contact the league desk." }, { status: 500 });

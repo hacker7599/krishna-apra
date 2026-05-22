@@ -11,13 +11,9 @@ import { STREAMING_YOUTUBE_URL } from "@/lib/league";
 import { cn } from "@/lib/cn";
 import { CARD_PAD, SECTION_WHITE, SECTION_MUTED, SITE_CONTAINER } from "@/lib/site-ui";
 
-const partners = [
-  { name: "FanCode", hint: "Live streaming partner" },
-  { name: "Waves", hint: "Live streaming partner" },
-  { name: "Styx Sports", hint: "Live streaming partner" },
-] as const;
+const partners = [{ name: "FanCode", hint: "Live streaming partner" }] as const;
 
-function AmbassadorBlock({
+function EventSupporterBlock({
   id,
   name,
   bio,
@@ -40,7 +36,7 @@ function AmbassadorBlock({
     <section className={tone} aria-labelledby={id}>
       <div className={`${SITE_CONTAINER} grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-14`}>
         <div className={reverse ? "lg:order-2" : undefined}>
-          <SectionHeader eyebrow="Season 1" title="Brand ambassador" />
+          <SectionHeader eyebrow="Season 1" title="Event supporter" />
           <p className="mt-4 text-xl font-bold text-slate-900">{name}</p>
           <p className="prose-league mt-3 max-w-xl text-sm font-medium">{bio}</p>
         </div>
@@ -48,7 +44,7 @@ function AmbassadorBlock({
           <MediaSlot
             src={portraitSrc}
             alt={portraitAlt}
-            label="Ambassador portrait"
+            label="Event supporter portrait"
             suggestedPath={suggestedPath}
             className="w-full max-w-sm sm:max-w-md"
             sizes="(max-width: 768px) 100vw, 400px"
@@ -71,7 +67,7 @@ export function HomeBroadcastLeadership() {
             align="center"
           />
 
-          <ul className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-3">
+          <ul className="mx-auto mt-10 grid max-w-sm gap-4 sm:max-w-md">
             {partners.map((p) => (
               <li key={p.name} className={cn(CARD_PAD, "text-center !py-6")}>
                 <span className="font-[family-name:var(--font-bebas)] text-2xl uppercase tracking-wide text-slate-900 sm:text-3xl">{p.name}</span>
@@ -100,20 +96,20 @@ export function HomeBroadcastLeadership() {
         </div>
       </section>
 
-      <AmbassadorBlock
-        id="home-ambassador-heading"
+      <EventSupporterBlock
+        id="home-aakash-supporter-heading"
         name="Mr. Aakash Chopra"
-        bio="Former India opener and one of the country&apos;s most trusted cricket voices — backing Future Star U-15 as we bring franchise-style storytelling and credibility to junior cricket in Delhi NCR."
+        bio="Former India opener and one of the country&apos;s most trusted cricket voices — supporting Future Star U-15 as we bring franchise-style storytelling and credibility to junior cricket in Delhi NCR."
         portraitSrc={HOME_AAKASH_CHOPRA_PORTRAIT_SRC}
         portraitAlt="Mr. Aakash Chopra"
         suggestedPath={HOME_AAKASH_CHOPRA_PORTRAIT_PATH}
         tone={SECTION_MUTED}
       />
 
-      <AmbassadorBlock
-        id="home-parthiv-ambassador-heading"
+      <EventSupporterBlock
+        id="home-parthiv-supporter-heading"
         name="Mr. Parthiv Patel"
-        bio="Former India wicketkeeper-batter and captain — championing youth cricket, franchise standards, and the pathway from trials to the big stage in Delhi NCR."
+        bio="Former India wicketkeeper-batter and captain — supporting youth cricket, franchise standards, and the pathway from trials to the big stage in Delhi NCR."
         portraitSrc={HOME_PARTHIV_PATEL_PORTRAIT_SRC}
         portraitAlt="Mr. Parthiv Patel"
         suggestedPath={HOME_PARTHIV_PATEL_PORTRAIT_PATH}

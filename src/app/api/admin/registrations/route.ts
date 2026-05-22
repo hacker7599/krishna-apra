@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { Prisma } from "@prisma/client";
+import { registrationAdminCreateSchema } from "@/lib/admin-entity-schemas";
+import {
+  assertEligibleDateOfBirth,
+  buildRegistrationCreateData,
+  findDuplicateRegistrationExcluding,
+} from "@/lib/admin-registration-mutation";
+import { listRegistrationsForAdmin } from "@/lib/admin-registrations-query";
+import { logAdminAudit } from "@/lib/admin-audit";
+import { getClientIp } from "@/lib/get-client-ip";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireAdmin, requireAdminMutation } from "@/lib/require-admin";
 
 export const runtime = "nodejs";
+
+const MAX_LIMIT = 500;
+const DEFAULT_LIMIT = 100;
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin();
@@ -13,43 +24,63 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q")?.trim();
-  const from = searchParams.get("from")?.trim();
-  const to = searchParams.get("to")?.trim();
+  const q = searchParams.get("q")?.trim() || undefined;
+  const from = searchParams.get("from")?.trim() || undefined;
+  const to = searchParams.get("to")?.trim() || undefined;
+  const paymentStatus = searchParams.get("paymentStatus")?.trim() || undefined;
+  const limit = Math.min(MAX_LIMIT, Math.max(1, Number(searchParams.get("limit")) || DEFAULT_LIMIT));
+  const offset = Math.max(0, Number(searchParams.get("offset")) || 0);
 
-  const where: Prisma.RegistrationWhereInput = {};
+  const result = await listRegistrationsForAdmin({ q, from, to, paymentStatus, limit, offset });
+  return NextResponse.json(result);
+}
 
-  if (q) {
-    where.OR = [
-      { playerName: { contains: q } },
-      { academyName: { contains: q } },
-      { email: { contains: q } },
-      { phone: { contains: q } },
-      { transactionRef: { contains: q } },
-      { fatherName: { contains: q } },
-      { address: { contains: q } },
-      { coachName: { contains: q } },
-      { achievementsAndAwards: { contains: q } },
-    ];
+export async function POST(req: NextRequest) {
+  const auth = await requireAdminMutation(req);
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.status === 403 ? "Forbidden" : "Unauthorized" }, { status: auth.status });
   }
 
-  const created: Prisma.DateTimeFilter = {};
-  if (from) {
-    const d = new Date(from + "T00:00:00.000Z");
-    if (!Number.isNaN(d.getTime())) created.gte = d;
-  }
-  if (to) {
-    const d = new Date(to + "T23:59:59.999Z");
-    if (!Number.isNaN(d.getTime())) created.lte = d;
-  }
-  if (Object.keys(created).length > 0) {
-    where.createdAt = created;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const rows = await prisma.registration.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
+  const parsed = registrationAdminCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid data", details: parsed.error.flatten() }, { status: 400 });
+  }
 
-  return NextResponse.json(rows);
+  const dobError = assertEligibleDateOfBirth(parsed.data.dateOfBirth);
+  if (dobError) {
+    return NextResponse.json({ error: dobError }, { status: 400 });
+  }
+
+  const dup = await findDuplicateRegistrationExcluding(parsed.data.email, parsed.data.phone);
+  if (dup) {
+    const msg =
+      dup.matched === "email"
+        ? "Another registration already uses this email."
+        : "Another registration already uses this mobile number.";
+    return NextResponse.json({ error: msg, duplicate: true }, { status: 409 });
+  }
+
+  try {
+    const registration = await prisma.registration.create({
+      data: buildRegistrationCreateData(parsed.data),
+    });
+    await logAdminAudit({
+      action: "create",
+      entityType: "registration",
+      entityId: registration.id,
+      summary: `Created registration for ${registration.playerName}`,
+      clientIp: getClientIp(req),
+    });
+    return NextResponse.json(registration, { status: 201 });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Could not create registration." }, { status: 500 });
+  }
 }

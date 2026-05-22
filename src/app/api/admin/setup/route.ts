@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getAdminAuthStatus, isAdminSetupAllowed, verifySetupSecret } from "@/lib/admin-auth-config";
+import {
+  getAdminAuthStatus,
+  isAdminPasswordConfigured,
+  isAdminSetupAllowed,
+  verifySetupSecret,
+} from "@/lib/admin-auth-config";
 import { writeAdminCredentials } from "@/lib/admin-credentials-store";
 import { getClientIp } from "@/lib/get-client-ip";
 import { checkLoginRate, recordLoginFailure, resetLoginFailures } from "@/lib/login-rate-limit";
@@ -41,6 +46,13 @@ export async function POST(req: NextRequest) {
   if (!verifySetupSecret(setupSecret)) {
     recordLoginFailure(ip);
     return NextResponse.json({ error: "Invalid setup secret." }, { status: 403 });
+  }
+
+  if (await isAdminPasswordConfigured()) {
+    return NextResponse.json(
+      { error: "Admin is already configured. Sign in at /admin/login or set ADMIN_SETUP_DISABLED=true." },
+      { status: 403 },
+    );
   }
 
   const username = typeof body.username === "string" ? body.username.trim() : "";

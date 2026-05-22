@@ -7,12 +7,16 @@ import { SiteMobileCta } from "@/components/site-mobile-cta";
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <SiteHeader />
-      <SiteAnnouncementBar />
-      <main className="relative flex-1 overflow-x-hidden pb-20 sm:pb-0">{children}</main>
-      <SiteFooter />
-      <SiteMobileCta />
-      <BackToTop />
+      <div className="print-only-hide">
+        <SiteHeader />
+        <SiteAnnouncementBar />
+      </div>
+      <main className="relative flex-1 overflow-x-hidden pb-20 sm:pb-0 print:overflow-visible print:pb-0">{children}</main>
+      <div className="print-only-hide">
+        <SiteFooter />
+        <SiteMobileCta />
+        <BackToTop />
+      </div>
     </>
   );
 }

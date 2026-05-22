@@ -51,16 +51,19 @@ export async function POST(req: NextRequest) {
 
   resetLoginFailures(ip);
   let token: string;
+  let csrf: string;
   try {
-    token = await signAdminSessionToken();
+    const session = await signAdminSessionToken();
+    token = session.token;
+    csrf = session.csrf;
   } catch {
     return NextResponse.json({ error: "Session signing failed. Check ADMIN_JWT_SECRET on the server." }, { status: 503 });
   }
 
-  const res = NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true, csrfToken: csrf, username: expectedUsername });
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     secure: adminCookieSecure(req),
     path: "/",
     maxAge: 60 * 60 * 8,

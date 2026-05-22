@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { setAdminCsrf } from "@/lib/admin-client";
 import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC } from "@/lib/branding";
 
 export function AdminLoginForm() {
@@ -31,6 +32,10 @@ export function AdminLoginForm() {
           setErr(typeof data.error === "string" ? data.error : "Login failed.");
         }
         return;
+      }
+      if (typeof data.csrfToken === "string") {
+        setAdminCsrf(data.csrfToken);
+        sessionStorage.setItem("fs_admin_user", typeof data.username === "string" ? data.username : username);
       }
       router.replace("/admin");
       router.refresh();

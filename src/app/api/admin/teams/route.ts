@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { Prisma } from "@prisma/client";
+import { parseAdminPagination, paginationMeta } from "@/lib/admin-pagination";
+import { logAdminAudit } from "@/lib/admin-audit";
+import { getClientIp } from "@/lib/get-client-ip";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireAdmin, requireAdminMutation } from "@/lib/require-admin";
 import { teamCreateSchema } from "@/lib/admin-entity-schemas";
 import { slugify } from "@/lib/slug";
 
@@ -13,6 +16,7 @@ export async function GET(req: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
+  const { limit, offset } = parseAdminPagination(searchParams, 20);
   const published = searchParams.get("published");
   const q = searchParams.get("q")?.trim();
 
@@ -27,13 +31,22 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const rows = await prisma.team.findMany({ where, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
-  return NextResponse.json(rows);
+  const [items, total] = await Promise.all([
+    prisma.team.findMany({
+      where,
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      take: limit,
+      skip: offset,
+    }),
+    prisma.team.count({ where }),
+  ]);
+
+  return NextResponse.json({ items, ...paginationMeta(total, limit, offset) });
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdminMutation(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.status === 403 ? "Forbidden" : "Unauthorized" }, { status: auth.status });
 
   let body: unknown;
   try {
@@ -72,5 +85,13 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json(team);
+  await logAdminAudit({
+    action: "create",
+    entityType: "team",
+    entityId: team.id,
+    summary: `Created team ${team.name}`,
+    clientIp: getClientIp(req),
+  });
+
+  return NextResponse.json(team, { status: 201 });
 }

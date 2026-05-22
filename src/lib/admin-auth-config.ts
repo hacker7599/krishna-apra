@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { decodeHashB64, hasAdminCredentialsFile, readAdminCredentialsFile } from "@/lib/admin-credentials-store";
 
 /** Reads bcrypt hash from data/admin-credentials.json first, then ADMIN_PASSWORD_HASH_B64 / ADMIN_PASSWORD_HASH. */
@@ -38,14 +39,19 @@ export function isAdminSetupAllowed(): boolean {
 
 export function verifySetupSecret(provided: string): boolean {
   const secret = process.env.ADMIN_SETUP_SECRET?.trim();
-  if (!secret || secret.length < 16) return false;
-  return provided === secret;
+  if (!secret || secret.length < 16 || !provided) return false;
+  try {
+    const a = Buffer.from(provided, "utf8");
+    const b = Buffer.from(secret, "utf8");
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 export async function getAdminAuthStatus() {
   const configured = await isAdminPasswordConfigured();
   const setupAllowed = isAdminSetupAllowed();
-  const fromFile = await hasAdminCredentialsFile();
-  const jwtOk = Boolean(process.env.ADMIN_JWT_SECRET && process.env.ADMIN_JWT_SECRET.length >= 32);
-  return { configured, setupAllowed, fromFile, jwtOk };
+  return { configured, setupAllowed };
 }

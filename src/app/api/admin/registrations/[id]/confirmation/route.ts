@@ -1,0 +1,20 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { toRegistrationConfirmation } from "@/lib/registration-confirmation";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
+
+export const runtime = "nodejs";
+
+type Ctx = { params: Promise<{ id: string }> };
+
+export async function GET(_req: NextRequest, ctx: Ctx) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await ctx.params;
+  const row = await prisma.registration.findUnique({ where: { id } });
+  if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  return NextResponse.json(toRegistrationConfirmation(row));
+}

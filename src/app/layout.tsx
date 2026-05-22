@@ -36,7 +36,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${display.variable} ${sans.variable} ${flash.variable} h-full`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+      className={`${display.variable} ${sans.variable} ${flash.variable} h-full`}
+    >
       <body suppressHydrationWarning className="flex min-h-full flex-col antialiased text-slate-900">
         {children}
       </body>

@@ -16,12 +16,44 @@ function StakeholderVisual({
   id: string;
 }) {
   if (logoSrc) {
+    const isLargeLogo = id === "outer-delhi-warriors" || id === "krishna-apra";
+    const logoEyebrow =
+      id === "outer-delhi-warriors" ? "Franchise partner" : id === "krishna-apra" ? "Title sponsor" : "Partner";
     return (
-      <div className="flex w-full max-w-[200px] flex-col items-center gap-2">
-        <span className="eyebrow">Title sponsor</span>
-        <div className="flex min-h-[5rem] w-full items-center justify-center rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <Image src={logoSrc} alt={name} width={200} height={80} unoptimized className="h-14 w-auto object-contain" />
+      <div className={`flex w-full flex-col items-center gap-2 ${isLargeLogo ? "max-w-[320px]" : "max-w-[200px]"}`}>
+        <span className="eyebrow">{logoEyebrow}</span>
+        <div
+          className={`flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm ${
+            isLargeLogo ? "min-h-[10rem] p-6 sm:min-h-[11rem] sm:p-8" : "min-h-[5rem] p-4"
+          }`}
+        >
+          <Image
+            src={logoSrc}
+            alt={name}
+            width={isLargeLogo ? 320 : 200}
+            height={isLargeLogo ? 160 : 80}
+            unoptimized
+            className={
+              isLargeLogo ? "h-24 w-auto max-w-full object-contain sm:h-28 md:h-32" : "h-14 w-auto object-contain"
+            }
+          />
         </div>
+      </div>
+    );
+  }
+
+  if (portraitSrc?.trim()) {
+    return (
+      <div className="relative h-[275px] w-[220px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <Image
+          src={portraitSrc}
+          alt={name}
+          fill
+          unoptimized
+          className="object-cover object-top"
+          sizes="220px"
+          priority={id === "subhash" || id === "naresh"}
+        />
       </div>
     );
   }
@@ -32,7 +64,7 @@ function StakeholderVisual({
       alt={name}
       label="Portrait"
       suggestedPath={`/home/about/${id}.jpg`}
-      className="max-w-[220px]"
+      className="w-[220px]"
       sizes="220px"
     />
   );
@@ -55,7 +87,13 @@ export function AboutStakeholders() {
                 index % 2 === 1 ? "lg:flex-row-reverse" : ""
               }`}
             >
-              <div className="flex shrink-0 justify-center lg:justify-start">
+              <div
+                className={`mx-auto flex shrink-0 justify-center lg:mx-0 lg:justify-start ${
+                  person.logoSrc && (person.id === "outer-delhi-warriors" || person.id === "krishna-apra")
+                    ? "w-full max-w-[320px] sm:w-[320px]"
+                    : "w-[220px]"
+                }`}
+              >
                 <StakeholderVisual portraitSrc={person.portraitSrc} logoSrc={person.logoSrc} name={person.name} id={person.id} />
               </div>
               <div className="min-w-0 flex-1">

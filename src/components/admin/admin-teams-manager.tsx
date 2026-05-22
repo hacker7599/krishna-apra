@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { adminFetch } from "@/components/admin/admin-session-provider";
+import { AdminModal } from "@/components/admin/admin-modal";
+import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
+import { AdminPagination } from "@/components/admin/ui/admin-pagination";
+import { AdminColorPicker } from "@/components/admin/ui/admin-color-picker";
 
 type Team = {
   id: string;
@@ -14,6 +19,14 @@ type Team = {
   published: boolean;
 };
 
+type ListResponse = {
+  items: Team[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+const PAGE_SIZE = 20;
 const emptyForm = { name: "", city: "", accentColor: "#ea580c", description: "", published: true };
 
 export function AdminTeamsManager() {
@@ -22,59 +35,67 @@ export function AdminTeamsManager() {
   useEffect(() => {
     routerRef.current = router;
   }, [router]);
-  const [teams, setTeams] = useState<Team[] | null>(null);
+
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [published, setPublished] = useState<"all" | "true" | "false">("all");
   const [q, setQ] = useState("");
   const [appliedQ, setAppliedQ] = useState("");
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Team | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
 
   const qs = useCallback(() => {
     const p = new URLSearchParams();
     if (published !== "all") p.set("published", published);
     if (appliedQ) p.set("q", appliedQ);
-    const s = p.toString();
-    return s ? `?${s}` : "";
-  }, [published, appliedQ]);
+    p.set("limit", String(PAGE_SIZE));
+    p.set("offset", String(offset));
+    return `?${p.toString()}`;
+  }, [published, appliedQ, offset]);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/teams${qs()}`, { credentials: "include" });
+    setLoading(true);
+    const res = await adminFetch(`/api/admin/teams${qs()}`);
     if (res.status === 401) {
       routerRef.current.replace("/admin/login");
       return;
     }
     if (!res.ok) {
       setErr("Could not load teams.");
+      setLoading(false);
       return;
     }
     setErr("");
-    setTeams((await res.json()) as Team[]);
+    const data = (await res.json()) as ListResponse;
+    setTeams(data.items);
+    setTotal(data.total);
+    setLoading(false);
   }, [qs]);
 
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      void load();
-    }, 0);
+    const id = window.setTimeout(() => void load(), 0);
     return () => clearTimeout(id);
   }, [load]);
+
+  useEffect(() => {
+    setOffset(0);
+  }, [published, appliedQ]);
 
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editing) return;
-    const res = await fetch(`/api/admin/teams/${editing.id}`, {
+    setSaving(true);
+    const res = await adminFetch(`/api/admin/teams/${editing.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        name: form.name,
-        city: form.city,
-        accentColor: form.accentColor,
-        description: form.description,
-        published: form.published,
-      }),
+      body: JSON.stringify(form),
     });
+    setSaving(false);
     if (res.status === 401) {
       routerRef.current.replace("/admin/login");
       return;
@@ -84,18 +105,18 @@ export function AdminTeamsManager() {
       return;
     }
     setEditing(null);
-    setForm(emptyForm);
     void load();
   }
 
   async function createTeam(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch("/api/admin/teams", {
+    setSaving(true);
+    const res = await adminFetch("/api/admin/teams", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify(form),
     });
+    setSaving(false);
     if (res.status === 401) {
       routerRef.current.replace("/admin/login");
       return;
@@ -111,26 +132,17 @@ export function AdminTeamsManager() {
   }
 
   async function togglePublished(t: Team) {
-    const res = await fetch(`/api/admin/teams/${t.id}`, {
+    const res = await adminFetch(`/api/admin/teams/${t.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ published: !t.published }),
     });
-    if (res.status === 401) {
-      routerRef.current.replace("/admin/login");
-      return;
-    }
     if (res.ok) void load();
   }
 
   async function removeTeam(t: Team) {
     if (!window.confirm(`Delete team “${t.name}”? This cannot be undone.`)) return;
-    const res = await fetch(`/api/admin/teams/${t.id}`, { method: "DELETE", credentials: "include" });
-    if (res.status === 401) {
-      routerRef.current.replace("/admin/login");
-      return;
-    }
+    const res = await adminFetch(`/api/admin/teams/${t.id}`, { method: "DELETE" });
     if (res.ok) void load();
   }
 
@@ -146,42 +158,82 @@ export function AdminTeamsManager() {
     setCreateOpen(false);
   }
 
-  return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-[family-name:var(--font-barlow)] text-3xl font-bold italic tracking-tight text-slate-900">Teams</h1>
-          <p className="mt-1 text-sm font-medium text-slate-600">Only published teams appear on the public /teams page.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setCreateOpen(true);
-            setEditing(null);
-            setForm(emptyForm);
-          }}
-          className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700"
-        >
-          Add team
-        </button>
+  const teamForm = (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-xs font-bold uppercase text-slate-600">Team name</span>
+          <input
+            required
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-bold uppercase text-slate-600">City</span>
+          <input
+            required
+            value={form.city}
+            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          />
+        </label>
       </div>
+      <AdminColorPicker label="Accent colour" value={form.accentColor} onChange={(accentColor) => setForm((f) => ({ ...f, accentColor }))} />
+      <label className="block">
+        <span className="mb-1 block text-xs font-bold uppercase text-slate-600">Description</span>
+        <textarea
+          value={form.description}
+          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          rows={3}
+        />
+      </label>
+      <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <input type="checkbox" checked={form.published} onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))} />
+        Published on website
+      </label>
+    </div>
+  );
+
+  return (
+    <div className="admin-panel mx-auto max-w-6xl space-y-6">
+      <AdminPageHeader
+        title="Teams"
+        description="Manage franchise teams shown on the public site. Only published teams appear on /teams."
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setCreateOpen(true);
+              setEditing(null);
+              setForm(emptyForm);
+            }}
+            className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700"
+          >
+            Add team
+          </button>
+        }
+      />
 
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-end">
         <label className="block flex-1">
-          <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Search</span>
+          <span className="mb-1 block text-xs font-bold uppercase text-slate-600">Search</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900"
+            onKeyDown={(e) => e.key === "Enter" && setAppliedQ(q.trim())}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
             placeholder="Name, city, slug…"
           />
         </label>
         <label className="block w-full sm:w-44">
-          <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Published</span>
+          <span className="mb-1 block text-xs font-bold uppercase text-slate-600">Status</span>
           <select
             value={published}
             onChange={(e) => setPublished(e.target.value as "all" | "true" | "false")}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-900"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
           >
             <option value="all">All</option>
             <option value="true">Published</option>
@@ -191,153 +243,108 @@ export function AdminTeamsManager() {
         <button
           type="button"
           onClick={() => setAppliedQ(q.trim())}
-          className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-bold text-white hover:bg-slate-900"
+          className="rounded-lg bg-[#1B365D] px-4 py-2 text-sm font-bold text-white hover:bg-[#152a4a]"
         >
-          Apply filters
+          Search
         </button>
       </div>
 
       {err && <p className="text-sm font-semibold text-rose-700">{err}</p>}
 
-      {createOpen && (
-        <form onSubmit={createTeam} className="space-y-3 rounded-xl border border-orange-200 bg-orange-50/50 p-4">
-          <p className="text-sm font-bold text-slate-900">New team</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input
-              required
-              placeholder="Name"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-            />
-            <input
-              required
-              placeholder="City"
-              value={form.city}
-              onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-            />
-            <input
-              required
-              placeholder="#RRGGBB"
-              value={form.accentColor}
-              onChange={(e) => setForm((f) => ({ ...f, accentColor: e.target.value }))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-            />
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-              <input type="checkbox" checked={form.published} onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))} />
-              Published on website
-            </label>
-          </div>
-          <textarea
-            placeholder="Short description"
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-            rows={2}
-          />
-          <div className="flex gap-2">
-            <button type="submit" className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white">
-              Create
-            </button>
-            <button type="button" onClick={() => setCreateOpen(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        {loading ? (
+          <p className="p-8 text-sm text-slate-600">Loading teams…</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="admin-table min-w-[720px] w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="px-4 py-3">#</th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">City</th>
+                    <th className="px-4 py-3">Colour</th>
+                    <th className="px-4 py-3">Site</th>
+                    <th className="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teams.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
+                        No teams found.
+                      </td>
+                    </tr>
+                  ) : (
+                    teams.map((t) => (
+                      <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50/80">
+                        <td className="px-4 py-3 text-slate-500">{t.sortOrder}</td>
+                        <td className="px-4 py-3 font-semibold text-slate-900">{t.name}</td>
+                        <td className="px-4 py-3">{t.city}</td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center gap-2">
+                            <span className="h-6 w-6 rounded-md border border-slate-200 shadow-inner" style={{ backgroundColor: t.accentColor }} />
+                            <span className="font-mono text-xs text-slate-500">{t.accentColor}</span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {t.published ? (
+                            <span className="text-xs font-bold text-emerald-700">Live</span>
+                          ) : (
+                            <span className="text-xs font-bold text-slate-400">Hidden</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            <button type="button" onClick={() => startEdit(t)} className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold hover:bg-slate-200">
+                              Edit
+                            </button>
+                            <button type="button" onClick={() => void togglePublished(t)} className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold hover:bg-slate-200">
+                              {t.published ? "Hide" : "Publish"}
+                            </button>
+                            <button type="button" onClick={() => void removeTeam(t)} className="rounded-md bg-rose-50 px-2 py-1 text-xs font-bold text-rose-800 hover:bg-rose-100">
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <AdminPagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
+          </>
+        )}
+      </div>
+
+      <AdminModal open={createOpen} onClose={() => setCreateOpen(false)} title="Add team">
+        <form onSubmit={createTeam} className="space-y-4">
+          {teamForm}
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+            <button type="button" onClick={() => setCreateOpen(false)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold">
               Cancel
+            </button>
+            <button type="submit" disabled={saving} className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60">
+              {saving ? "Creating…" : "Create team"}
             </button>
           </div>
         </form>
-      )}
+      </AdminModal>
 
-      {editing && (
-        <form onSubmit={saveEdit} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm font-bold text-slate-900">Edit “{editing.name}”</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-            />
-            <input
-              required
-              value={form.city}
-              onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-            />
-            <input
-              required
-              value={form.accentColor}
-              onChange={(e) => setForm((f) => ({ ...f, accentColor: e.target.value }))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-            />
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-              <input type="checkbox" checked={form.published} onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))} />
-              Published
-            </label>
-          </div>
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-            rows={2}
-          />
-          <div className="flex gap-2">
-            <button type="submit" className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white">
-              Save
-            </button>
-            <button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold">
+      <AdminModal open={!!editing} onClose={() => setEditing(null)} title={editing ? `Edit ${editing.name}` : "Edit team"}>
+        <form onSubmit={saveEdit} className="space-y-4">
+          {teamForm}
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+            <button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold">
               Cancel
+            </button>
+            <button type="submit" disabled={saving} className="rounded-lg bg-[#1B365D] px-4 py-2 text-sm font-bold text-white disabled:opacity-60">
+              {saving ? "Saving…" : "Save changes"}
             </button>
           </div>
         </form>
-      )}
-
-      {teams === null ? (
-        <p className="text-sm font-semibold text-slate-600">Loading…</p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-[720px] w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase text-slate-700">
-              <tr>
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">City</th>
-                <th className="px-3 py-2">Colour</th>
-                <th className="px-3 py-2">Site</th>
-                <th className="px-3 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="font-medium text-slate-800">
-              {teams.map((t) => (
-                <tr key={t.id} className="border-b border-slate-100">
-                  <td className="px-3 py-2 text-slate-600">{t.sortOrder}</td>
-                  <td className="px-3 py-2 font-bold">{t.name}</td>
-                  <td className="px-3 py-2">{t.city}</td>
-                  <td className="px-3 py-2">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-5 w-5 rounded border border-slate-200" style={{ backgroundColor: t.accentColor }} />
-                      <span className="text-xs text-slate-600">{t.accentColor}</span>
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">{t.published ? <span className="text-emerald-700">Live</span> : <span className="text-slate-500">Hidden</span>}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-1">
-                      <button type="button" onClick={() => startEdit(t)} className="rounded bg-slate-100 px-2 py-1 text-xs font-bold hover:bg-slate-200">
-                        Edit
-                      </button>
-                      <button type="button" onClick={() => void togglePublished(t)} className="rounded bg-slate-100 px-2 py-1 text-xs font-bold hover:bg-slate-200">
-                        Toggle
-                      </button>
-                      <button type="button" onClick={() => void removeTeam(t)} className="rounded bg-rose-50 px-2 py-1 text-xs font-bold text-rose-800 hover:bg-rose-100">
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </AdminModal>
     </div>
   );
 }

@@ -1,5 +1,7 @@
+import Image from "next/image";
 import { MediaSlot } from "@/components/media-slot";
 import { SectionHeader } from "@/components/section-header";
+import { OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
 import { ODW_TEAM_IN_UNIFORM, OUTER_DELHI_WARRIORS } from "@/lib/outer-delhi-warriors";
 import { CARD_PAD, SECTION_MUTED, SITE_CONTAINER } from "@/lib/site-ui";
 
@@ -8,7 +10,14 @@ export function OuterDelhiWarriorsSection() {
     <section className={SECTION_MUTED} aria-labelledby="odw-heading">
       <div className={SITE_CONTAINER}>
         <div className="flex flex-wrap items-center gap-4">
-          <img src="/branding/outer-delhi-warriors.svg" alt="" width={120} height={72} className="h-12 w-auto object-contain sm:h-14" />
+          <Image
+            src={OUTER_DELHI_WARRIORS_LOGO_SRC}
+            alt="Outer Delhi Warriors"
+            width={160}
+            height={107}
+            unoptimized
+            className="h-12 w-auto object-contain sm:h-14"
+          />
           <span className="rounded-md bg-orange-600 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">Season 1 initiative</span>
         </div>
 

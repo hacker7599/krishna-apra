@@ -1,4 +1,4 @@
-import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC } from "@/lib/branding";
+import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC, OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
 import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, PLAYER_AGE_CUTOFF_DATE, ROLE_OPTIONS, SEASON_START, TAGLINE, TRIAL_FEE_INR, VENUE } from "@/lib/league";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 
@@ -27,12 +27,11 @@ export function OfflineTrialFormDocument() {
       <header className="border-b-2 border-slate-900 pb-3 print:border-black print:pb-2">
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between print:flex-row print:gap-2 print:items-start">
           <div className="flex shrink-0 justify-center sm:justify-start">
-            {/* Replace with /branding/outer-delhi-warriors.png when you have the official mark */}
             <img
-              src="/branding/outer-delhi-warriors.svg"
+              src={OUTER_DELHI_WARRIORS_LOGO_SRC}
               alt="Outer Delhi Warriors"
-              width={140}
-              height={84}
+              width={160}
+              height={107}
               className="h-16 w-auto object-contain sm:h-[4.75rem] print:h-[18mm] print:w-auto"
             />
           </div>

@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { adminFetch } from "@/components/admin/admin-session-provider";
 import { AdminModal } from "@/components/admin/admin-modal";
+import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
+import { AdminPagination } from "@/components/admin/ui/admin-pagination";
 
 type Banner = {
   id: string;
@@ -46,7 +49,10 @@ export function AdminBannersManager() {
   useEffect(() => {
     routerRef.current = router;
   }, [router]);
+  const PAGE_SIZE = 15;
   const [rows, setRows] = useState<Banner[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [published, setPublished] = useState<"all" | "true" | "false">("all");
   const [q, setQ] = useState("");
   const [appliedQ, setAppliedQ] = useState("");
@@ -62,12 +68,13 @@ export function AdminBannersManager() {
     const p = new URLSearchParams();
     if (published !== "all") p.set("published", published);
     if (appliedQ) p.set("q", appliedQ);
-    const s = p.toString();
-    return s ? `?${s}` : "";
-  }, [published, appliedQ]);
+    p.set("limit", String(PAGE_SIZE));
+    p.set("offset", String(offset));
+    return `?${p.toString()}`;
+  }, [published, appliedQ, offset]);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/banners${qs()}`, { credentials: "include" });
+    const res = await adminFetch(`/api/admin/banners${qs()}`);
     if (res.status === 401) {
       routerRef.current.replace("/admin/login");
       return;
@@ -77,8 +84,14 @@ export function AdminBannersManager() {
       return;
     }
     setErr("");
-    setRows((await res.json()) as Banner[]);
+    const data = (await res.json()) as { items: Banner[]; total: number };
+    setRows(data.items);
+    setTotal(data.total);
   }, [qs]);
+
+  useEffect(() => {
+    setOffset(0);
+  }, [published, appliedQ]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -102,7 +115,7 @@ export function AdminBannersManager() {
     const fd = new FormData();
     fd.append("image", file);
     try {
-      const res = await fetch("/api/admin/banners/upload", { method: "POST", credentials: "include", body: fd });
+      const res = await adminFetch("/api/admin/banners/upload", { method: "POST",  body: fd });
       const data = await res.json().catch(() => ({}));
       if (res.status === 401) {
         routerRef.current.replace("/admin/login");
@@ -160,10 +173,9 @@ export function AdminBannersManager() {
       return;
     }
     setSaving(true);
-    const res = await fetch(`/api/admin/banners/${editing.id}`, {
+    const res = await adminFetch(`/api/admin/banners/${editing.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify(toPayload()),
     });
     if (res.status === 401) {
@@ -186,10 +198,9 @@ export function AdminBannersManager() {
       return;
     }
     setSaving(true);
-    const res = await fetch("/api/admin/banners", {
+    const res = await adminFetch("/api/admin/banners", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify(toPayload()),
     });
     if (res.status === 401) {
@@ -207,10 +218,9 @@ export function AdminBannersManager() {
   }
 
   async function togglePublished(b: Banner) {
-    const res = await fetch(`/api/admin/banners/${b.id}`, {
+    const res = await adminFetch(`/api/admin/banners/${b.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ published: !b.published }),
     });
     if (res.status === 401) {
@@ -222,7 +232,7 @@ export function AdminBannersManager() {
 
   async function removeBanner(b: Banner) {
     if (!window.confirm("Delete this banner slide?")) return;
-    const res = await fetch(`/api/admin/banners/${b.id}`, { method: "DELETE", credentials: "include" });
+    const res = await adminFetch(`/api/admin/banners/${b.id}`, { method: "DELETE", credentials: "include" });
     if (res.status === 401) {
       routerRef.current.replace("/admin/login");
       return;
@@ -447,6 +457,9 @@ export function AdminBannersManager() {
           ))}
         </ul>
       )}
+      {rows && rows.length > 0 ? (
+        <AdminPagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
+      ) : null}
     </div>
   );
 }

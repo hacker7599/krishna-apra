@@ -2,36 +2,50 @@ import { PrismaClient } from "@prisma/client";
 
 const g = globalThis as typeof globalThis & { prisma?: PrismaClient };
 
-function clientHasCmsDelegates(client: PrismaClient): boolean {
+function clientHasCurrentDelegates(client: PrismaClient): boolean {
+  const c = client as unknown as Record<string, Record<string, unknown> | undefined>;
   return (
-    typeof (client as unknown as { team?: { findMany?: unknown } }).team?.findMany === "function" &&
-    typeof (client as unknown as { heroBanner?: { findMany?: unknown } }).heroBanner?.findMany === "function" &&
-    typeof (client as unknown as { trialZone?: { findMany?: unknown } }).trialZone?.findMany === "function"
+    typeof c.team?.findMany === "function" &&
+    typeof c.heroBanner?.findMany === "function" &&
+    typeof c.trialZone?.findMany === "function" &&
+    typeof c.paymentOrder?.create === "function" &&
+    typeof c.paymentLog?.findMany === "function" &&
+    typeof c.adminAuditLog?.findMany === "function"
   );
 }
 
-/**
- * One process-wide client. In dev, HMR can reload modules; without `globalThis` you leak
- * native connections until the machine swaps/thrashes (especially noticeable on 8GB RAM).
- * If the cached client predates current models (`Team`, `HeroBanner`, `TrialZone`, …), it is replaced.
- */
-export const prisma: PrismaClient = (() => {
-  let cached = g.prisma;
-  if (cached && !clientHasCmsDelegates(cached)) {
-    void cached.$disconnect().catch(() => undefined);
-    g.prisma = undefined;
-    cached = undefined;
-  }
-  if (cached) {
-    return cached;
-  }
-  const next = new PrismaClient();
-  if (clientHasCmsDelegates(next)) {
-    g.prisma = next;
-  } else {
-    console.warn(
-      "[prisma] Prisma client is out of date. Run `npm run db:generate` and restart the dev server."
+function createPrismaClient(): PrismaClient {
+  const client = new PrismaClient();
+  if (!clientHasCurrentDelegates(client)) {
+    throw new Error(
+      "Prisma client is missing PaymentLog or AdminAuditLog models. Run: npx prisma generate && npx prisma db push — then restart the dev server.",
     );
   }
-  return next;
-})();
+  return client;
+}
+
+export function getPrisma(): PrismaClient {
+  const cached = g.prisma;
+  if (cached && clientHasCurrentDelegates(cached)) {
+    return cached;
+  }
+  if (cached) {
+    void cached.$disconnect().catch(() => undefined);
+    g.prisma = undefined;
+  }
+  const client = createPrismaClient();
+  g.prisma = client;
+  return client;
+}
+
+/** Lazy proxy so HMR never keeps a stale client reference. */
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getPrisma();
+    const value = Reflect.get(client, prop, receiver);
+    if (typeof value === "function") {
+      return (value as (...args: unknown[]) => unknown).bind(client);
+    }
+    return value;
+  },
+});

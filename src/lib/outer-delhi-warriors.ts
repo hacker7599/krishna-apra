@@ -22,9 +22,9 @@ export const OUTER_DELHI_WARRIORS = {
 
 /** Set portraitSrc to e.g. "/home/odw/priyansh.jpg" after adding files under public/home/odw/ */
 export const ODW_TEAM_IN_UNIFORM: OdwTeamMember[] = [
+  { id: "mohit-panwar", name: "Mohit Panwar", role: "Outer Delhi Warriors", portraitSrc: "/home/odw/mohit-panwar.jpg", suggestedPath: "/home/odw/mohit-panwar.jpg" },
   { id: "priyansh", name: "Priyansh", role: "Outer Delhi Warriors", portraitSrc: "", suggestedPath: "/home/odw/priyansh.jpg" },
   { id: "suyash", name: "Suyash", role: "Outer Delhi Warriors", portraitSrc: "", suggestedPath: "/home/odw/suyash.jpg" },
   { id: "harsh", name: "Harsh", role: "Outer Delhi Warriors", portraitSrc: "", suggestedPath: "/home/odw/harsh.jpg" },
   { id: "shivam", name: "Shivam", role: "Outer Delhi Warriors", portraitSrc: "", suggestedPath: "/home/odw/shivam.jpg" },
-  { id: "parthiv", name: "Mr. Parthiv Patel", role: "Brand ambassador", portraitSrc: "", suggestedPath: "/home/odw/parthiv.jpg" },
 ];

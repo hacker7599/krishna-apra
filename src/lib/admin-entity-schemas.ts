@@ -103,3 +103,58 @@ export const trialZonePatchSchema = z.object({
   sortOrder: z.number().int().optional(),
   published: z.boolean().optional(),
 });
+
+const roleEnum = z.enum(["BATSMAN", "ALL_ROUNDER", "WICKET_KEEPER", "BOWLER", "SPINNER"]);
+const idDocumentTypeEnum = z.enum(["AADHAAR", "PASSPORT", "BIRTH_CERTIFICATE"]);
+const jerseySizeEnum = z.enum(["XS", "S", "M", "L", "XL", "XXL", "XXXL"]);
+const paymentStatusEnum = z.enum(["paid", "manual", "pending", "refunded"]);
+
+const registrationCore = {
+  academyName: z.string().trim().min(2).max(200),
+  playerName: z.string().trim().min(2).max(120),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  roles: z.array(roleEnum).min(1).max(5),
+  email: z.string().trim().email().max(200),
+  phone: z
+    .string()
+    .trim()
+    .min(10)
+    .max(18)
+    .regex(/^\+?[0-9\s-]{10,18}$/),
+  fatherName: z.string().trim().min(2).max(120),
+  address: z.string().trim().min(10).max(600),
+  jerseySize: jerseySizeEnum,
+  shoeSize: z.string().trim().min(1).max(24),
+  idDocumentType: idDocumentTypeEnum,
+  achievementsAndAwards: z.string().trim().max(2000).optional().nullable(),
+  transactionRef: z.string().trim().max(120).optional().nullable(),
+  feeReceivedDate: z.string().trim().max(40).optional().nullable(),
+  coachName: z.string().trim().max(120).optional().nullable(),
+  paymentStatus: paymentStatusEnum.optional(),
+};
+
+export const registrationAdminCreateSchema = z.object({
+  ...registrationCore,
+  paymentStatus: paymentStatusEnum.optional().default("manual"),
+});
+
+export const registrationAdminPatchSchema = z
+  .object({
+    academyName: registrationCore.academyName.optional(),
+    playerName: registrationCore.playerName.optional(),
+    dateOfBirth: registrationCore.dateOfBirth.optional(),
+    roles: registrationCore.roles.optional(),
+    email: registrationCore.email.optional(),
+    phone: registrationCore.phone.optional(),
+    fatherName: registrationCore.fatherName.optional(),
+    address: registrationCore.address.optional(),
+    jerseySize: registrationCore.jerseySize.optional(),
+    shoeSize: registrationCore.shoeSize.optional(),
+    idDocumentType: registrationCore.idDocumentType.optional(),
+    achievementsAndAwards: registrationCore.achievementsAndAwards,
+    transactionRef: registrationCore.transactionRef,
+    feeReceivedDate: registrationCore.feeReceivedDate,
+    coachName: registrationCore.coachName,
+    paymentStatus: paymentStatusEnum.optional(),
+  })
+  .refine((data) => Object.values(data).some((v) => v !== undefined), { message: "No fields to update" });

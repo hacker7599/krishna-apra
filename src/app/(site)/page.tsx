@@ -3,6 +3,7 @@ import { HeroBannersCarousel, type HeroBannerDTO } from "@/components/hero-banne
 import { HomeIntroBand } from "@/components/home-intro-band";
 import { HomeStatsStrip } from "@/components/home-stats-strip";
 import { HomeBroadcastLeadership } from "@/components/home-broadcast-leadership";
+import { HomeEstimatedReach } from "@/components/home-estimated-reach";
 import { OuterDelhiWarriorsSection } from "@/components/outer-delhi-warriors-section";
 import { LeagueProtectionSection } from "@/components/league-protection-section";
 import { TournamentFormatSplit } from "@/components/tournament-format-split";
@@ -48,6 +49,7 @@ export default async function Home() {
       <OuterDelhiWarriorsSection />
       <TournamentFormatSplit showAboutLink imagePriority />
       <HomeBroadcastLeadership />
+      <HomeEstimatedReach />
 
       <SiteSection tone="muted" width="content">
         <SectionHeader

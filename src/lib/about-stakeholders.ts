@@ -1,3 +1,5 @@
+import { OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
+
 /** Leadership & partners — About page. Update copy and portraitSrc when bios and photos are final. */
 
 export type AboutStakeholder = {
@@ -23,19 +25,10 @@ export const ABOUT_STAKEHOLDERS: AboutStakeholder[] = [
     ],
   },
   {
-    id: "mr-gupta",
-    name: "Mr. Gupta",
-    role: "League leadership",
-    paragraphs: [
-      "Mr. Gupta provides strategic and operational leadership for the Future Star U-15 Championship, working alongside franchise and sponsor partners to deliver a coherent Season 1 calendar, venue plan, and commercial framework.",
-      "His focus is on governance, stakeholder alignment, and execution — ensuring trials, team builds, and match days run to published standards and that academies and families receive clear communication at every stage.",
-      "Under this leadership, the league balances ambition with accountability: professional presentation on and off the field, transparent registration and fees, and a structure designed to scale beyond a single season.",
-    ],
-  },
-  {
     id: "outer-delhi-warriors",
     name: "Outer Delhi Warriors",
     role: "DPL franchise · League initiative partner",
+    logoSrc: OUTER_DELHI_WARRIORS_LOGO_SRC,
     paragraphs: [
       "Outer Delhi Warriors are a Delhi Premier League (DPL) franchise and the driving initiative behind Future Star U-15. The franchise brings franchise cricket culture — branding, match-day energy, and competitive standards — to the Under-15 age group.",
       "From trials and team identity to broadcast-style production and the High Performance Camp pathway, Outer Delhi Warriors embed the same values that define their senior franchise: community pride in Outer Delhi, disciplined cricket, and a platform where the region’s best school-age talent is seen and developed.",
@@ -43,23 +36,57 @@ export const ABOUT_STAKEHOLDERS: AboutStakeholder[] = [
     ],
   },
   {
-    id: "naresh",
-    name: "Naresh",
-    role: "Operations & cricket development",
+    id: "mr-gupta",
+    name: "Manish Gupta",
+    role: "Owner · Krishna Apra Group",
     paragraphs: [
-      "Naresh plays a central role in day-to-day league operations and cricket development for Future Star U-15, coordinating between franchises, venues, and academy networks.",
-      "His work covers trial zone logistics, squad and schedule management, and the practical delivery of match days — so players, coaches, and officials experience a well-run tournament rather than an ad-hoc local event.",
-      "Naresh’s involvement ensures the league’s published format — groups, league games, semi-finals, and final — is executed consistently, with attention to playing conditions, equipment, and the player experience from first registration to the final whistle.",
+      "Manish Gupta is a prominent Indian real estate developer and executive who serves as a key Director and driving force behind the Krishna Apra group of companies, including Krishna Apra Estates Private Limited.",
+      "Under his corporate leadership, the group — often collaborating under the wider Mapsko umbrella — has established a formidable footprint across major National Capital Region hubs including Noida, Ghaziabad, and Greater Noida.",
+      "As owner of the Krishna Apra Group and title sponsor of Future Star U-15, Manish Gupta brings the same standards of scale, governance, and long-term commitment to junior cricket that define the group’s work in real estate and community development across Delhi NCR.",
     ],
   },
   {
     id: "subhash",
-    name: "Subhash",
+    name: "Subhash Rajput",
     role: "Operations & stakeholder relations",
+    portraitSrc: "/home/about/subhash.jpg",
     paragraphs: [
-      "Subhash supports stakeholder relations and operational delivery for the championship, acting as a key link between the league office, sponsors, franchises, and participating academies.",
+      "Subhash Rajput supports stakeholder relations and operational delivery for the championship, acting as a key link between the league office, sponsors, franchises, and participating academies.",
       "He helps align commercial commitments with on-ground reality: sponsor visibility, broadcast requirements, registration and compliance, and the information flow parents and coaches need before and during the season.",
-      "Subhash’s contribution strengthens the league’s credibility as a serious junior property — one that treats partners, players, and families with the same professionalism expected at senior franchise level.",
+      "Subhash Rajput’s contribution strengthens the league’s credibility as a serious junior property — one that treats partners, players, and families with the same professionalism expected at senior franchise level.",
+    ],
+  },
+  {
+    id: "naresh",
+    name: "Naresh Panwar",
+    role: "President",
+    portraitSrc: "/home/about/naresh.jpg",
+    paragraphs: [
+      "Naresh Panwar serves as President of Future Star U-15, providing overall leadership for the championship’s vision, governance, and Season 1 delivery across Delhi NCR.",
+      "In this role he oversees stakeholder alignment between the title sponsor, franchise partners, academies, and the league office — ensuring trials, team builds, and match days meet published professional standards.",
+      "His leadership keeps the tournament accountable and ambitious: transparent registration, structured competition from groups through to the final, and a player experience that reflects senior franchise-level seriousness.",
+    ],
+  },
+  {
+    id: "mohit-panwar",
+    name: "Mohit Panwar",
+    role: "Player · Outer Delhi Warriors",
+    portraitSrc: "/home/about/mohit-panwar.jpg",
+    paragraphs: [
+      "Mohit Panwar represents Outer Delhi Warriors in the Future Star U-15 programme — part of the franchise squad that brings competitive cricket and professional match-day standards to Season 1.",
+      "In Warriors colours he helps embody the initiative’s energy on the ground: disciplined preparation, franchise pride, and the pathway from academy trials to structured league cricket in Delhi NCR.",
+      "Players like Mohit connect grassroots talent with a broadcast-ready tournament — showing school-age cricketers what it means to compete under a serious franchise banner.",
+    ],
+  },
+  {
+    id: "sanjay-rawat",
+    name: "Sanjay Rawat",
+    role: "Secretary of the league",
+    portraitSrc: "/home/about/sanjay-rawat.jpg",
+    paragraphs: [
+      "Sanjay Rawat serves as Secretary of the Future Star U-15 league, supporting the President and league office with governance, documentation, and day-to-day coordination across Season 1.",
+      "In this role he helps maintain clear communication with franchises, academies, and sponsors — keeping schedules, registrations, and official records aligned with published tournament standards.",
+      "His work strengthens the league’s organisational backbone so trials, fixtures, and stakeholder commitments run smoothly from planning through to match day.",
     ],
   },
 ];

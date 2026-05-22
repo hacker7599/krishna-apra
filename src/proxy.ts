@@ -24,7 +24,7 @@ export async function proxy(request: NextRequest) {
 
   try {
     const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-    if (payload.role !== "admin") {
+    if (payload.role !== "admin" || typeof payload.csrf !== "string") {
       throw new Error("role");
     }
     return NextResponse.next();

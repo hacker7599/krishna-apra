@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireAdminMutation } from "@/lib/require-admin";
 import { saveBannerImage } from "@/lib/save-upload";
 
 export const runtime = "nodejs";
 
 /** Returns a public imageUrl path for hero banners. */
 export async function POST(req: NextRequest) {
-  const auth = await requireAdmin();
-  if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdminMutation(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.status === 403 ? "Forbidden" : "Unauthorized" }, { status: auth.status });
 
   let form: FormData;
   try {
