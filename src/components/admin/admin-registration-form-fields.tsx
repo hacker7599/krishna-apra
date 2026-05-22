@@ -1,6 +1,6 @@
 "use client";
 
-import { PLAYER_AGE_CUTOFF_DATE, ROLE_OPTIONS } from "@/lib/league";
+import { PLAYER_AGE_MAX_BIRTH_DATE, PLAYER_AGE_MIN_BIRTH_DATE, ROLE_OPTIONS } from "@/lib/league";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 
 export type AdminRegistrationFormState = {
@@ -88,7 +88,8 @@ export function AdminRegistrationFormFields({ form, setForm, disabled }: Props) 
         <input
           type="date"
           required
-          max={PLAYER_AGE_CUTOFF_DATE}
+          min={PLAYER_AGE_MIN_BIRTH_DATE}
+          max={PLAYER_AGE_MAX_BIRTH_DATE}
           disabled={disabled}
           value={form.dateOfBirth}
           onChange={(e) => setForm((p) => ({ ...p, dateOfBirth: e.target.value }))}

@@ -6,11 +6,19 @@ export const TAGLINE = "Where Future Stars Begin Their Journey.";
 export const TRIAL_FEE_INR = 1299;
 
 /**
- * Latest allowed date of birth (inclusive). Registrations with DOB strictly after this ISO date are rejected.
- * Matches the printed line: “AGE CUT OFF AUG 1 2010” together with “players born after … are not eligible.”
- * If your season uses a different as-on rule, change this string (YYYY-MM-DD).
+ * Age cut-off from the official trial form: “AGE CUT OFF 1 AUG 2010”.
+ * Players must be born **after** this date (1 August 2010 or earlier = not eligible).
  */
 export const PLAYER_AGE_CUTOFF_DATE = "2010-08-01";
+
+/** First eligible date of birth (inclusive) — day after the cut-off. */
+export const PLAYER_AGE_MIN_BIRTH_DATE = "2010-08-02";
+
+/**
+ * Latest date of birth for Under-15 on season start (inclusive).
+ * Under 15 on SEASON_START (29 May 2026) → born on or after 30 May 2011.
+ */
+export const PLAYER_AGE_MAX_BIRTH_DATE = "2011-05-29";
 export const VENUE =
   "Nawab Mansur Ali Khan Pataudi Sports Complex (Jamia Millia Islamia Cricket Ground), New Delhi";
 export const SEASON_START = "29 May 2026";

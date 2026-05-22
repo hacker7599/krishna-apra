@@ -4,7 +4,7 @@ import { PLAYER_AGE_CUTOFF_DATE, TRIAL_FEE_INR, VENUE } from "@/lib/league";
 export const REGISTRATION_FAQ: FaqItem[] = [
   {
     question: "Who can register?",
-    answer: `Players in the Under-15 category for Season 1. Date of birth must be on or before ${PLAYER_AGE_CUTOFF_DATE} (age cut-off as per official trial form).`,
+    answer: `Players in the Under-15 category for Season 1. Date of birth must be after ${PLAYER_AGE_CUTOFF_DATE} (age cut-off as per official trial form).`,
   },
   {
     question: "What is the trial registration fee?",

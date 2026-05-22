@@ -20,11 +20,11 @@ export const OUTER_DELHI_WARRIORS = {
     "As the driving franchise behind Future Star U-15 Season 1, Outer Delhi Warriors provide league infrastructure, operational leadership, trial pathways, and the vision to give school-age cricketers a broadcast-ready, franchise-style tournament — backed by title sponsor Krishna Apra and partners across Delhi NCR.",
 } as const;
 
-/** Set portraitSrc to e.g. "/home/odw/priyansh.jpg" after adding files under public/home/odw/ */
+/** Set portraitSrc to e.g. "/home/odw/suyash.jpg" after adding files under public/home/odw/ */
 export const ODW_TEAM_IN_UNIFORM: OdwTeamMember[] = [
   { id: "mohit-panwar", name: "Mohit Panwar", role: "Outer Delhi Warriors", portraitSrc: "/home/odw/mohit-panwar.jpg", suggestedPath: "/home/odw/mohit-panwar.jpg" },
-  { id: "priyansh", name: "Priyansh", role: "Outer Delhi Warriors", portraitSrc: "", suggestedPath: "/home/odw/priyansh.jpg" },
-  { id: "suyash", name: "Suyash", role: "Outer Delhi Warriors", portraitSrc: "", suggestedPath: "/home/odw/suyash.jpg" },
-  { id: "harsh", name: "Harsh", role: "Outer Delhi Warriors", portraitSrc: "", suggestedPath: "/home/odw/harsh.jpg" },
-  { id: "shivam", name: "Shivam", role: "Outer Delhi Warriors", portraitSrc: "", suggestedPath: "/home/odw/shivam.jpg" },
+  { id: "priyansh", name: "Priyansh", role: "Outer Delhi Warriors", portraitSrc: "/home/odw/priyansh.jpg", suggestedPath: "/home/odw/priyansh.jpg" },
+  { id: "suyash", name: "Suyash", role: "Outer Delhi Warriors", portraitSrc: "/home/odw/suyash.jpg", suggestedPath: "/home/odw/suyash.jpg" },
+  { id: "harsh", name: "Harsh", role: "Outer Delhi Warriors", portraitSrc: "/home/odw/harsh.jpg", suggestedPath: "/home/odw/harsh.jpg" },
+  { id: "sidhant", name: "Sidhant", role: "Outer Delhi Warriors", portraitSrc: "/home/odw/sidhant.jpg", suggestedPath: "/home/odw/sidhant.jpg" },
 ];

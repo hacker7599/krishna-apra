@@ -207,7 +207,7 @@ export const TERMS_AND_CONDITIONS: {
       id: "eligibility",
       title: "3. Eligibility & registration",
       paragraphs: [
-        `Players must meet the published Under-15 age criteria. For Season 1, players born after ${cutoffDisplay()} are not eligible unless the League publishes a different cut-off in writing.`,
+        `Players must meet the published Under-15 age criteria. For Season 1, players must be born after ${cutoffDisplay()} unless the League publishes a different cut-off in writing.`,
         "All information in the registration form must be accurate and complete. False, misleading, or incomplete information may result in rejection or removal without refund, except where prohibited by law.",
         "The League reserves the right to request additional verification, conduct background checks permitted by law, and refuse or cancel any registration at its discretion.",
         "Registration does not guarantee selection, franchise placement, or participation in the Tournament.",

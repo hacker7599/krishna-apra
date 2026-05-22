@@ -127,7 +127,7 @@ export function OfflineTrialFormDocument() {
       <section className="print-form-section mt-4 border-2 border-slate-900 p-2.5 print:mt-3 print:border-black print:p-2">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Government ID (one compulsory copy attached)</p>
         <p className="mt-1 text-[10px] font-medium leading-snug text-slate-700 print:text-[9px]">
-          Age cut-off: players born after <strong>{cutoffDisplay()}</strong> are not eligible. Accepted proof: Aadhaar card, passport (minimum 3-year
+          Age cut-off: players must be born after <strong>{cutoffDisplay()}</strong> (on or before that date are not eligible). Accepted proof: Aadhaar card, passport (minimum 3-year
           validity), or birth certificate.
         </p>
         <p className="mt-2 text-[10px] font-bold uppercase text-slate-800 print:text-[9px]">Tick document attached</p>

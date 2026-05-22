@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { PLAYER_AGE_CUTOFF_DATE } from "@/lib/league";
+import { PLAYER_AGE_CUTOFF_DATE, PLAYER_AGE_MAX_BIRTH_DATE, PLAYER_AGE_MIN_BIRTH_DATE } from "@/lib/league";
 import { normalizePhone } from "@/lib/normalize-phone";
 import { prisma } from "@/lib/prisma";
 import type { registrationAdminCreateSchema, registrationAdminPatchSchema } from "@/lib/admin-entity-schemas";
@@ -9,8 +9,11 @@ export type AdminRegistrationCreateInput = z.infer<typeof registrationAdminCreat
 export type AdminRegistrationPatchInput = z.infer<typeof registrationAdminPatchSchema>;
 
 export function assertEligibleDateOfBirth(dateOfBirth: string): string | null {
-  if (dateOfBirth > PLAYER_AGE_CUTOFF_DATE) {
-    return `Date of birth must be on or before ${PLAYER_AGE_CUTOFF_DATE} for this age group.`;
+  if (dateOfBirth <= PLAYER_AGE_CUTOFF_DATE) {
+    return `Players must be born after ${PLAYER_AGE_CUTOFF_DATE} (trial form age cut-off).`;
+  }
+  if (dateOfBirth > PLAYER_AGE_MAX_BIRTH_DATE) {
+    return `Players must be Under-15 for Season 1 (date of birth on or before ${PLAYER_AGE_MAX_BIRTH_DATE}).`;
   }
   return null;
 }

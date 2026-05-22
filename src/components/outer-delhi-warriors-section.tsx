@@ -43,7 +43,7 @@ export function OuterDelhiWarriorsSection() {
           <h3 id="odw-heading" className="text-center font-[family-name:var(--font-bebas)] text-3xl uppercase tracking-wide text-slate-900 sm:text-4xl">
             The team behind the league
           </h3>
-          <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5">
             {ODW_TEAM_IN_UNIFORM.map((m) => (
               <li key={m.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <MediaSlot
