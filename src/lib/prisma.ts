@@ -10,7 +10,8 @@ function clientHasCurrentDelegates(client: PrismaClient): boolean {
     typeof c.trialZone?.findMany === "function" &&
     typeof c.paymentOrder?.create === "function" &&
     typeof c.paymentLog?.findMany === "function" &&
-    typeof c.adminAuditLog?.findMany === "function"
+    typeof c.adminAuditLog?.findMany === "function" &&
+    typeof c.blogPost?.findMany === "function"
   );
 }
 
@@ -18,7 +19,7 @@ function createPrismaClient(): PrismaClient {
   const client = new PrismaClient();
   if (!clientHasCurrentDelegates(client)) {
     throw new Error(
-      "Prisma client is missing PaymentLog or AdminAuditLog models. Run: npx prisma generate && npx prisma db push — then restart the dev server.",
+      "Prisma client is out of date (missing BlogPost or other models). Run: npx prisma generate && npx prisma db push — then restart the server.",
     );
   }
   return client;

@@ -10,6 +10,9 @@ import { getPublishedBlogPostBySlug } from "@/lib/blog-queries";
 import { plainTextFromBlogContent } from "@/lib/blog-content-utils";
 import { BTN_SECONDARY } from "@/lib/site-ui";
 
+/** New publishes must work without redeploying after `next build`. */
+export const dynamic = "force-dynamic";
+
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -83,12 +86,3 @@ export default async function BlogPostPage({ params }: Props) {
   );
 }
 
-export async function generateStaticParams() {
-  try {
-    const { getPublishedBlogSlugs } = await import("@/lib/blog-queries");
-    const rows = await getPublishedBlogSlugs();
-    return rows.map((r) => ({ slug: r.slug }));
-  } catch {
-    return [];
-  }
-}

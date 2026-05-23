@@ -6,6 +6,9 @@ import { blogListingMetadata } from "@/lib/blog-seo";
 import { countPublishedBlogPosts, getPublishedBlogPosts } from "@/lib/blog-queries";
 import { EMPTY_STATE } from "@/lib/site-ui";
 
+/** Always read from the live database (not the empty list baked in at `next build`). */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = blogListingMetadata();
 
 const PAGE_SIZE = 12;
