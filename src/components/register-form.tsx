@@ -3,17 +3,43 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PlayerRolePicker } from "@/components/player-role-picker";
 import {
   FORMAT,
   PLAYER_AGE_CUTOFF_DATE,
   PLAYER_AGE_MIN_BIRTH_DATE,
   playerDateOfBirthMaxIso,
-  ROLE_OPTIONS,
   TRIAL_FEE_INR,
 } from "@/lib/league";
 import type { RoleId } from "@/lib/league";
+import type { TrialZoneOption } from "@/lib/trial-zone-options";
+import { trialZoneSelectLabel } from "@/lib/trial-zone-options";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
+import {
+  digitsOnlyPhoneInput,
+  firstRegistrationFormError,
+  readRegistrationFormValues,
+  validateRegistrationForm,
+} from "@/lib/registration-form-validation";
+import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
 import { openRazorpayCheckout } from "@/lib/open-razorpay-checkout";
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="mt-1.5 text-xs font-semibold text-rose-700" role="alert">
+      {message}
+    </p>
+  );
+}
+
+function fieldInputClass(hasError: boolean) {
+  return `w-full rounded-lg border bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
+    hasError
+      ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/25"
+      : "border-slate-300 focus:border-orange-500 focus:ring-orange-500/20"
+  }`;
+}
 
 function cutoffNote() {
   const [y, m, d] = PLAYER_AGE_CUTOFF_DATE.split("-").map(Number);
@@ -29,7 +55,11 @@ type PaymentConfig = {
   currency?: string;
 };
 
-export function RegisterForm() {
+type Props = {
+  trialZones: TrialZoneOption[];
+};
+
+export function RegisterForm({ trialZones }: Props) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [roles, setRoles] = useState<Set<RoleId>>(() => new Set());
@@ -37,6 +67,7 @@ export function RegisterForm() {
   const [message, setMessage] = useState("");
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const rolesJson = useMemo(() => JSON.stringify([...roles]), [roles]);
   const razorpayEnabled = paymentConfig?.enabled === true;
@@ -56,13 +87,18 @@ export function RegisterForm() {
     };
   }, []);
 
-  function toggleRole(id: RoleId) {
-    setRoles((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+  function clearFieldError(name: string) {
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
       return next;
     });
+  }
+
+  function setRolesSelection(next: Set<RoleId>) {
+    setRoles(next);
+    clearFieldError("roles");
   }
 
   async function checkDuplicateRegistration(email: string, phone: string): Promise<string | null> {
@@ -82,7 +118,7 @@ export function RegisterForm() {
   }
 
   async function submitRegistration(fd: FormData) {
-    const res = await fetch("/api/register", { method: "POST", body: fd });
+    const res = await fetch("/api/register", { method: "POST", body: fd, credentials: "include" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       setStatus("err");
@@ -93,8 +129,8 @@ export function RegisterForm() {
       }
       return false;
     }
-    if (typeof data.confirmationToken === "string" && data.confirmationToken) {
-      router.push(`/register/success?token=${encodeURIComponent(data.confirmationToken)}`);
+    if (data.ok) {
+      router.push("/register/success");
       return true;
     }
     setStatus("ok");
@@ -119,15 +155,34 @@ export function RegisterForm() {
     }
 
     const form = e.currentTarget;
-    if (!form.reportValidity()) return;
+    const values = readRegistrationFormValues(form, roles);
+    const errors = validateRegistrationForm(values);
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setStatus("err");
+      setMessage(firstRegistrationFormError(errors) ?? "Please fix the highlighted fields.");
+      const firstKey = Object.keys(errors)[0];
+      const el =
+        firstKey === "roles"
+          ? form.querySelector("fieldset")
+          : form.querySelector<HTMLElement>(`[name="${firstKey}"]`);
+      el?.focus();
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    setFieldErrors({});
 
     const fd = new FormData(form);
     fd.set("roles", rolesJson);
+    fd.set("phone", digitsOnlyPhoneInput(values.phone));
+    fd.set("email", values.email.trim().toLowerCase());
 
     setStatus("loading");
     setMessage("");
 
-    const dupError = await checkDuplicateRegistration(String(fd.get("email") ?? ""), String(fd.get("phone") ?? ""));
+    const dupError = await checkDuplicateRegistration(values.email.trim().toLowerCase(), digitsOnlyPhoneInput(values.phone));
     if (dupError) {
       setStatus("err");
       setMessage(dupError);
@@ -230,9 +285,13 @@ export function RegisterForm() {
             name="academyName"
             required
             minLength={2}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            maxLength={200}
+            autoComplete="organization"
+            className={fieldInputClass(!!fieldErrors.academyName)}
             placeholder="e.g. Delhi Cricket Academy"
+            onInput={() => clearFieldError("academyName")}
           />
+          <FieldError message={fieldErrors.academyName} />
         </label>
         <label className="block sm:col-span-2">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Name of the player</span>
@@ -240,9 +299,13 @@ export function RegisterForm() {
             name="playerName"
             required
             minLength={2}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            maxLength={120}
+            autoComplete="name"
+            className={fieldInputClass(!!fieldErrors.playerName)}
             placeholder="Full name as on ID"
+            onInput={() => clearFieldError("playerName")}
           />
+          <FieldError message={fieldErrors.playerName} />
         </label>
         <label className="block sm:col-span-2">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Father / guardian name</span>
@@ -250,9 +313,13 @@ export function RegisterForm() {
             name="fatherName"
             required
             minLength={2}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            maxLength={120}
+            autoComplete="name"
+            className={fieldInputClass(!!fieldErrors.fatherName)}
             placeholder="As on government ID where applicable"
+            onInput={() => clearFieldError("fatherName")}
           />
+          <FieldError message={fieldErrors.fatherName} />
         </label>
         <label className="block sm:col-span-2">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Address</span>
@@ -260,10 +327,14 @@ export function RegisterForm() {
             name="address"
             required
             minLength={10}
+            maxLength={600}
             rows={3}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            autoComplete="street-address"
+            className={fieldInputClass(!!fieldErrors.address)}
             placeholder="Full postal address for correspondence"
+            onInput={() => clearFieldError("address")}
           />
+          <FieldError message={fieldErrors.address} />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Player date of birth</span>
@@ -273,8 +344,10 @@ export function RegisterForm() {
             required
             min={PLAYER_AGE_MIN_BIRTH_DATE}
             max={playerDateOfBirthMaxIso()}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            className={fieldInputClass(!!fieldErrors.dateOfBirth)}
+            onChange={() => clearFieldError("dateOfBirth")}
           />
+          <FieldError message={fieldErrors.dateOfBirth} />
           <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-600">
             Age cut-off per trial form: players must be born <span className="font-bold text-slate-900">after {cutoffNote()}</span> (any later year is
             allowed). Dates on or before that day are not accepted.
@@ -286,10 +359,33 @@ export function RegisterForm() {
           <input
             name="phone"
             required
-            inputMode="tel"
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            pattern="[0-9]{10}"
+            minLength={10}
+            maxLength={10}
+            title="Enter 10 digits only (no letters or spaces)"
+            className={fieldInputClass(!!fieldErrors.phone)}
             placeholder="10-digit mobile"
+            onInput={(e) => {
+              e.currentTarget.value = digitsOnlyPhoneInput(e.currentTarget.value);
+              clearFieldError("phone");
+            }}
+            onKeyDown={(e) => {
+              if (e.ctrlKey || e.metaKey) return;
+              const allowed = ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"];
+              if (allowed.includes(e.key)) return;
+              if (e.key.length === 1 && !/[0-9]/.test(e.key)) e.preventDefault();
+            }}
+            onPaste={(e) => {
+              e.preventDefault();
+              const pasted = e.clipboardData.getData("text");
+              e.currentTarget.value = digitsOnlyPhoneInput(pasted);
+              clearFieldError("phone");
+            }}
           />
+          <FieldError message={fieldErrors.phone} />
         </label>
         <label className="block sm:col-span-2">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Email</span>
@@ -297,17 +393,22 @@ export function RegisterForm() {
             name="email"
             type="email"
             required
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            maxLength={200}
+            autoComplete="email"
+            className={fieldInputClass(!!fieldErrors.email)}
             placeholder="you@example.com"
+            onInput={() => clearFieldError("email")}
           />
+          <FieldError message={fieldErrors.email} />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Jersey (t-shirt) size</span>
           <select
             name="jerseySize"
             required
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            className={fieldInputClass(!!fieldErrors.jerseySize)}
             defaultValue=""
+            onChange={() => clearFieldError("jerseySize")}
           >
             <option value="" disabled>
               Select size
@@ -318,6 +419,7 @@ export function RegisterForm() {
               </option>
             ))}
           </select>
+          <FieldError message={fieldErrors.jerseySize} />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Shoe size</span>
@@ -325,35 +427,42 @@ export function RegisterForm() {
             name="shoeSize"
             required
             maxLength={24}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            className={fieldInputClass(!!fieldErrors.shoeSize)}
             placeholder="e.g. UK 5 / EU 38"
+            onInput={() => clearFieldError("shoeSize")}
           />
+          <FieldError message={fieldErrors.shoeSize} />
         </label>
       </div>
 
-      <fieldset>
-        <legend className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-900">Player details (position / role)</legend>
-        <div className="flex flex-wrap gap-2">
-          {ROLE_OPTIONS.map((r) => {
-            const on = roles.has(r.id);
-            return (
-              <button
-                type="button"
-                key={r.id}
-                onClick={() => toggleRole(r.id)}
-                className={`rounded-lg border px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
-                  on
-                    ? "border-orange-600 bg-orange-600 text-white"
-                    : "border-slate-300 bg-white text-slate-800 hover:border-slate-400"
-                }`}
-              >
-                {r.label}
-              </button>
-            );
-          })}
-        </div>
-        {roles.size === 0 && <p className="mt-2 text-sm font-semibold text-slate-700">Select at least one role.</p>}
-      </fieldset>
+      <PlayerRolePicker roles={roles} onChange={setRolesSelection} hasError={!!fieldErrors.roles} />
+      <FieldError message={fieldErrors.roles} />
+      {roles.size === 0 && !fieldErrors.roles ? (
+        <p className="-mt-2 text-sm font-semibold text-slate-700">Select at least one role.</p>
+      ) : null}
+
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Preferred trial zone</span>
+        <select
+          name="trialZoneId"
+          required
+          defaultValue=""
+          disabled={trialZones.length === 0}
+          className={fieldInputClass(!!fieldErrors.trialZoneId)}
+          onChange={() => clearFieldError("trialZoneId")}
+        >
+          <option value="" disabled>
+            {trialZones.length === 0 ? "No trial zones available — contact the league desk" : "Select trial zone"}
+          </option>
+          {trialZones.map((z) => (
+            <option key={z.id} value={z.id}>
+              {trialZoneSelectLabel(z)}
+            </option>
+          ))}
+        </select>
+        <FieldError message={fieldErrors.trialZoneId} />
+        <p className="mt-1.5 text-xs font-medium text-slate-600">Choose where you plan to attend trials. Venues are managed by the league and shown on the Trials page.</p>
+      </label>
 
       <label className="block">
         <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">
@@ -363,9 +472,11 @@ export function RegisterForm() {
           name="achievementsAndAwards"
           rows={4}
           maxLength={2000}
-          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+          className={fieldInputClass(!!fieldErrors.achievementsAndAwards)}
           placeholder="e.g. District U-14 best batter 2024, school tournament MVP, academy player of the year…"
+          onInput={() => clearFieldError("achievementsAndAwards")}
         />
+        <FieldError message={fieldErrors.achievementsAndAwards} />
         <p className="mt-1.5 text-xs font-medium text-slate-600">List cricket honours, selections, and awards — helps scouts review your profile.</p>
       </label>
 
@@ -379,8 +490,9 @@ export function RegisterForm() {
           <select
             name="idDocumentType"
             required
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            className={fieldInputClass(!!fieldErrors.idDocumentType)}
             defaultValue=""
+            onChange={() => clearFieldError("idDocumentType")}
           >
             <option value="" disabled>
               Select document
@@ -391,16 +503,22 @@ export function RegisterForm() {
               </option>
             ))}
           </select>
+          <FieldError message={fieldErrors.idDocumentType} />
         </label>
         <label className="mt-3 block max-w-md">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Upload ID proof (max 4 MB)</span>
+          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Upload ID proof</span>
           <input
             name="idProof"
             type="file"
             required
             accept="image/jpeg,image/png,image/webp,application/pdf"
-            className="w-full text-sm font-medium text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
+            className={`w-full text-sm font-medium text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white ${
+              fieldErrors.idProof ? "rounded-lg ring-2 ring-rose-500/40" : ""
+            }`}
+            onChange={() => clearFieldError("idProof")}
           />
+          <ImageUploadSizeHint specKey="registrationIdScan" />
+          <FieldError message={fieldErrors.idProof} />
         </label>
       </div>
 
@@ -423,18 +541,26 @@ export function RegisterForm() {
             <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Transaction reference (optional)</span>
             <input
               name="transactionRef"
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              maxLength={120}
+              className={fieldInputClass(!!fieldErrors.transactionRef)}
               placeholder="UPI ref / bank ref"
+              onInput={() => clearFieldError("transactionRef")}
             />
+            <FieldError message={fieldErrors.transactionRef} />
           </label>
           <label className="mt-3 block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Payment proof (optional, max 4 MB)</span>
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Payment proof (optional)</span>
             <input
               name="paymentProof"
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              className="w-full text-sm font-medium text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
+              className={`w-full text-sm font-medium text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white ${
+                fieldErrors.paymentProof ? "rounded-lg ring-2 ring-rose-500/40" : ""
+              }`}
+              onChange={() => clearFieldError("paymentProof")}
             />
+            <ImageUploadSizeHint specKey="registrationPaymentProof" />
+            <FieldError message={fieldErrors.paymentProof} />
           </label>
         </div>
       )}

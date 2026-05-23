@@ -192,6 +192,7 @@ export function RegistrationSuccessDocument({ data }: { data: RegistrationConfir
             <DetailRow label="Date of birth" value={formatDob(data.dateOfBirth)} />
             <DetailRow label="Father / guardian name" value={data.fatherName ?? "—"} />
             <DetailRow label="Playing role(s)" value={data.roles.join(" · ")} />
+            {data.trialZone ? <DetailRow label="Preferred trial zone" value={data.trialZone} highlight /> : null}
             <DetailRow label="Jersey (t-shirt) size" value={data.jerseySize ?? "—"} />
             <DetailRow label="Shoe size" value={data.shoeSize ?? "—"} />
             <DetailRow label="Correspondence address" value={data.address ?? "—"} />

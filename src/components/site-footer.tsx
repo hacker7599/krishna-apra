@@ -13,6 +13,7 @@ const legalLinks = [
 
 const exploreLinks = [
   { href: "/about", label: "About the league" },
+  { href: "/blog", label: "News & updates" },
   { href: "/sponsorship", label: "Sponsorship & partners" },
   { href: "/trials", label: "Trial zones" },
   { href: "/register", label: "Trial registration" },

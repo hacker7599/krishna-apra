@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { adminFetch } from "@/components/admin/admin-session-provider";
 import { AdminModal } from "@/components/admin/admin-modal";
 import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
+import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
 import { AdminPagination } from "@/components/admin/ui/admin-pagination";
 
 type Banner = {
@@ -257,7 +258,7 @@ export function AdminBannersManager() {
             }}
           />
           <span className="text-sm font-semibold text-[#1B365D]">{uploading ? "Uploading…" : "Click to upload image"}</span>
-          <span className="mt-1 text-xs text-slate-500">JPG, PNG, or WebP · max 5 MB</span>
+          <ImageUploadSizeHint specKey="heroBanner" className="mt-2 text-center text-xs font-medium leading-relaxed text-slate-500" />
         </label>
         {uploadErr ? <p className="mt-2 text-sm font-medium text-rose-700">{uploadErr}</p> : null}
         {form.imageUrl ? (
@@ -274,6 +275,7 @@ export function AdminBannersManager() {
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-[#1B365D] focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
           placeholder="https://… or /branding/logo.png"
         />
+        <ImageUploadSizeHint specKey="heroBanner" />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block sm:col-span-2">

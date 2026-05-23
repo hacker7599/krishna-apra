@@ -40,15 +40,14 @@ export const FORMAT = {
   cameraLive: 8,
 };
 
-export const ROLE_OPTIONS = [
-  { id: "BATSMAN", label: "Batter" },
-  { id: "ALL_ROUNDER", label: "All Rounder" },
-  { id: "WICKET_KEEPER", label: "Wicket Keeper" },
-  { id: "BOWLER", label: "Bowler" },
-  { id: "SPINNER", label: "Spinner" },
-] as const;
-
-export type RoleId = (typeof ROLE_OPTIONS)[number]["id"];
+export {
+  ROLE_OPTION_GROUPS,
+  ROLE_OPTIONS,
+  type RoleId,
+  toggleRegistrationRole,
+  formatRoleLabels,
+  isRoleId,
+} from "@/lib/registration-roles";
 
 export const TEAMS = [
   { name: "Outer Delhi Warriors", city: "Outer Delhi", accent: "#22c55e" },

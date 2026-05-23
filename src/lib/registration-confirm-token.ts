@@ -1,12 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
+import { getRegistrationSigningSecret } from "@/lib/secrets";
 
 function getSecret() {
-  const dedicated = process.env.REGISTRATION_TOKEN_SECRET?.trim();
-  const s = dedicated || process.env.ADMIN_JWT_SECRET;
-  if (!s || s.length < 32) {
-    throw new Error("REGISTRATION_TOKEN_SECRET or ADMIN_JWT_SECRET (32+ chars) must be set.");
-  }
-  return new TextEncoder().encode(s);
+  return new TextEncoder().encode(getRegistrationSigningSecret());
 }
 
 export async function signRegistrationConfirmationToken(registrationId: string): Promise<string> {
@@ -14,7 +10,7 @@ export async function signRegistrationConfirmationToken(registrationId: string):
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(registrationId)
     .setIssuedAt()
-    .setExpirationTime("30d")
+    .setExpirationTime("7d")
     .sign(getSecret());
 }
 

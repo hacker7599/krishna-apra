@@ -1,5 +1,6 @@
 import type { Registration } from "@prisma/client";
-import { ROLE_OPTIONS, TRIAL_FEE_INR } from "@/lib/league";
+import { TRIAL_FEE_INR } from "@/lib/league";
+import { formatRoleLabels } from "@/lib/registration-roles";
 import { ID_DOCUMENT_LABELS, type IdDocumentType } from "@/lib/registration-schema";
 
 export type RegistrationConfirmation = {
@@ -17,6 +18,7 @@ export type RegistrationConfirmation = {
   shoeSize: string | null;
   idDocumentType: string | null;
   achievementsAndAwards: string | null;
+  trialZone: string | null;
   payment: {
     status: string;
     method: string;
@@ -28,17 +30,11 @@ export type RegistrationConfirmation = {
   };
 };
 
-function formatRoles(json: string): string[] {
-  try {
-    const arr = JSON.parse(json) as string[];
-    const map = Object.fromEntries(ROLE_OPTIONS.map((r) => [r.id, r.label]));
-    return arr.map((id) => map[id] ?? id);
-  } catch {
-    return [json];
-  }
-}
+type RegistrationWithZone = Registration & {
+  trialZone?: { trialPlace: string; zone: string } | null;
+};
 
-export function toRegistrationConfirmation(row: Registration): RegistrationConfirmation {
+export function toRegistrationConfirmation(row: RegistrationWithZone): RegistrationConfirmation {
   const idLabel =
     row.idDocumentType && row.idDocumentType in ID_DOCUMENT_LABELS
       ? ID_DOCUMENT_LABELS[row.idDocumentType as IdDocumentType]
@@ -52,7 +48,13 @@ export function toRegistrationConfirmation(row: Registration): RegistrationConfi
     academyName: row.academyName,
     playerName: row.playerName,
     dateOfBirth: row.dateOfBirth.toISOString().slice(0, 10),
-    roles: formatRoles(row.roles),
+    roles: (() => {
+      try {
+        return formatRoleLabels(JSON.parse(row.roles) as string[]);
+      } catch {
+        return [row.roles];
+      }
+    })(),
     email: row.email,
     phone: row.phone,
     fatherName: row.fatherName,
@@ -61,6 +63,7 @@ export function toRegistrationConfirmation(row: Registration): RegistrationConfi
     shoeSize: row.shoeSize,
     idDocumentType: idLabel,
     achievementsAndAwards: row.achievementsAndAwards,
+    trialZone: row.trialZone ? `${row.trialZone.trialPlace} — ${row.trialZone.zone}` : null,
     payment: {
       status: row.paymentStatus ?? "manual",
       method: paidOnline ? "Razorpay (online)" : "Manual / offline verification",

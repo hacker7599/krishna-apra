@@ -2,6 +2,7 @@ import Image from "next/image";
 import { MediaSlot } from "@/components/media-slot";
 import { SectionHeader } from "@/components/section-header";
 import { ABOUT_STAKEHOLDERS } from "@/lib/about-stakeholders";
+import { formatImageUploadSpecShort } from "@/lib/image-upload-specs";
 import { SECTION_MUTED, SITE_CONTAINER_NARROW } from "@/lib/site-ui";
 
 function StakeholderVisual({
@@ -52,7 +53,7 @@ function StakeholderVisual({
           unoptimized
           className="object-cover object-top"
           sizes="220px"
-          priority={id === "subhash" || id === "naresh"}
+          priority={id === "naresh" || id === "mr-gupta"}
         />
       </div>
     );
@@ -66,6 +67,7 @@ function StakeholderVisual({
       suggestedPath={`/home/about/${id}.jpg`}
       className="w-[220px]"
       sizes="220px"
+      sizeHint={`Exact size: ${formatImageUploadSpecShort("aboutPortrait")}`}
     />
   );
 }

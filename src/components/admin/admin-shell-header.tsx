@@ -11,6 +11,7 @@ const titles: Record<string, { title: string; subtitle: string }> = {
   "/admin/teams": { title: "Teams", subtitle: "Franchise listings on the public site" },
   "/admin/banners": { title: "Hero banners", subtitle: "Homepage carousel and CTAs" },
   "/admin/trials": { title: "Trial zones", subtitle: "Venues and contact details for /trials" },
+  "/admin/blog": { title: "Blog", subtitle: "Articles, SEO meta tags, and /blog publishing" },
 };
 
 export function AdminShellHeader() {

@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { PLAYER_AGE_CUTOFF_DATE } from "@/lib/league";
+import { normalizePhone } from "@/lib/normalize-phone";
+import { ROLE_IDS } from "@/lib/registration-roles";
 
-const roleEnum = z.enum(["BATSMAN", "ALL_ROUNDER", "WICKET_KEEPER", "BOWLER", "SPINNER"]);
+const roleEnum = z.enum(ROLE_IDS);
 
 export const ID_DOCUMENT_TYPES = ["AADHAAR", "PASSPORT", "BIRTH_CERTIFICATE"] as const;
 export type IdDocumentType = (typeof ID_DOCUMENT_TYPES)[number];
@@ -23,13 +25,15 @@ export const registrationSchema = z
     playerName: z.string().trim().min(2).max(120),
     dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     roles: z.array(roleEnum).min(1).max(5),
+    trialZoneId: z.string().trim().min(1, "Select a trial zone."),
     email: z.string().trim().email().max(200),
     phone: z
       .string()
       .trim()
-      .min(10)
-      .max(18)
-      .regex(/^\+?[0-9\s-]{10,18}$/),
+      .transform((s) => normalizePhone(s))
+      .refine((s) => /^[0-9]{10}$/.test(s), {
+        message: "Enter a valid 10-digit mobile number (digits only).",
+      }),
     fatherName: z.string().trim().min(2).max(120),
     address: z.string().trim().min(10).max(600),
     jerseySize: jerseySizeEnum,

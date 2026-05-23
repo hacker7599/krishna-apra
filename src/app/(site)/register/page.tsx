@@ -7,6 +7,7 @@ import { SectionHeader } from "@/components/section-header";
 import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
 import { REGISTRATION_FAQ } from "@/lib/faq";
+import { getPublishedTrialZoneOptions } from "@/lib/public-queries";
 import { cricketTeamGame } from "@/lib/remote-images";
 import { CARD } from "@/lib/site-ui";
 import { LEAGUE_NAME, TITLE_SPONSOR } from "@/lib/league";
@@ -18,7 +19,9 @@ export const metadata: Metadata = {
   description: `Official trial registration for the ${TITLE_SPONSOR} Future Star Under-15 Cricket League (Delhi NCR).`,
 };
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const trialZones = await getPublishedTrialZoneOptions();
+
   return (
     <>
       <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-14">
@@ -48,7 +51,7 @@ export default function RegisterPage() {
             </div>
           </aside>
           <div className="min-w-0 lg:col-span-8">
-            <RegisterForm />
+            <RegisterForm trialZones={trialZones} />
           </div>
         </div>
       </SiteSection>

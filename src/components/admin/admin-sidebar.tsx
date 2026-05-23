@@ -23,6 +23,7 @@ const sections = [
       { href: "/admin/teams", label: "Teams" },
       { href: "/admin/banners", label: "Hero banners" },
       { href: "/admin/trials", label: "Trial zones" },
+      { href: "/admin/blog", label: "Blog" },
     ],
   },
 ];

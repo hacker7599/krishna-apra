@@ -15,12 +15,10 @@ export function RegistrationStatusFlow({ embedded = false }: { embedded?: boolea
   const [maskedEmail, setMaskedEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [notRegistered, setNotRegistered] = useState(false);
 
   async function requestOtp(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setNotRegistered(false);
     setLoading(true);
     try {
       const res = await fetch("/api/registration/status/request-otp", {
@@ -29,11 +27,6 @@ export function RegistrationStatusFlow({ embedded = false }: { embedded?: boolea
         body: JSON.stringify({ email: email.trim() }),
       });
       const body = await res.json().catch(() => ({}));
-      if (res.status === 404 && body.registered === false) {
-        setNotRegistered(true);
-        setError(body.error || "Not registered.");
-        return;
-      }
       if (!res.ok) {
         setError(typeof body.error === "string" ? body.error : "Could not send code.");
         return;
@@ -55,18 +48,14 @@ export function RegistrationStatusFlow({ embedded = false }: { embedded?: boolea
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), otp: otp.trim() }),
+        credentials: "include",
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(typeof body.error === "string" ? body.error : "Verification failed.");
         return;
       }
-      const token = body.receiptToken as string;
-      if (!token) {
-        setError("Could not open your receipt.");
-        return;
-      }
-      router.push(`/register/receipt?token=${encodeURIComponent(token)}`);
+      router.push("/register/receipt");
     } finally {
       setLoading(false);
     }
@@ -88,14 +77,7 @@ export function RegistrationStatusFlow({ embedded = false }: { embedded?: boolea
           </>
         ) : null}
 
-        {notRegistered ? (
-          <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-4">
-            <p className="text-sm font-semibold text-amber-950">{error}</p>
-            <Link href="/register" className={`${BTN_PRIMARY} mt-4 inline-flex w-full justify-center`}>
-              Go to registration
-            </Link>
-          </div>
-        ) : step === "email" ? (
+        {step === "email" ? (
           <form onSubmit={(e) => void requestOtp(e)} className="mt-6 space-y-4">
             <div>
               <label htmlFor="status-email" className="text-xs font-bold uppercase tracking-wide text-slate-600">

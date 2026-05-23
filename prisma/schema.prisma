@@ -85,6 +85,14 @@ model EmailLog {
   @@index([registrationId])
 }
 
+model RateLimitEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  bucket    String
+
+  @@index([bucket, createdAt])
+}
+
 model RegistrationAccessOtp {
   id             String    @id @default(cuid())
   createdAt      DateTime  @default(now())
@@ -100,14 +108,16 @@ model RegistrationAccessOtp {
 }
 
 model Registration {
-  id                    String   @id @default(cuid())
-  createdAt             DateTime @default(now())
+  id                    String     @id @default(cuid())
+  createdAt             DateTime   @default(now())
   academyName           String
   playerName            String
   dateOfBirth           DateTime
   roles                 String
-  email                 String
-  phone                 String
+  trialZoneId           String?
+  trialZone             TrialZone? @relation(fields: [trialZoneId], references: [id], onDelete: SetNull)
+  email                 String     @unique
+  phone                 String     @unique
   fatherName            String?
   address               String?
   jerseySize            String?
@@ -120,7 +130,7 @@ model Registration {
   feeReceivedDate       String?
   coachName             String?
   paymentStatus         String?
-  razorpayOrderId       String?  @unique
+  razorpayOrderId       String?    @unique
   razorpayPaymentId     String?
 }
 
@@ -151,14 +161,38 @@ model HeroBanner {
 }
 
 model TrialZone {
-  id             String   @id @default(cuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id             String         @id @default(cuid())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   trialPlace     String
   zone           String
   address        String
   navigationUrl  String
   contactDetails String
-  sortOrder      Int      @default(0)
-  published      Boolean  @default(true)
+  sortOrder      Int            @default(0)
+  published      Boolean        @default(true)
+  registrations  Registration[]
+}
+
+model BlogPost {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  slug            String    @unique
+  title           String
+  excerpt         String    @default("")
+  content         String
+  coverImageUrl   String?
+  authorName      String    @default("")
+  published       Boolean   @default(false)
+  publishedAt     DateTime?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  ogImageUrl      String?
+  canonicalUrl    String?
+  robotsNoindex   Boolean   @default(false)
+
+  @@index([published, publishedAt])
+  @@index([slug])
 }

@@ -13,7 +13,10 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;
-  const row = await prisma.registration.findUnique({ where: { id } });
+  const row = await prisma.registration.findUnique({
+    where: { id },
+    include: { trialZone: { select: { trialPlace: true, zone: true } } },
+  });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json(toRegistrationConfirmation(row));

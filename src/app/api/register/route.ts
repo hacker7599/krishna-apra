@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -9,14 +10,16 @@ import { confirmRazorpayPayment, linkPaymentOrderToRegistration } from "@/lib/co
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
 import { duplicateRegistrationMessage, findExistingRegistration } from "@/lib/registration-duplicate";
 import { normalizePhone } from "@/lib/normalize-phone";
+import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cookie";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
+import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  const limited = checkRegisterPostRate(ip);
+  const limited = await checkRegisterPostRate(ip);
   if (!limited.allowed) {
     const res = NextResponse.json(
       { error: "Too many registration attempts from this network. Please try again later.", retryAfterSec: limited.retryAfterSec },
@@ -50,6 +53,7 @@ export async function POST(req: NextRequest) {
       idDocumentType: String(form.get("idDocumentType") ?? ""),
       transactionRef: form.get("transactionRef") ? String(form.get("transactionRef")) : undefined,
       achievementsAndAwards: form.get("achievementsAndAwards") ? String(form.get("achievementsAndAwards")) : undefined,
+      trialZoneId: String(form.get("trialZoneId") ?? ""),
     };
 
     const parsed = registrationSchema.safeParse(payload);
@@ -66,6 +70,11 @@ export async function POST(req: NextRequest) {
     const existing = await findExistingRegistration(emailNorm, phoneNorm);
     if (existing) {
       return NextResponse.json({ error: duplicateRegistrationMessage(existing), duplicate: true }, { status: 409 });
+    }
+
+    const trialZone = await findPublishedTrialZone(parsed.data.trialZoneId);
+    if (!trialZone) {
+      return NextResponse.json({ error: "Please select a valid trial zone." }, { status: 400 });
     }
 
     const razorpayOrderId = String(form.get("razorpayOrderId") ?? "").trim();
@@ -133,36 +142,53 @@ export async function POST(req: NextRequest) {
 
     const dob = new Date(`${parsed.data.dateOfBirth}T00:00:00.000Z`);
 
-    const registration = await prisma.registration.create({
-      data: {
-        academyName: parsed.data.academyName,
-        playerName: parsed.data.playerName,
-        dateOfBirth: dob,
-        roles: JSON.stringify(parsed.data.roles),
-        email: emailNorm,
-        phone: phoneNorm,
-        fatherName: parsed.data.fatherName,
-        address: parsed.data.address,
-        jerseySize: parsed.data.jerseySize,
-        shoeSize: parsed.data.shoeSize,
-        idDocumentType: parsed.data.idDocumentType,
-        idProofPath,
-        paymentProofPath,
-        transactionRef: razorpayEnabled ? storedPaymentId : parsed.data.transactionRef || null,
-        achievementsAndAwards: parsed.data.achievementsAndAwards?.trim() || null,
-        paymentStatus,
-        razorpayOrderId: storedOrderId,
-        razorpayPaymentId: storedPaymentId,
-      },
+    const registration = await prisma.$transaction(async (tx) => {
+      const dup = await findExistingRegistration(emailNorm, phoneNorm, tx);
+      if (dup) {
+        return { duplicate: dup } as const;
+      }
+      const row = await tx.registration.create({
+        data: {
+          academyName: parsed.data.academyName,
+          playerName: parsed.data.playerName,
+          dateOfBirth: dob,
+          roles: JSON.stringify(parsed.data.roles),
+          email: emailNorm,
+          phone: phoneNorm,
+          fatherName: parsed.data.fatherName,
+          address: parsed.data.address,
+          jerseySize: parsed.data.jerseySize,
+          shoeSize: parsed.data.shoeSize,
+          idDocumentType: parsed.data.idDocumentType,
+          idProofPath,
+          paymentProofPath,
+          transactionRef: razorpayEnabled ? storedPaymentId : parsed.data.transactionRef || null,
+          achievementsAndAwards: parsed.data.achievementsAndAwards?.trim() || null,
+          trialZoneId: trialZone.id,
+          paymentStatus,
+          razorpayOrderId: storedOrderId,
+          razorpayPaymentId: storedPaymentId,
+        },
+      });
+      return { row } as const;
     });
 
+    if ("duplicate" in registration && registration.duplicate) {
+      return NextResponse.json(
+        { error: duplicateRegistrationMessage(registration.duplicate), duplicate: true },
+        { status: 409 },
+      );
+    }
+
+    const saved = registration.row;
+
     if (storedOrderId && storedPaymentId) {
-      await linkPaymentOrderToRegistration(storedOrderId, storedPaymentId, registration.id);
+      await linkPaymentOrderToRegistration(storedOrderId, storedPaymentId, saved.id);
     }
 
     let confirmationToken: string;
     try {
-      confirmationToken = await signRegistrationConfirmationToken(registration.id);
+      confirmationToken = await signRegistrationConfirmationToken(saved.id);
     } catch {
       return NextResponse.json(
         { error: "Registration saved but confirmation could not be issued. Contact the league desk with your payment reference." },
@@ -171,21 +197,28 @@ export async function POST(req: NextRequest) {
     }
 
     const emailResult = await sendRegistrationConfirmationEmail({
-      registrationId: registration.id,
+      registrationId: saved.id,
       email: emailNorm,
       playerName: parsed.data.playerName,
       confirmationToken,
     });
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       ok: true,
-      confirmationToken,
       emailSent: emailResult.sent,
       emailError: emailResult.sent ? undefined : emailResult.error,
     });
+    attachRegistrationReceiptCookie(res, confirmationToken, req);
+    return res;
   } catch (e) {
     console.error(e);
     const msg = e instanceof Error ? e.message : "";
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return NextResponse.json(
+        { error: "This email or mobile number is already registered.", duplicate: true },
+        { status: 409 },
+      );
+    }
     if (msg.includes("no such table") || msg.includes("SQLITE") || msg.includes("Prisma")) {
       return NextResponse.json(
         {

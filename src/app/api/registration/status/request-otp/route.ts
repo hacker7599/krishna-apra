@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const limited = checkOtpRequestRate(ip, email);
+  const limited = await checkOtpRequestRate(ip, email);
   if (!limited.allowed) {
     return NextResponse.json(
       { error: "Too many attempts. Please wait and try again.", retryAfterSec: limited.retryAfterSec },
@@ -42,14 +42,11 @@ export async function POST(req: NextRequest) {
   });
 
   if (!registration) {
-    return NextResponse.json(
-      {
-        registered: false,
-        error: "No registration found for this email. Please complete trial registration first.",
-        redirectTo: "/register",
-      },
-      { status: 404 },
-    );
+    return NextResponse.json({
+      ok: true,
+      message: "If this email is registered, a 6-digit code has been sent. Check your inbox and spam folder.",
+      maskedEmail: maskEmail(email),
+    });
   }
 
   const otp = await createRegistrationOtp(email, registration.id);

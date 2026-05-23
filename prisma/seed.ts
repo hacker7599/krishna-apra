@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { sampleBlogPost, SAMPLE_BLOG_SLUG } from "../src/lib/blog-sample-post";
 import { cricketMatchWide, cricketTeamGame } from "../src/lib/remote-images";
 
 const prisma = new PrismaClient();
@@ -94,6 +95,29 @@ async function main() {
       ],
     });
     console.log("Seeded trial zones: 3");
+  }
+
+  const blogExists = await prisma.blogPost.findUnique({ where: { slug: SAMPLE_BLOG_SLUG } });
+  const blogData = {
+    slug: sampleBlogPost.slug,
+    title: sampleBlogPost.title,
+    excerpt: sampleBlogPost.excerpt,
+    content: sampleBlogPost.content,
+    coverImageUrl: sampleBlogPost.coverImageUrl,
+    authorName: sampleBlogPost.authorName,
+    metaTitle: sampleBlogPost.metaTitle,
+    metaDescription: sampleBlogPost.metaDescription,
+    metaKeywords: sampleBlogPost.metaKeywords,
+    published: true,
+    publishedAt: new Date(),
+    robotsNoindex: false,
+  };
+  if (!blogExists) {
+    await prisma.blogPost.create({ data: blogData });
+    console.log("Seeded sample blog post:", SAMPLE_BLOG_SLUG);
+  } else if (blogExists.content.trim().startsWith("##")) {
+    await prisma.blogPost.update({ where: { slug: SAMPLE_BLOG_SLUG }, data: { content: sampleBlogPost.content } });
+    console.log("Updated sample blog post to rich-text HTML:", SAMPLE_BLOG_SLUG);
   }
 }
 

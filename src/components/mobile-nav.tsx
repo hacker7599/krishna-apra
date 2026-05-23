@@ -10,6 +10,7 @@ const links = [
   { href: "/sponsorship", label: "Partners" },
   { href: "/teams", label: "Teams" },
   { href: "/trials", label: "Trials" },
+  { href: "/blog", label: "Blog" },
   { href: "/register", label: "Join" },
 ];
 

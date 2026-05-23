@@ -1,7 +1,11 @@
 "use client";
 
-import { PLAYER_AGE_MIN_BIRTH_DATE, playerDateOfBirthMaxIso, ROLE_OPTIONS } from "@/lib/league";
+import { PLAYER_AGE_MIN_BIRTH_DATE, playerDateOfBirthMaxIso } from "@/lib/league";
+import type { RoleId } from "@/lib/league";
+import { ROLE_OPTION_GROUPS, toggleRegistrationRole } from "@/lib/registration-roles";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
+import type { TrialZoneOption } from "@/lib/trial-zone-options";
+import { trialZoneSelectLabel } from "@/lib/trial-zone-options";
 
 export type AdminRegistrationFormState = {
   academyName: string;
@@ -20,6 +24,7 @@ export type AdminRegistrationFormState = {
   feeReceivedDate: string;
   coachName: string;
   paymentStatus: string;
+  trialZoneId: string;
 };
 
 export const emptyAdminRegistrationForm: AdminRegistrationFormState = {
@@ -39,6 +44,7 @@ export const emptyAdminRegistrationForm: AdminRegistrationFormState = {
   feeReceivedDate: "",
   coachName: "",
   paymentStatus: "manual",
+  trialZoneId: "",
 };
 
 const inputClass =
@@ -47,17 +53,15 @@ const inputClass =
 type Props = {
   form: AdminRegistrationFormState;
   setForm: React.Dispatch<React.SetStateAction<AdminRegistrationFormState>>;
+  trialZones: TrialZoneOption[];
   disabled?: boolean;
 };
 
-export function AdminRegistrationFormFields({ form, setForm, disabled }: Props) {
-  function toggleRole(id: string) {
+export function AdminRegistrationFormFields({ form, setForm, trialZones, disabled }: Props) {
+  function toggleRole(id: RoleId) {
     setForm((prev) => {
-      const has = prev.roles.includes(id);
-      return {
-        ...prev,
-        roles: has ? prev.roles.filter((r) => r !== id) : [...prev.roles, id],
-      };
+      const next = toggleRegistrationRole(new Set(prev.roles as RoleId[]), id);
+      return { ...prev, roles: [...next] };
     });
   }
 
@@ -140,25 +144,51 @@ export function AdminRegistrationFormFields({ form, setForm, disabled }: Props) 
       </label>
       <fieldset className="sm:col-span-2">
         <legend className="mb-2 text-xs font-bold uppercase text-slate-700">Roles</legend>
-        <div className="flex flex-wrap gap-2">
-          {ROLE_OPTIONS.map((r) => {
-            const on = form.roles.includes(r.id);
-            return (
-              <button
-                key={r.id}
-                type="button"
-                disabled={disabled}
-                onClick={() => toggleRole(r.id)}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-bold uppercase ${
-                  on ? "border-orange-600 bg-orange-600 text-white" : "border-slate-300 bg-white text-slate-800"
-                }`}
-              >
-                {r.label}
-              </button>
-            );
-          })}
+        <div className="space-y-3">
+          {ROLE_OPTION_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="text-[10px] font-bold uppercase text-slate-600">
+                {group.label}
+                {"hint" in group && group.hint ? ` (${group.hint})` : ""}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {group.options.map((r) => {
+                  const on = form.roles.includes(r.id);
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => toggleRole(r.id)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-bold uppercase ${
+                        on ? "border-orange-600 bg-orange-600 text-white" : "border-slate-300 bg-white text-slate-800"
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </fieldset>
+      <label className="block sm:col-span-2">
+        <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Trial zone (optional)</span>
+        <select
+          disabled={disabled}
+          value={form.trialZoneId}
+          onChange={(e) => setForm((p) => ({ ...p, trialZoneId: e.target.value }))}
+          className={inputClass}
+        >
+          <option value="">Not set</option>
+          {trialZones.map((z) => (
+            <option key={z.id} value={z.id}>
+              {trialZoneSelectLabel(z)}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className="block">
         <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Jersey size</span>
         <select
@@ -280,6 +310,7 @@ export function rowToAdminForm(row: {
   feeReceivedDate: string | null;
   coachName: string | null;
   paymentStatus: string | null;
+  trialZoneId?: string | null;
 }): AdminRegistrationFormState {
   let roles: string[] = [];
   try {
@@ -304,5 +335,6 @@ export function rowToAdminForm(row: {
     feeReceivedDate: row.feeReceivedDate ?? "",
     coachName: row.coachName ?? "",
     paymentStatus: row.paymentStatus ?? "manual",
+    trialZoneId: row.trialZoneId ?? "",
   };
 }

@@ -54,6 +54,7 @@ export async function listRegistrationsForAdmin(opts: {
   let rows = await prisma.registration.findMany({
     where,
     orderBy: { createdAt: "desc" },
+    include: { trialZone: { select: { trialPlace: true, zone: true } } },
   });
 
   if (opts.q) {

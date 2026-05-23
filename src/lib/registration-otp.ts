@@ -1,12 +1,22 @@
-import { createHash, randomInt } from "crypto";
+import { createHash, randomInt, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { getRegistrationSigningSecret } from "@/lib/secrets";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
 function hashOtp(email: string, otp: string): string {
-  const pepper = process.env.REGISTRATION_TOKEN_SECRET || process.env.ADMIN_JWT_SECRET || "otp-pepper";
+  const pepper = getRegistrationSigningSecret();
   return createHash("sha256").update(`${pepper}:${email.toLowerCase()}:${otp}`).digest("hex");
+}
+
+function otpHashesMatch(stored: string, candidate: string): boolean {
+  if (stored.length !== candidate.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(stored, "utf8"), Buffer.from(candidate, "utf8"));
+  } catch {
+    return false;
+  }
 }
 
 export function generateSixDigitOtp(): string {
@@ -62,7 +72,7 @@ export async function verifyRegistrationOtp(
     return { ok: false, error: "Too many attempts. Request a new code." };
   }
 
-  const valid = row.otpHash === hashOtp(normalized, cleanOtp);
+  const valid = otpHashesMatch(row.otpHash, hashOtp(normalized, cleanOtp));
   if (!valid) {
     await prisma.registrationAccessOtp.update({
       where: { id: row.id },

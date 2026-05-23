@@ -4,9 +4,12 @@ import { SectionHeader } from "@/components/section-header";
 import {
   HOME_AAKASH_CHOPRA_PORTRAIT_PATH,
   HOME_AAKASH_CHOPRA_PORTRAIT_SRC,
+  HOME_DINESH_NANAVATI_PORTRAIT_PATH,
+  HOME_DINESH_NANAVATI_PORTRAIT_SRC,
   HOME_PARTHIV_PATEL_PORTRAIT_PATH,
   HOME_PARTHIV_PATEL_PORTRAIT_SRC,
 } from "@/lib/home-media";
+import { formatImageUploadSpecShort } from "@/lib/image-upload-specs";
 import { STREAMING_YOUTUBE_URL } from "@/lib/league";
 import { cn } from "@/lib/cn";
 import { CARD_PAD, SECTION_WHITE, SECTION_MUTED, SITE_CONTAINER } from "@/lib/site-ui";
@@ -22,6 +25,7 @@ function EventSupporterBlock({
   suggestedPath,
   reverse,
   tone,
+  roleLine,
 }: {
   id: string;
   name: string;
@@ -31,6 +35,8 @@ function EventSupporterBlock({
   suggestedPath: string;
   reverse?: boolean;
   tone: typeof SECTION_WHITE | typeof SECTION_MUTED;
+  /** e.g. Former Director, National Cricket Academy */
+  roleLine?: string;
 }) {
   return (
     <section className={tone} aria-labelledby={id}>
@@ -38,6 +44,9 @@ function EventSupporterBlock({
         <div className={reverse ? "lg:order-2" : undefined}>
           <SectionHeader eyebrow="Season 1" title="Event supporter" />
           <p className="mt-4 text-xl font-bold text-slate-900">{name}</p>
+          {roleLine ? (
+            <p className="mt-1 text-sm font-bold uppercase tracking-wide text-orange-700">{roleLine}</p>
+          ) : null}
           <p className="prose-league mt-3 max-w-xl text-sm font-medium">{bio}</p>
         </div>
         <div className={`flex justify-center ${reverse ? "lg:order-1 lg:justify-start" : "lg:justify-end"}`}>
@@ -48,6 +57,7 @@ function EventSupporterBlock({
             suggestedPath={suggestedPath}
             className="w-full max-w-sm sm:max-w-md"
             sizes="(max-width: 768px) 100vw, 400px"
+            sizeHint={`Exact size: ${formatImageUploadSpecShort("homeSupporterPortrait")}`}
           />
         </div>
       </div>
@@ -115,6 +125,17 @@ export function HomeBroadcastLeadership() {
         suggestedPath={HOME_PARTHIV_PATEL_PORTRAIT_PATH}
         reverse
         tone={SECTION_WHITE}
+      />
+
+      <EventSupporterBlock
+        id="home-dinesh-nanavati-heading"
+        name="Mr. Dinesh Nanavati"
+        roleLine="Former Director, National Cricket Academy (NCA)"
+        bio="With decades of experience in Indian cricket&apos;s high-performance pathway, Mr. Nanavati lends his guidance to Future Star U-15 — helping align trials, coaching standards, and player development with the professionalism of the national academy system."
+        portraitSrc={HOME_DINESH_NANAVATI_PORTRAIT_SRC}
+        portraitAlt="Mr. Dinesh Nanavati"
+        suggestedPath={HOME_DINESH_NANAVATI_PORTRAIT_PATH}
+        tone={SECTION_MUTED}
       />
     </>
   );

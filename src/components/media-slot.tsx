@@ -11,6 +11,8 @@ type Props = {
   className?: string;
   sizes?: string;
   imageClassName?: string;
+  /** Shown on empty placeholder — e.g. recommended pixel dimensions */
+  sizeHint?: string;
 };
 
 /**
@@ -25,6 +27,7 @@ export function MediaSlot({
   className,
   sizes = "400px",
   imageClassName = "object-cover object-top",
+  sizeHint,
 }: Props) {
   const hasImage = Boolean(src?.trim());
 
@@ -49,6 +52,7 @@ export function MediaSlot({
             </p>
           ) : null}
           <p className="mt-2 text-xs font-medium text-slate-500">Photo slot — add image to display</p>
+          {sizeHint ? <p className="mt-1 text-[10px] font-semibold text-slate-600">{sizeHint}</p> : null}
         </>
       )}
     </div>

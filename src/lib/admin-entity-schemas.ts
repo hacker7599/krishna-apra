@@ -1,5 +1,24 @@
 import { z } from "zod";
+import { isEmptyEditorHtml } from "@/lib/blog-content-utils";
+import { ROLE_IDS } from "@/lib/registration-roles";
 import { isSafeBannerCtaHref, isSafeGoogleMapsUrl } from "@/lib/safe-public-href";
+
+const blogOgImageUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .nullable()
+  .refine(
+    (u) =>
+      u == null ||
+      u === "" ||
+      u.startsWith("/api/blog/media/") ||
+      u.startsWith("/api/banners/media/") ||
+      u.startsWith("/branding/") ||
+      (u.startsWith("https://") && u.includes("images.unsplash.com")),
+    "OG image must be an uploaded path, /branding/, or Unsplash CDN.",
+  );
 
 const hexColor = z.string().regex(/^#([0-9a-fA-F]{6})$/, "Use #RRGGBB hex colour");
 
@@ -104,7 +123,7 @@ export const trialZonePatchSchema = z.object({
   published: z.boolean().optional(),
 });
 
-const roleEnum = z.enum(["BATSMAN", "ALL_ROUNDER", "WICKET_KEEPER", "BOWLER", "SPINNER"]);
+const roleEnum = z.enum(ROLE_IDS);
 const idDocumentTypeEnum = z.enum(["AADHAAR", "PASSPORT", "BIRTH_CERTIFICATE"]);
 const jerseySizeEnum = z.enum(["XS", "S", "M", "L", "XL", "XXL", "XXXL"]);
 const paymentStatusEnum = z.enum(["paid", "manual", "pending", "refunded"]);
@@ -114,6 +133,7 @@ const registrationCore = {
   playerName: z.string().trim().min(2).max(120),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   roles: z.array(roleEnum).min(1).max(5),
+  trialZoneId: z.string().trim().min(1).optional().nullable(),
   email: z.string().trim().email().max(200),
   phone: z
     .string()
@@ -138,12 +158,75 @@ export const registrationAdminCreateSchema = z.object({
   paymentStatus: paymentStatusEnum.optional().default("manual"),
 });
 
+const blogImageUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .nullable()
+  .refine(
+    (u) => u == null || u === "" || u.startsWith("/") || u.startsWith("https://"),
+    "Image must be uploaded or use a path starting with / or https://",
+  );
+
+const blogCanonicalUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .nullable()
+  .refine((u) => u == null || u === "" || isSafeBannerCtaHref(u), {
+    message: "Canonical URL must be a same-site path (starting with /) or safe https:// link.",
+  });
+
+export const blogPostCreateSchema = z.object({
+  title: z.string().trim().min(2).max(200),
+  slug: z.string().trim().min(2).max(120).regex(/^[a-z0-9-]+$/).optional(),
+  excerpt: z.string().trim().max(500).optional().default(""),
+  content: z
+    .string()
+    .max(100_000)
+    .refine((c) => !isEmptyEditorHtml(c), { message: "Article body is required" }),
+  coverImageUrl: blogImageUrl,
+  authorName: z.string().trim().max(120).optional().default(""),
+  published: z.boolean().optional().default(false),
+  metaTitle: z.string().trim().max(70).optional().nullable(),
+  metaDescription: z.string().trim().max(320).optional().nullable(),
+  metaKeywords: z.string().trim().max(500).optional().nullable(),
+  ogImageUrl: blogOgImageUrl,
+  canonicalUrl: blogCanonicalUrl,
+  robotsNoindex: z.boolean().optional().default(false),
+});
+
+export const blogPostPatchSchema = z
+  .object({
+    title: z.string().trim().min(2).max(200).optional(),
+    slug: z.string().trim().min(2).max(120).regex(/^[a-z0-9-]+$/).optional(),
+    excerpt: z.string().trim().max(500).optional(),
+    content: z
+      .string()
+      .max(100_000)
+      .optional()
+      .refine((c) => c === undefined || !isEmptyEditorHtml(c), { message: "Article body cannot be empty" }),
+    coverImageUrl: blogImageUrl,
+    authorName: z.string().trim().max(120).optional(),
+    published: z.boolean().optional(),
+    metaTitle: z.string().trim().max(70).optional().nullable(),
+    metaDescription: z.string().trim().max(320).optional().nullable(),
+    metaKeywords: z.string().trim().max(500).optional().nullable(),
+    ogImageUrl: blogOgImageUrl,
+    canonicalUrl: blogCanonicalUrl,
+    robotsNoindex: z.boolean().optional(),
+  })
+  .refine((data) => Object.values(data).some((v) => v !== undefined), { message: "No fields to update" });
+
 export const registrationAdminPatchSchema = z
   .object({
     academyName: registrationCore.academyName.optional(),
     playerName: registrationCore.playerName.optional(),
     dateOfBirth: registrationCore.dateOfBirth.optional(),
     roles: registrationCore.roles.optional(),
+    trialZoneId: registrationCore.trialZoneId,
     email: registrationCore.email.optional(),
     phone: registrationCore.phone.optional(),
     fatherName: registrationCore.fatherName.optional(),

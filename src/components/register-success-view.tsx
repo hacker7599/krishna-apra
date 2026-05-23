@@ -6,13 +6,23 @@ import { RegistrationSuccessDocument } from "@/components/registration-success-d
 import type { RegistrationConfirmation } from "@/lib/registration-confirmation";
 import { printRegistrationReceipt } from "@/lib/print-receipt";
 
-export function RegisterSuccessView({ token, minimal }: { token: string; minimal?: boolean }) {
+type Props = {
+  /** Optional: email links still pass ?token=; fresh registrations use HttpOnly cookie instead. */
+  token?: string;
+  minimal?: boolean;
+};
+
+export function RegisterSuccessView({ token, minimal }: Props) {
   const [data, setData] = useState<RegistrationConfirmation | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(`/api/register/confirmation?token=${encodeURIComponent(token)}`)
+    const url = token
+      ? `/api/register/confirmation?token=${encodeURIComponent(token)}`
+      : "/api/register/confirmation";
+
+    void fetch(url, { credentials: "include" })
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -31,12 +41,14 @@ export function RegisterSuccessView({ token, minimal }: { token: string; minimal
     };
   }, [token]);
 
-
   if (error) {
     return (
       <div className="rounded-xl border border-rose-200 bg-rose-50 px-6 py-8 text-center">
         <p className="text-sm font-semibold text-rose-900">{error}</p>
-        <Link href="/register" className="mt-4 inline-block text-sm font-bold text-orange-600 underline hover:text-orange-700">
+        <Link href="/register/status" className="mt-3 block text-sm font-bold text-orange-600 underline hover:text-orange-700">
+          Check status with email OTP
+        </Link>
+        <Link href="/register" className="mt-2 block text-sm font-bold text-slate-600 underline hover:text-slate-800">
           Back to registration
         </Link>
       </div>
@@ -48,32 +60,24 @@ export function RegisterSuccessView({ token, minimal }: { token: string; minimal
   }
 
   return (
-    <div className="print-document-scope space-y-6">
+    <div className={minimal ? "" : "space-y-6"}>
       {!minimal ? (
-        <p className="no-print text-center text-sm font-medium text-slate-600">
-          A confirmation email with your print link was sent if MSG91 is configured. Lost the email?{" "}
-          <a href="/register/status" className="font-bold text-orange-700 underline hover:text-orange-800">
-            Verify with email &amp; OTP
-          </a>
-        </p>
-      ) : null}
-      <div className="no-print flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
-        <button
-          type="button"
-          onClick={printRegistrationReceipt}
-          className="rounded-lg bg-orange-600 px-6 py-3 text-sm font-bold uppercase tracking-wide text-white hover:bg-orange-700"
-        >
-          Print / save as PDF (A4)
-        </button>
-        {!minimal ? (
-          <Link
-            href="/"
-            className="rounded-lg border border-slate-300 bg-white px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-slate-800 hover:bg-slate-50"
+        <div className="print-only-hide flex flex-wrap justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => printRegistrationReceipt()}
+            className="rounded-lg bg-[#1B365D] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#152a4a]"
           >
-            Back to home
+            Print / Save PDF
+          </button>
+          <Link
+            href="/register/status"
+            className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            Check status later
           </Link>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <RegistrationSuccessDocument data={data} />
     </div>
   );

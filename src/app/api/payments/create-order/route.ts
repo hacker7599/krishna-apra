@@ -4,7 +4,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getClientIp } from "@/lib/get-client-ip";
 import { normalizePhone } from "@/lib/normalize-phone";
+
+const phoneField = z
+  .string()
+  .trim()
+  .transform((s) => normalizePhone(s))
+  .refine((s) => /^[0-9]{10}$/.test(s), { message: "Enter a valid 10-digit mobile number." });
 import { logPaymentEvent } from "@/lib/payment-log";
+import { checkCreateOrderRate } from "@/lib/create-order-rate-limit";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
 import { getRazorpayPublicKeyId, isRazorpayConfigured, TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { getRazorpay } from "@/lib/razorpay";
@@ -16,7 +23,7 @@ export const runtime = "nodejs";
 const bodySchema = z.object({
   playerName: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(200),
-  phone: z.string().trim().min(10).max(18),
+  phone: phoneField,
 });
 
 export async function POST(req: NextRequest) {
@@ -25,7 +32,8 @@ export async function POST(req: NextRequest) {
   }
 
   const ip = getClientIp(req);
-  const limited = checkRegisterPostRate(ip);
+  const [orderLimited, registerLimited] = await Promise.all([checkCreateOrderRate(ip), checkRegisterPostRate(ip)]);
+  const limited = !orderLimited.allowed ? orderLimited : !registerLimited.allowed ? registerLimited : { allowed: true as const };
   if (!limited.allowed) {
     const res = NextResponse.json(
       { error: "Too many attempts from this network. Please try again later.", retryAfterSec: limited.retryAfterSec },

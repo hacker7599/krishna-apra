@@ -189,9 +189,118 @@ body {
   line-height: 1.7;
 }
 
+.blog-prose p {
+  margin-top: 1rem;
+}
+
+.blog-prose p:first-child {
+  margin-top: 0;
+}
+
+.blog-prose pre {
+  margin-top: 1rem;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  padding: 1rem;
+  font-size: 0.875rem;
+}
+
+.blog-prose h2 {
+  margin-top: 2rem;
+  font-family: var(--font-bebas);
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+  color: #0f172a;
+}
+
+.blog-prose h2:first-child {
+  margin-top: 0;
+}
+
+.blog-prose h3 {
+  margin-top: 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1b365d;
+}
+
+.blog-prose ul,
+.blog-prose ol {
+  margin-top: 1rem;
+  padding-left: 1.5rem;
+}
+
+.blog-prose ul {
+  list-style-type: disc;
+}
+
+.blog-prose ol {
+  list-style-type: decimal;
+}
+
+.blog-prose li {
+  margin-top: 0.35rem;
+}
+
+.blog-prose blockquote {
+  margin-top: 1.25rem;
+  border-left: 4px solid #f97316;
+  background: rgb(255 247 237 / 0.5);
+  padding: 0.5rem 0 0.5rem 1rem;
+  font-style: italic;
+  color: #1e293b;
+}
+
+.blog-prose a {
+  font-weight: 600;
+  color: #c2410c;
+  text-underline-offset: 2px;
+}
+
+.blog-prose a:hover {
+  text-decoration: underline;
+}
+
+.blog-editor-prose .tiptap p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.blog-editor-prose h2 {
+  font-family: var(--font-bebas);
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  margin: 1rem 0 0.5rem;
+}
+
+.blog-editor-prose h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0.75rem 0 0.35rem;
+  color: #1b365d;
+}
+
+.blog-editor-prose ul,
+.blog-editor-prose ol {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.blog-editor-prose blockquote {
+  border-left: 3px solid #f97316;
+  padding-left: 0.75rem;
+  margin: 0.75rem 0;
+  color: #475569;
+}
+
 @page {
   size: A4 portrait;
-  margin: 10mm 12mm 10mm;
+  margin: 5mm 10mm 8mm;
 }
 
 /* Screen: A4 preview width */
@@ -257,6 +366,26 @@ body {
     padding: 0;
     border: none;
     box-shadow: none;
+  }
+
+  body.is-printing-offline-form main,
+  body.is-printing-offline-form .offline-form-print-root {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  /* Page chrome only — keep spacing between blocks inside the A4 form */
+  body.is-printing-offline-form main > section {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  body.is-printing-offline-form .offline-form-block-gap-after {
+    margin-bottom: 5mm !important;
+  }
+
+  body.is-printing-offline-form .a4-form-sheet > header {
+    padding-top: 0 !important;
   }
 
   .receipt-a4-sheet,

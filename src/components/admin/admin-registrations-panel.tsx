@@ -14,9 +14,10 @@ import {
   type AdminRegistrationFormState,
 } from "@/components/admin/admin-registration-form-fields";
 import { AdminRegistrationPrintModal } from "@/components/admin/admin-registration-print-modal";
-import { ROLE_OPTIONS } from "@/lib/league";
+import { formatRoleLabels } from "@/lib/registration-roles";
 import type { IdDocumentType } from "@/lib/registration-schema";
 import { ID_DOCUMENT_LABELS } from "@/lib/registration-schema";
+import type { TrialZoneOption } from "@/lib/trial-zone-options";
 
 type Row = {
   id: string;
@@ -41,6 +42,8 @@ type Row = {
   feeReceivedDate: string | null;
   coachName: string | null;
   achievementsAndAwards: string | null;
+  trialZoneId: string | null;
+  trialZone?: { trialPlace: string; zone: string } | null;
 };
 
 type ListResponse = {
@@ -52,9 +55,7 @@ type ListResponse = {
 
 function formatRoles(json: string) {
   try {
-    const arr = JSON.parse(json) as string[];
-    const map = Object.fromEntries(ROLE_OPTIONS.map((r) => [r.id, r.label]));
-    return arr.map((id) => map[id] ?? id).join(", ");
+    return formatRoleLabels(JSON.parse(json) as string[]).join(", ");
   } catch {
     return json;
   }
@@ -79,6 +80,7 @@ function formToPayload(form: AdminRegistrationFormState) {
     shoeSize: form.shoeSize,
     idDocumentType: form.idDocumentType,
     achievementsAndAwards: form.achievementsAndAwards || null,
+    trialZoneId: form.trialZoneId || null,
     transactionRef: form.transactionRef || null,
     feeReceivedDate: form.feeReceivedDate || null,
     coachName: form.coachName || null,
@@ -86,7 +88,11 @@ function formToPayload(form: AdminRegistrationFormState) {
   };
 }
 
-export function AdminRegistrationsPanel() {
+type PanelProps = {
+  trialZones: TrialZoneOption[];
+};
+
+export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   const router = useRouter();
   const routerRef = useRef(router);
   useEffect(() => {
@@ -445,6 +451,12 @@ export function AdminRegistrationsPanel() {
               <dd>{formatRoles(viewRow.roles)}</dd>
             </div>
             <div>
+              <dt className="text-xs font-bold uppercase text-slate-500">Trial zone</dt>
+              <dd>
+                {viewRow.trialZone ? `${viewRow.trialZone.trialPlace} — ${viewRow.trialZone.zone}` : "—"}
+              </dd>
+            </div>
+            <div>
               <dt className="text-xs font-bold uppercase text-slate-500">Email</dt>
               <dd>{viewRow.email}</dd>
             </div>
@@ -497,7 +509,7 @@ export function AdminRegistrationsPanel() {
         }
       >
         <form id="admin-reg-create" onSubmit={saveCreate}>
-          <AdminRegistrationFormFields form={form} setForm={setForm} disabled={saving} />
+          <AdminRegistrationFormFields form={form} setForm={setForm} trialZones={trialZones} disabled={saving} />
         </form>
       </AdminModal>
 
@@ -518,7 +530,7 @@ export function AdminRegistrationsPanel() {
         }
       >
         <form id="admin-reg-edit" onSubmit={saveEdit}>
-          <AdminRegistrationFormFields form={form} setForm={setForm} disabled={saving} />
+          <AdminRegistrationFormFields form={form} setForm={setForm} trialZones={trialZones} disabled={saving} />
           {editing?.razorpayPaymentId && (
             <p className="mt-4 text-xs font-medium text-slate-600">
               Razorpay payment ID (read-only): <span className="font-mono">{editing.razorpayPaymentId}</span>

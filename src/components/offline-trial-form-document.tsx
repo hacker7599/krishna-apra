@@ -1,6 +1,8 @@
 import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC, OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
-import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, PLAYER_AGE_CUTOFF_DATE, ROLE_OPTIONS, SEASON_START, TAGLINE, TRIAL_FEE_INR, VENUE } from "@/lib/league";
+import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, PLAYER_AGE_CUTOFF_DATE, SEASON_START, TAGLINE, TRIAL_FEE_INR, VENUE } from "@/lib/league";
+import { ROLE_OPTION_GROUPS } from "@/lib/registration-roles";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
+import type { TrialZoneOption } from "@/lib/trial-zone-options";
 
 function cutoffDisplay() {
   const [y, m, d] = PLAYER_AGE_CUTOFF_DATE.split("-").map(Number);
@@ -21,11 +23,11 @@ function FieldLine({ label }: { label: string }) {
   );
 }
 
-export function OfflineTrialFormDocument() {
+export function OfflineTrialFormDocument({ trialZones }: { trialZones: TrialZoneOption[] }) {
   return (
     <div className="a4-form-sheet box-border w-full max-w-[210mm] border border-slate-300 bg-white p-5 text-slate-900 shadow-sm sm:p-7 print:max-w-none print:border-0 print:p-0 print:shadow-none">
       <header className="border-b-2 border-slate-900 pb-3 print:border-black print:pb-2">
-        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between print:flex-row print:gap-2 print:items-start">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between print:flex-row print:items-start print:gap-2">
           <div className="flex shrink-0 justify-center sm:justify-start">
             <img
               src={OUTER_DELHI_WARRIORS_LOGO_SRC}
@@ -66,14 +68,14 @@ export function OfflineTrialFormDocument() {
         </div>
       </header>
 
-      <p className="mt-4 text-center text-xs font-bold uppercase tracking-wide text-slate-800 print:mt-3 print:text-[10px]">
+      <p className="mt-3 text-center text-xs font-bold uppercase tracking-wide text-slate-800 print:mt-2 print:text-[10px]">
         Registration form (offline) · Season 1
       </p>
       <p className="mt-1 text-center text-[10px] font-medium leading-snug text-slate-600 print:text-[9px]">
         Submit completed form and fee at the league / academy desk as directed. Trial fee includes jersey. Formatted for A4 (210 × 297 mm).
       </p>
 
-      <div className="mt-5 space-y-3 print:mt-4 print:space-y-2.5">
+      <div className="mt-4 space-y-3 print:mt-3 print:space-y-2.5">
         <FieldLine label="Name of the academy / club" />
         <FieldLine label="Name of the player (as on government ID)" />
         <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2 print:gap-2">
@@ -105,17 +107,44 @@ export function OfflineTrialFormDocument() {
         </div>
       </div>
 
-      <section className="print-form-section mt-5 border-2 border-slate-900 p-2.5 print:mt-4 print:border-black print:p-2">
+      <section className="print-form-section mt-4 border-2 border-slate-900 p-2.5 print:mt-3 print:border-black print:p-2">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Player details (tick all that apply)</p>
-        <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm font-semibold sm:grid-cols-3 print:grid-cols-3 print:text-xs">
-          {ROLE_OPTIONS.map((r) => (
-            <label key={r.id} className="flex items-center gap-2">
-              <span className="inline-block h-3.5 w-3.5 shrink-0 border-2 border-slate-900 print:border-black" aria-hidden />
-              {r.label}
-            </label>
+        <div className="mt-2 space-y-2.5">
+          {ROLE_OPTION_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="text-[10px] font-bold uppercase text-slate-800 print:text-[9px]">
+                {group.label}
+                {"hint" in group && group.hint ? ` (${group.hint})` : ""}
+              </p>
+              <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-sm font-semibold print:grid-cols-2 print:text-xs">
+                {group.options.map((r) => (
+                  <label key={r.id} className="flex items-center gap-2">
+                    <span className="inline-block h-3.5 w-3.5 shrink-0 border-2 border-slate-900 print:border-black" aria-hidden />
+                    {r.label}
+                  </label>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </section>
+
+      <div className="print-form-section mt-4 print:mt-3">
+        <FieldLine label="Preferred trial zone" />
+        {trialZones.length > 0 ? (
+          <div className="mt-2 space-y-1 text-sm font-semibold print:text-xs">
+            {trialZones.map((z) => (
+              <label key={z.id} className="flex items-center gap-2">
+                <span className="inline-block h-3.5 w-3.5 shrink-0 border-2 border-slate-900 print:border-black" aria-hidden />
+                {z.trialPlace} — {z.zone}
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-1 text-[9px] font-medium text-slate-600 print:text-[8px]">Write venue / zone name:</p>
+        )}
+        <div className="mt-3 min-h-[1.25rem] border-b-2 border-slate-900 print:mt-2 print:border-black" />
+      </div>
 
       <div className="print-form-section mt-4 print:mt-3">
         <FieldLine label="Achievements & awards (optional)" />
@@ -124,7 +153,7 @@ export function OfflineTrialFormDocument() {
         </p>
       </div>
 
-      <section className="print-form-section mt-4 border-2 border-slate-900 p-2.5 print:mt-3 print:border-black print:p-2">
+      <section className="offline-form-block-gap-after print-form-section mt-4 mb-6 border-2 border-slate-900 p-2.5 print:mt-3 print:mb-0 print:border-black print:p-2">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Government ID (one compulsory copy attached)</p>
         <p className="mt-1 text-[10px] font-medium leading-snug text-slate-700 print:text-[9px]">
           Age cut-off: players must be born after <strong>{cutoffDisplay()}</strong> (on or before that date are not eligible). Accepted proof: Aadhaar card, passport (minimum 3-year
@@ -144,14 +173,7 @@ export function OfflineTrialFormDocument() {
         </p>
       </section>
 
-      <div className="print-form-section mt-4 print:mt-3">
-        <FieldLine label="Achievements & awards (optional)" />
-        <p className="mt-1 text-[9px] font-medium text-slate-600 print:text-[8px]">
-          District / state selections, tournament awards, academy honours, etc.
-        </p>
-      </div>
-
-      <section className="print-form-section mt-4 space-y-2 border-2 border-dashed border-slate-400 p-2.5 print:mt-3 print:p-2">
+      <section className="print-form-section mt-6 space-y-2 border-2 border-dashed border-slate-400 p-2.5 print:mt-5 print:p-2">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Payment (office / coordinator)</p>
         <div className="border-b border-slate-700 py-0.5 text-[10px] font-semibold text-slate-700 print:border-black print:text-[9px]">
           <span>Transaction reference / receipt no. (if paid digitally)</span>
@@ -160,7 +182,7 @@ export function OfflineTrialFormDocument() {
         <p className="text-[10px] text-slate-600 print:text-[9px]">Attach payment slip / screenshot if applicable.</p>
       </section>
 
-      <div className="print-form-section mt-6 grid gap-4 border-t-2 border-slate-900 pt-3 sm:grid-cols-2 print:mt-5 print:grid-cols-2 print:border-black print:pt-2">
+      <div className="print-form-section mt-5 grid gap-4 border-t-2 border-slate-900 pt-3 sm:grid-cols-2 print:mt-4 print:grid-cols-2 print:border-black print:pt-2">
         <div>
           <p className="text-[11px] font-bold uppercase text-slate-800 print:text-[10px]">Coach sign / stamp</p>
           <div className="mt-8 min-h-[2rem] border-b border-slate-700 print:mt-6 print:border-black" />
@@ -173,7 +195,7 @@ export function OfflineTrialFormDocument() {
         </div>
       </div>
 
-      <footer className="mt-6 border-t border-slate-300 pt-3 text-[10px] font-medium leading-snug text-slate-600 print:mt-5 print:border-black print:pt-2 print:text-[9px]">
+      <footer className="mt-5 border-t border-slate-300 pt-3 text-[10px] font-medium leading-snug text-slate-600 print:mt-4 print:border-black print:pt-2 print:text-[9px]">
         <p>
           <strong className="text-slate-800">Format:</strong> {FORMAT.category} · {FORMAT.overs}-over T20 · {FORMAT.teams} teams · Season window ·{" "}
           {SEASON_START}

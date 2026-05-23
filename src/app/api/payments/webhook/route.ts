@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
     const payment = event.payload?.payment?.entity;
     const orderId = payment?.order_id;
     const paymentId = payment?.id;
-    const amountOk = payment?.amount === undefined || Number(payment.amount) === TRIAL_FEE_PAISE;
+    const amountOk =
+      payment?.amount !== undefined && Number(payment.amount) === TRIAL_FEE_PAISE;
 
     if (orderId && paymentId && payment?.status === "captured" && amountOk) {
       const existing = await prisma.paymentOrder.findUnique({ where: { razorpayOrderId: orderId } });

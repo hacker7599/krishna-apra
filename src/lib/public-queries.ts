@@ -33,3 +33,12 @@ export async function getPublishedTrialZones() {
     navigationUrl: sanitizeTrialZoneNavUrl(r.navigationUrl),
   }));
 }
+
+export async function getPublishedTrialZoneOptions() {
+  const rows = await prisma.trialZone.findMany({
+    where: { published: true },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, trialPlace: true, zone: true },
+  });
+  return rows;
+}

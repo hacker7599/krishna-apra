@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getRegistrationReceiptToken } from "@/lib/registration-receipt-cookie";
 import { verifyRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { toRegistrationConfirmation } from "@/lib/registration-confirmation";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const token = new URL(req.url).searchParams.get("token")?.trim();
+  const token = getRegistrationReceiptToken(req);
   if (!token) {
-    return NextResponse.json({ error: "Confirmation link is invalid." }, { status: 400 });
+    return NextResponse.json({ error: "Confirmation access expired or missing. Use registration status or your email link." }, { status: 401 });
   }
 
   const registrationId = await verifyRegistrationConfirmationToken(token);
@@ -17,7 +18,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "This confirmation link has expired or is invalid." }, { status: 401 });
   }
 
-  const row = await prisma.registration.findUnique({ where: { id: registrationId } });
+  const row = await prisma.registration.findUnique({
+    where: { id: registrationId },
+    include: { trialZone: { select: { trialPlace: true, zone: true } } },
+  });
   if (!row) {
     return NextResponse.json({ error: "Registration not found." }, { status: 404 });
   }

@@ -54,6 +54,9 @@ export function buildRegistrationCreateData(input: AdminRegistrationCreateInput)
     playerName: input.playerName,
     dateOfBirth: dob,
     roles: JSON.stringify(input.roles),
+    ...(input.trialZoneId?.trim()
+      ? { trialZone: { connect: { id: input.trialZoneId.trim() } } }
+      : {}),
     email: input.email.toLowerCase().trim(),
     phone: normalizePhone(input.phone),
     fatherName: input.fatherName,
@@ -80,6 +83,11 @@ export function buildRegistrationPatchData(input: AdminRegistrationPatchInput): 
     data.dateOfBirth = new Date(`${input.dateOfBirth}T00:00:00.000Z`);
   }
   if (input.roles !== undefined) data.roles = JSON.stringify(input.roles);
+  if (input.trialZoneId !== undefined) {
+    data.trialZone = input.trialZoneId?.trim()
+      ? { connect: { id: input.trialZoneId.trim() } }
+      : { disconnect: true };
+  }
   if (input.email !== undefined) data.email = input.email.toLowerCase().trim();
   if (input.phone !== undefined) data.phone = normalizePhone(input.phone);
   if (input.fatherName !== undefined) data.fatherName = input.fatherName;

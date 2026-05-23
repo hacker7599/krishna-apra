@@ -2,6 +2,7 @@ import Image from "next/image";
 import { MediaSlot } from "@/components/media-slot";
 import { SectionHeader } from "@/components/section-header";
 import { OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
+import { formatImageUploadSpecShort } from "@/lib/image-upload-specs";
 import { ODW_TEAM_IN_UNIFORM, OUTER_DELHI_WARRIORS } from "@/lib/outer-delhi-warriors";
 import { CARD_PAD, SECTION_MUTED, SITE_CONTAINER } from "@/lib/site-ui";
 
@@ -53,6 +54,7 @@ export function OuterDelhiWarriorsSection() {
                   suggestedPath={m.suggestedPath}
                   aspectClassName="aspect-[3/4]"
                   sizes="(max-width:640px) 45vw, 220px"
+                  sizeHint={`Exact size: ${formatImageUploadSpecShort("odwSquadPortrait")}`}
                 />
                 <div className="border-t border-slate-200 px-2 py-3 text-center">
                   <p className="text-xs font-bold text-slate-900 sm:text-sm">{m.name}</p>

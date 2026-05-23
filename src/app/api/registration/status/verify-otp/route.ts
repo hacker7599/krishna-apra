@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { getClientIp } from "@/lib/get-client-ip";
-import { checkOtpRequestRate } from "@/lib/registration-status-rate-limit";
+import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cookie";
+import { checkOtpVerifyRate } from "@/lib/registration-status-rate-limit";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { verifyRegistrationOtp } from "@/lib/registration-otp";
 
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const limited = checkOtpRequestRate(ip, email);
+  const limited = await checkOtpVerifyRate(ip, email);
   if (!limited.allowed) {
     return NextResponse.json({ error: "Too many attempts. Please wait and try again." }, { status: 429 });
   }
@@ -45,5 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not issue receipt access. Contact the league desk." }, { status: 503 });
   }
 
-  return NextResponse.json({ ok: true, receiptToken });
+  const res = NextResponse.json({ ok: true });
+  attachRegistrationReceiptCookie(res, receiptToken, req);
+  return res;
 }
