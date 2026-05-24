@@ -85,17 +85,6 @@ export const ABOUT_LEADERSHIP: AboutStakeholder[] = [
     ],
   },
   {
-    id: "mohit-panwar",
-    name: "Mohit Panwar",
-    role: "League leadership · Outer Delhi Warriors",
-    portraitSrc: "/home/about/mohit-panwar.jpg",
-    paragraphs: [
-      "Mohit Panwar is part of the league leadership team and represents the Outer Delhi Warriors franchise initiative behind Future Star U-15.",
-      "He helps connect on-ground franchise operations with the league’s Season 1 goals: disciplined trials, competitive match days, and a player experience that reflects professional T20 standards.",
-      "His work supports the pathway from academy discovery to structured league cricket — keeping Outer Delhi’s talent visible within a broadcast-ready junior championship.",
-    ],
-  },
-  {
     id: "vishal-sharma",
     name: "Vishal Sharma",
     role: "League CEO",

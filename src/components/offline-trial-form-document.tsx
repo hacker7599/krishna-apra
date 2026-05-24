@@ -175,8 +175,27 @@ export function OfflineTrialFormDocument({ trialZones }: { trialZones: TrialZone
 
       <section className="print-form-section mt-6 space-y-2 border-2 border-dashed border-slate-400 p-2.5 print:mt-5 print:p-2">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Payment (office / coordinator)</p>
+        <p className="text-[10px] font-medium leading-snug text-slate-700 print:text-[9px]">
+          Trial fee: <strong>₹{TRIAL_FEE_INR.toLocaleString("en-IN")}</strong> (incl. t-shirt). Pay via UPI / cards by scanning the QR below, or at the league desk.
+        </p>
+        <div className="mt-3 flex flex-col items-center gap-2 border border-slate-300 bg-white p-3 print:mt-2 print:p-2">
+          <p className="text-center text-[10px] font-bold uppercase tracking-wide text-slate-800 print:text-[9px]">Scan to pay · UPI / cards</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/branding/trial-fee-payment-qr.png"
+            alt="UPI payment QR code for TBCL Sports Pvt Ltd"
+            width={160}
+            height={160}
+            className="h-36 w-36 object-contain print:h-[38mm] print:w-[38mm]"
+          />
+          <p className="text-center text-[9px] font-semibold text-slate-700 print:text-[8px]">
+            TBCL Sports Pvt Ltd
+            <br />
+            <span className="font-mono text-[8px]">Vyapar.173394572826@hdfcbank</span>
+          </p>
+        </div>
         <div className="border-b border-slate-700 py-0.5 text-[10px] font-semibold text-slate-700 print:border-black print:text-[9px]">
-          <span>Transaction reference / receipt no. (if paid digitally)</span>
+          <span>Transaction reference / receipt no. (after payment)</span>
           <div className="mt-4 min-h-[1rem] print:mt-3" />
         </div>
         <p className="text-[10px] text-slate-600 print:text-[9px]">Attach payment slip / screenshot if applicable.</p>
