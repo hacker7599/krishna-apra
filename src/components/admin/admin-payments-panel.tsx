@@ -94,10 +94,6 @@ export function AdminPaymentsPanel() {
   }, [q, status, ordersOffset, logsOffset]);
 
   useEffect(() => {
-    setOrdersOffset(0);
-  }, [q, status]);
-
-  useEffect(() => {
     const id = window.setTimeout(() => void load(), 0);
     return () => clearTimeout(id);
   }, [load]);
@@ -141,12 +137,18 @@ export function AdminPaymentsPanel() {
           type="search"
           placeholder="Search order id, email, phone, player…"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setOrdersOffset(0);
+          }}
           className="min-w-[200px] flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#1B365D] focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
         />
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setOrdersOffset(0);
+          }}
           className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
         >
           <option value="">All statuses</option>

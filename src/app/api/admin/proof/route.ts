@@ -25,20 +25,23 @@ export async function GET(req: NextRequest) {
     return new NextResponse("Missing id", { status: 400 });
   }
 
-  const kind = req.nextUrl.searchParams.get("kind") === "id" ? "id" : "payment";
+  const kindParam = req.nextUrl.searchParams.get("kind");
+  const kind = kindParam === "id" ? "id" : kindParam === "photo" ? "photo" : "payment";
 
   const reg = await prisma.registration.findUnique({ where: { id } });
   if (!reg) {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const relRaw = kind === "id" ? reg.idProofPath : reg.paymentProofPath;
+  const relRaw =
+    kind === "id" ? reg.idProofPath : kind === "photo" ? reg.playerPhotoPath : reg.paymentProofPath;
   if (!relRaw) {
     return new NextResponse("Not found", { status: 404 });
   }
 
   const rel = relRaw.replace(/\\/g, "/");
-  const allowedPrefix = kind === "id" ? "id-proofs/" : "payment-proofs/";
+  const allowedPrefix =
+    kind === "id" ? "id-proofs/" : kind === "photo" ? "player-photos/" : "payment-proofs/";
   if (rel.includes("..") || !rel.startsWith(allowedPrefix)) {
     return new NextResponse("Invalid path", { status: 400 });
   }

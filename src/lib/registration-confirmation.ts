@@ -1,6 +1,7 @@
 import type { Registration } from "@prisma/client";
 import { TRIAL_FEE_INR } from "@/lib/league";
 import { formatRoleLabels } from "@/lib/registration-roles";
+import { trialVenueDisplayLabel } from "@/lib/trial-zone-catalog";
 import { ID_DOCUMENT_LABELS, type IdDocumentType } from "@/lib/registration-schema";
 
 export type RegistrationConfirmation = {
@@ -63,7 +64,7 @@ export function toRegistrationConfirmation(row: RegistrationWithZone): Registrat
     shoeSize: row.shoeSize,
     idDocumentType: idLabel,
     achievementsAndAwards: row.achievementsAndAwards,
-    trialZone: row.trialZone ? `${row.trialZone.trialPlace} — ${row.trialZone.zone}` : null,
+    trialZone: row.trialZone ? trialVenueDisplayLabel(row.trialZone) : null,
     payment: {
       status: row.paymentStatus ?? "manual",
       method: paidOnline ? "Razorpay (online)" : "Manual / offline verification",

@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { sampleBlogPost, SAMPLE_BLOG_SLUG } from "../src/lib/blog-sample-post";
+import { OFFICIAL_TRIAL_VENUES } from "../src/lib/trial-zone-catalog";
+import { renumberTrialZoneSortOrders } from "../src/lib/trial-zone-sort";
 import { cricketMatchWide, cricketTeamGame } from "../src/lib/remote-images";
 
 const prisma = new PrismaClient();
@@ -14,6 +16,58 @@ const defaultTeams = [
   { slug: "yamuna-blazers", name: "Yamuna Blazers", city: "Yamuna Bank", accentColor: "#34d399", description: "Franchise colours and match-day identity—finalised post trials." },
   { slug: "capital-colts", name: "Capital Colts", city: "Central Delhi", accentColor: "#f97316", description: "Franchise colours and match-day identity—finalised post trials." },
 ];
+
+async function syncOfficialTrialZones() {
+  const ids: string[] = [];
+  for (let i = 0; i < OFFICIAL_TRIAL_VENUES.length; i++) {
+    const v = OFFICIAL_TRIAL_VENUES[i];
+    const existing = await prisma.trialZone.findFirst({
+      where: { trialPlace: v.trialPlace, zone: v.zone },
+    });
+    const row = existing
+      ? await prisma.trialZone.update({
+          where: { id: existing.id },
+          data: {
+            address: v.address,
+            navigationUrl: v.navigationUrl,
+            contactDetails: v.contactDetails,
+            sortOrder: i,
+            published: true,
+          },
+        })
+      : await prisma.trialZone.create({
+          data: {
+            trialPlace: v.trialPlace,
+            zone: v.zone,
+            address: v.address,
+            navigationUrl: v.navigationUrl,
+            contactDetails: v.contactDetails,
+            sortOrder: i,
+            published: true,
+          },
+        });
+    ids.push(row.id);
+  }
+  const officialCount = OFFICIAL_TRIAL_VENUES.length;
+  if (ids.length > 0) {
+    await prisma.trialZone.updateMany({
+      where: { id: { notIn: ids } },
+      data: { published: false },
+    });
+    const legacy = await prisma.trialZone.findMany({
+      where: { id: { notIn: ids } },
+      orderBy: [{ trialPlace: "asc" }, { zone: "asc" }],
+    });
+    for (let i = 0; i < legacy.length; i++) {
+      await prisma.trialZone.update({
+        where: { id: legacy[i].id },
+        data: { sortOrder: officialCount + i },
+      });
+    }
+  }
+  const renumbered = await renumberTrialZoneSortOrders(prisma);
+  console.log("Synced official trial zones:", officialCount, "· renumbered:", renumbered);
+}
 
 async function main() {
   if ((await prisma.team.count()) === 0) {
@@ -62,40 +116,7 @@ async function main() {
     console.log("Seeded hero banners: 3");
   }
 
-  if ((await prisma.trialZone.count()) === 0) {
-    await prisma.trialZone.createMany({
-      data: [
-        {
-          trialPlace: "Krishna Apra Academy Ground",
-          zone: "Outer Delhi",
-          address: "Sector trial block, Outer Delhi NCR (example address for coordinators).",
-          navigationUrl: "https://www.google.com/maps/search/?api=1&query=Delhi+NCR+cricket+ground",
-          contactDetails: "Zone desk: +91 98XXX XXXXX · trials@example.org",
-          sortOrder: 0,
-          published: true,
-        },
-        {
-          trialPlace: "North Delhi Hub",
-          zone: "North Delhi",
-          address: "Near Model Town complex — follow on-site signage on trial day.",
-          navigationUrl: "https://www.google.com/maps/search/?api=1&query=Model+Town+Delhi",
-          contactDetails: "Coordinator WhatsApp (10am–6pm): +91 97XXX XXXXX",
-          sortOrder: 1,
-          published: true,
-        },
-        {
-          trialPlace: "East Delhi nets venue",
-          zone: "East Delhi",
-          address: "Indoor nets + outfield checks — report 30 minutes before your slot.",
-          navigationUrl: "https://www.google.com/maps/search/?api=1&query=East+Delhi+cricket+nets",
-          contactDetails: "Help desk at gate · carry trial fee receipt on phone.",
-          sortOrder: 2,
-          published: true,
-        },
-      ],
-    });
-    console.log("Seeded trial zones: 3");
-  }
+  await syncOfficialTrialZones();
 
   const blogExists = await prisma.blogPost.findUnique({ where: { slug: SAMPLE_BLOG_SLUG } });
   const blogData = {

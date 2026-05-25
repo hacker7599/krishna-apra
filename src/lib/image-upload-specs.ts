@@ -70,6 +70,16 @@ export const IMAGE_UPLOAD_SPECS = {
     maxMb: 4,
     note: "Place file in public/home/odw/ — shown in squad grid.",
   },
+  registrationPlayerPhoto: {
+    id: "registration-player-photo",
+    label: "Player photo",
+    width: 800,
+    height: 1000,
+    aspectLabel: "4∶5 portrait",
+    formats: "JPG, PNG, or WebP",
+    maxMb: 4,
+    note: "Recent head-and-shoulders or full-length cricket photo — optional but helps scouts.",
+  },
   registrationIdScan: {
     id: "registration-id",
     label: "Government ID scan / photo",

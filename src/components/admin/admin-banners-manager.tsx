@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/components/admin/admin-session-provider";
 import { AdminModal } from "@/components/admin/admin-modal";
-import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
 import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
 import { AdminPagination } from "@/components/admin/ui/admin-pagination";
 
@@ -89,10 +88,6 @@ export function AdminBannersManager() {
     setRows(data.items);
     setTotal(data.total);
   }, [qs]);
-
-  useEffect(() => {
-    setOffset(0);
-  }, [published, appliedQ]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -365,7 +360,10 @@ export function AdminBannersManager() {
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Published</span>
           <select
             value={published}
-            onChange={(e) => setPublished(e.target.value as "all" | "true" | "false")}
+            onChange={(e) => {
+              setPublished(e.target.value as "all" | "true" | "false");
+              setOffset(0);
+            }}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
           >
             <option value="all">All</option>
@@ -373,7 +371,14 @@ export function AdminBannersManager() {
             <option value="false">Hidden</option>
           </select>
         </label>
-        <button type="button" onClick={() => setAppliedQ(q.trim())} className={btnPrimary}>
+        <button
+          type="button"
+          onClick={() => {
+            setAppliedQ(q.trim());
+            setOffset(0);
+          }}
+          className={btnPrimary}
+        >
           Apply
         </button>
       </div>

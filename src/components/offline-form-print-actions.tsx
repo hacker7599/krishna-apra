@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { BTN_PRIMARY, BTN_SECONDARY } from "@/lib/site-ui";
 
 const BODY_CLASS = "is-printing-offline-form";
 
@@ -21,25 +22,22 @@ export function OfflineFormPrintActions() {
   }
 
   return (
-    <div className="no-print mb-8 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm font-medium text-slate-700">
-        Use <strong>Print</strong> and choose <strong>Save as PDF</strong> (or your printer). In the print dialog, select <strong>A4</strong> paper (this
-        layout is tuned for 210 × 297 mm).
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={handlePrint}
-          className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-white shadow-sm hover:bg-orange-700"
-        >
-          Print / Save as PDF
-        </button>
-        <Link
-          href="/register"
-          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-slate-900 hover:bg-slate-50"
-        >
-          Online registration
-        </Link>
+    <div className="no-print mx-auto mt-8 max-w-3xl rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-bold text-slate-900">Print or save as PDF (2 pages)</p>
+          <p className="mt-1 text-sm font-medium leading-relaxed text-slate-600">
+            Use <strong>Print</strong> → <strong>Save as PDF</strong>, paper <strong>A4</strong>, margins <strong>Default</strong> or <strong>Minimum</strong>. The form is laid out as <strong>page 1</strong> (details &amp; venues) and <strong>page 2</strong> (ID, payment &amp; signatures).
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button type="button" onClick={handlePrint} className={BTN_PRIMARY}>
+            Print / PDF
+          </button>
+          <Link href="/register" className={BTN_SECONDARY}>
+            Online form
+          </Link>
+        </div>
       </div>
     </div>
   );

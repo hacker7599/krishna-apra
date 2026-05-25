@@ -1,6 +1,9 @@
+import { OfflinePlayerRoleFields } from "@/components/offline-player-role-fields";
+import { PrintLayoutImage } from "@/components/print-layout-image";
+import { OfflineFieldLine, OfflineFormSection, OfflinePrintCheckbox } from "@/components/offline-form-primitives";
+import { OfflineTrialVenueFields } from "@/components/offline-trial-venue-fields";
 import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC, OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
 import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, PLAYER_AGE_CUTOFF_DATE, SEASON_START, TAGLINE, TRIAL_FEE_INR, VENUE } from "@/lib/league";
-import { ROLE_OPTION_GROUPS } from "@/lib/registration-roles";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
 
@@ -14,218 +17,175 @@ function cutoffDisplay() {
   });
 }
 
-function FieldLine({ label }: { label: string }) {
+function FormHeader() {
   return (
-    <div className="border-b-2 border-slate-900 py-1 print:border-black">
-      <span className="text-[11px] font-bold uppercase tracking-wide text-slate-800 print:text-[10px]">{label}</span>
-      <div className="mt-5 min-h-[1.1rem] print:mt-4" />
-    </div>
+    <header className="offline-form-header">
+      <div className="offline-form-header__logos">
+        <PrintLayoutImage
+          src={OUTER_DELHI_WARRIORS_LOGO_SRC}
+          alt="Outer Delhi Warriors"
+          width={160}
+          height={107}
+          className="offline-form-header__logo"
+        />
+        <div className="text-center">
+          <p className="offline-form-header__eyebrow">An Outer Delhi Warriors initiative (DPL franchise)</p>
+          <h1 className="offline-form-header__title">Future Star U-15 Cricket Tournament</h1>
+          <PrintLayoutImage
+            src={KRISHNA_APRA_LOGO_SRC}
+            alt="Krishna Apra — title sponsor"
+            width={220}
+            height={88}
+            className="offline-form-header__sponsor"
+          />
+          <p className="offline-form-header__subtitle">
+            {LEAGUE_NAME} · {LEAGUE_SUBTITLE}
+          </p>
+          <p className="offline-form-header__tagline">&ldquo;{TAGLINE}&rdquo;</p>
+        </div>
+        <PrintLayoutImage
+          src={LEAGUE_LOGO_SRC}
+          alt="Future Star U15 league logo"
+          width={112}
+          height={112}
+          className="offline-form-header__logo offline-form-header__logo--end offline-form-header__logo--league"
+        />
+      </div>
+    </header>
   );
 }
 
 export function OfflineTrialFormDocument({ trialZones }: { trialZones: TrialZoneOption[] }) {
   return (
-    <div className="a4-form-sheet box-border w-full max-w-[210mm] border border-slate-300 bg-white p-5 text-slate-900 shadow-sm sm:p-7 print:max-w-none print:border-0 print:p-0 print:shadow-none">
-      <header className="border-b-2 border-slate-900 pb-3 print:border-black print:pb-2">
-        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between print:flex-row print:items-start print:gap-2">
-          <div className="flex shrink-0 justify-center sm:justify-start">
-            <img
-              src={OUTER_DELHI_WARRIORS_LOGO_SRC}
-              alt="Outer Delhi Warriors"
-              width={160}
-              height={107}
-              className="h-16 w-auto object-contain sm:h-[4.75rem] print:h-[18mm] print:w-auto"
-            />
-          </div>
-          <div className="min-w-0 flex-1 px-1 text-center sm:px-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-600 print:text-[8px]">
-              An Outer Delhi Warriors initiative (DPL franchise)
-            </p>
-            <h1 className="mt-1 font-[family-name:var(--font-bebas)] text-2xl uppercase leading-none tracking-wide text-slate-900 sm:text-3xl print:text-[22pt]">
-              Future Star U-15 Cricket Tournament
-            </h1>
-            <img
-              src={KRISHNA_APRA_LOGO_SRC}
-              alt="Krishna Apra — title sponsor"
-              width={220}
-              height={88}
-              className="mx-auto mt-2 h-14 w-auto max-w-[220px] object-contain print:h-[14mm]"
-            />
-            <p className="mt-1 text-[11px] font-semibold text-slate-700 print:text-[9px]">
-              {LEAGUE_NAME} · {LEAGUE_SUBTITLE}
-            </p>
-            <p className="mt-0.5 text-[10px] font-medium italic text-slate-600 print:text-[8px]">&ldquo;{TAGLINE}&rdquo;</p>
-          </div>
-          <div className="flex shrink-0 justify-center sm:justify-end">
-            <img
-              src={LEAGUE_LOGO_SRC}
-              alt="Future Star U15 league logo"
-              width={112}
-              height={112}
-              className="h-16 w-16 object-contain sm:h-[4.75rem] sm:w-[4.75rem] print:h-[20mm] print:w-[20mm]"
-            />
-          </div>
-        </div>
-      </header>
+    <div className="offline-form-sheet a4-form-sheet offline-form-two-pages p-6 sm:p-8 print:p-0">
+      {/* —— Page 1: player & trial details —— */}
+      <div className="offline-form-page offline-form-page--1">
+        <FormHeader />
 
-      <p className="mt-3 text-center text-xs font-bold uppercase tracking-wide text-slate-800 print:mt-2 print:text-[10px]">
-        Registration form (offline) · Season 1
-      </p>
-      <p className="mt-1 text-center text-[10px] font-medium leading-snug text-slate-600 print:text-[9px]">
-        Submit completed form and fee at the league / academy desk as directed. Trial fee includes jersey. Formatted for A4 (210 × 297 mm).
-      </p>
+        <p className="offline-form-doc-title">Registration form (offline) · Season 1</p>
+        <p className="offline-form-doc-lead">
+          Submit completed form and fee at the league / academy desk. Trial fee includes jersey. A4 · 2 pages.
+        </p>
 
-      <div className="mt-4 space-y-3 print:mt-3 print:space-y-2.5">
-        <FieldLine label="Name of the academy / club" />
-        <FieldLine label="Name of the player (as on government ID)" />
-        <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2 print:gap-2">
-          <FieldLine label="Player date of birth (DD/MM/YYYY)" />
-          <div className="border-b-2 border-slate-900 py-1 print:border-black">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-800 print:text-[10px]">Receiving registration fee</span>
-            <p className="mt-0.5 text-[10px] font-semibold text-slate-600 print:text-[9px]">
-              Amount: ₹{TRIAL_FEE_INR.toLocaleString("en-IN")} (incl. t-shirt)
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-bold uppercase text-slate-700 print:mt-2">
-              <span>Date received:</span>
-              <div className="border-b border-slate-500 print:border-black" />
-            </div>
-          </div>
-        </div>
-        <FieldLine label="Full postal address" />
-        <FieldLine label="Father / guardian name" />
-        <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2 print:gap-2">
-          <FieldLine label="Email ID" />
-          <FieldLine label="Phone number" />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2 print:gap-2">
-          <div className="border-b-2 border-slate-900 py-1 print:border-black">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-800 print:text-[10px]">Jersey (t-shirt) size</span>
-            <p className="mt-0.5 text-[9px] leading-snug text-slate-600 print:text-[8px]">Circle one: {JERSEY_SIZES.join(" · ")}</p>
-            <div className="mt-5 min-h-[1.1rem] print:mt-4" />
-          </div>
-          <FieldLine label="Shoe size (e.g. UK / EU)" />
-        </div>
-      </div>
-
-      <section className="print-form-section mt-4 border-2 border-slate-900 p-2.5 print:mt-3 print:border-black print:p-2">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Player details (tick all that apply)</p>
-        <div className="mt-2 space-y-2.5">
-          {ROLE_OPTION_GROUPS.map((group) => (
-            <div key={group.label}>
-              <p className="text-[10px] font-bold uppercase text-slate-800 print:text-[9px]">
-                {group.label}
-                {"hint" in group && group.hint ? ` (${group.hint})` : ""}
-              </p>
-              <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-sm font-semibold print:grid-cols-2 print:text-xs">
-                {group.options.map((r) => (
-                  <label key={r.id} className="flex items-center gap-2">
-                    <span className="inline-block h-3.5 w-3.5 shrink-0 border-2 border-slate-900 print:border-black" aria-hidden />
-                    {r.label}
-                  </label>
-                ))}
+        <div className="offline-form-fields">
+          <OfflineFieldLine label="Name of the academy / club" span={2} />
+          <OfflineFieldLine label="Name of the player (as on government ID)" span={2} />
+          <div className="offline-form-grid-2">
+            <OfflineFieldLine label="Player date of birth (DD/MM/YYYY)" />
+            <div className="offline-field-line">
+              <span className="offline-field-line__label">Receiving registration fee</span>
+              <span className="offline-field-line__sublabel">
+                Amount: ₹{TRIAL_FEE_INR.toLocaleString("en-IN")} (incl. t-shirt)
+              </span>
+              <div className="offline-form-grid-2 mt-2">
+                <span className="offline-field-line__label text-[0.5625rem]">Date received</span>
+                <div className="min-h-3 border-b border-slate-500 print:border-black" />
               </div>
             </div>
-          ))}
+          </div>
+          <OfflineFieldLine label="Full postal address" span={2} />
+          <OfflineFieldLine label="Father / guardian name" span={2} />
+          <div className="offline-form-grid-2">
+            <OfflineFieldLine label="Email ID" />
+            <OfflineFieldLine label="Phone number" />
+          </div>
+          <div className="offline-form-grid-2">
+            <div className="offline-field-line">
+              <span className="offline-field-line__label">Jersey (t-shirt) size</span>
+              <span className="offline-field-line__sublabel">Circle one: {JERSEY_SIZES.join(" · ")}</span>
+              <div className="offline-field-line__write" />
+            </div>
+            <OfflineFieldLine label="Shoe size (e.g. UK / EU)" />
+          </div>
         </div>
-      </section>
 
-      <div className="print-form-section mt-4 print:mt-3">
-        <FieldLine label="Preferred trial zone" />
-        {trialZones.length > 0 ? (
-          <div className="mt-2 space-y-1 text-sm font-semibold print:text-xs">
-            {trialZones.map((z) => (
-              <label key={z.id} className="flex items-center gap-2">
-                <span className="inline-block h-3.5 w-3.5 shrink-0 border-2 border-slate-900 print:border-black" aria-hidden />
-                {z.trialPlace} — {z.zone}
-              </label>
+        <OfflinePlayerRoleFields />
+        <OfflineTrialVenueFields trialZones={trialZones} />
+
+        <p className="offline-form-page-marker" aria-hidden>
+          Page 1 of 2
+        </p>
+      </div>
+
+      {/* —— Page 2: ID, payment, signatures —— */}
+      <div className="offline-form-page offline-form-page--2">
+        <p className="offline-form-continued">Future Star U-15 · Registration (continued)</p>
+
+        <OfflineFormSection number="13" title="Achievements & awards" hint="Optional — district / state selections, tournament awards, academy honours.">
+          <div className="offline-field-line">
+            <div className="offline-field-line__write offline-field-line__write--short" />
+          </div>
+        </OfflineFormSection>
+
+        <OfflineFormSection
+          number="14"
+          title="Government ID (one compulsory copy attached)"
+          hint={`Age cut-off: born after ${cutoffDisplay()}. Aadhaar, passport (3-year validity), or birth certificate.`}
+          boxed
+        >
+          <p className="offline-form-section__title mt-1 text-[0.5625rem]">Tick document attached</p>
+          <div className="offline-form-id-options">
+            {ID_DOCUMENT_TYPES.map((t) => (
+              <OfflinePrintCheckbox key={t} label={ID_DOCUMENT_LABELS[t]} />
             ))}
           </div>
-        ) : (
-          <p className="mt-1 text-[9px] font-medium text-slate-600 print:text-[8px]">Write venue / zone name:</p>
-        )}
-        <div className="mt-3 min-h-[1.25rem] border-b-2 border-slate-900 print:mt-2 print:border-black" />
-      </div>
+        </OfflineFormSection>
 
-      <div className="print-form-section mt-4 print:mt-3">
-        <FieldLine label="Achievements & awards (optional)" />
-        <p className="mt-1 text-[9px] font-medium text-slate-600 print:text-[8px]">
-          District / state selections, tournament awards, academy honours, etc.
-        </p>
-      </div>
-
-      <section className="offline-form-block-gap-after print-form-section mt-4 mb-6 border-2 border-slate-900 p-2.5 print:mt-3 print:mb-0 print:border-black print:p-2">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Government ID (one compulsory copy attached)</p>
-        <p className="mt-1 text-[10px] font-medium leading-snug text-slate-700 print:text-[9px]">
-          Age cut-off: players must be born after <strong>{cutoffDisplay()}</strong> (on or before that date are not eligible). Accepted proof: Aadhaar card, passport (minimum 3-year
-          validity), or birth certificate.
-        </p>
-        <p className="mt-2 text-[10px] font-bold uppercase text-slate-800 print:text-[9px]">Tick document attached</p>
-        <div className="mt-1.5 space-y-1 text-sm font-semibold print:text-xs">
-          {ID_DOCUMENT_TYPES.map((t) => (
-            <div key={t} className="flex items-center gap-2">
-              <span className="inline-block h-3.5 w-3.5 shrink-0 border-2 border-slate-900 print:border-black" aria-hidden />
-              {ID_DOCUMENT_LABELS[t]}
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-[10px] font-medium text-slate-600 print:mt-2 print:text-[9px]">
-          Attach clear photocopy / printout of the selected ID to this form.
-        </p>
-      </section>
-
-      <section className="print-form-section mt-6 space-y-2 border-2 border-dashed border-slate-400 p-2.5 print:mt-5 print:p-2">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-900 print:text-[10px]">Payment (office / coordinator)</p>
-        <p className="text-[10px] font-medium leading-snug text-slate-700 print:text-[9px]">
-          Trial fee: <strong>₹{TRIAL_FEE_INR.toLocaleString("en-IN")}</strong> (incl. t-shirt). Pay via UPI / cards by scanning the QR below, or at the league desk.
-        </p>
-        <div className="mt-3 flex flex-col items-center gap-2 border border-slate-300 bg-white p-3 print:mt-2 print:p-2">
-          <p className="text-center text-[10px] font-bold uppercase tracking-wide text-slate-800 print:text-[9px]">Scan to pay · UPI / cards</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/branding/trial-fee-payment-qr.png"
-            alt="UPI payment QR code for TBCL Sports Pvt Ltd"
-            width={160}
-            height={160}
-            className="h-36 w-36 object-contain print:h-[38mm] print:w-[38mm]"
-          />
-          <p className="text-center text-[9px] font-semibold text-slate-700 print:text-[8px]">
-            TBCL Sports Pvt Ltd
-            <br />
-            <span className="font-mono text-[8px]">Vyapar.173394572826@hdfcbank</span>
+        <section className="offline-form-payment">
+          <p className="offline-form-section__title">Payment (office / coordinator)</p>
+          <p className="offline-form-section__hint">
+            Trial fee: <strong>₹{TRIAL_FEE_INR.toLocaleString("en-IN")}</strong> (incl. t-shirt). Pay via UPI / cards or at the league desk.
           </p>
-        </div>
-        <div className="border-b border-slate-700 py-0.5 text-[10px] font-semibold text-slate-700 print:border-black print:text-[9px]">
-          <span>Transaction reference / receipt no. (after payment)</span>
-          <div className="mt-4 min-h-[1rem] print:mt-3" />
-        </div>
-        <p className="text-[10px] text-slate-600 print:text-[9px]">Attach payment slip / screenshot if applicable.</p>
-      </section>
+          <div className="offline-form-payment__layout">
+            <div className="offline-form-payment__qr-wrap">
+              <p className="offline-form-section__title text-center">Scan to pay</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/branding/trial-fee-payment-qr.png"
+                alt="UPI payment QR code for TBCL Sports Pvt Ltd"
+                width={160}
+                height={160}
+                className="offline-form-payment__qr"
+              />
+              <p className="offline-form-section__hint text-center">
+                TBCL Sports Pvt Ltd
+                <br />
+                <span className="font-mono text-[0.5rem]">Vyapar.173394572826@hdfcbank</span>
+              </p>
+            </div>
+            <div className="offline-form-payment__fields">
+              <div className="offline-field-line">
+                <span className="offline-field-line__label">Transaction reference / receipt no.</span>
+                <div className="offline-field-line__write min-h-3.5" />
+              </div>
+              <p className="offline-form-section__hint">Attach payment slip / screenshot if applicable.</p>
+            </div>
+          </div>
+        </section>
 
-      <div className="print-form-section mt-5 grid gap-4 border-t-2 border-slate-900 pt-3 sm:grid-cols-2 print:mt-4 print:grid-cols-2 print:border-black print:pt-2">
-        <div>
-          <p className="text-[11px] font-bold uppercase text-slate-800 print:text-[10px]">Coach sign / stamp</p>
-          <div className="mt-8 min-h-[2rem] border-b border-slate-700 print:mt-6 print:border-black" />
-          <p className="mt-0.5 text-[9px] text-slate-500 print:text-[8px]">Name & signature</p>
+        <div className="offline-form-signatures">
+          <div>
+            <p className="offline-field-line__label">Coach sign / stamp</p>
+            <div className="offline-form-sign-line" />
+            <p className="offline-form-section__hint">Name & signature</p>
+          </div>
+          <div>
+            <p className="offline-field-line__label">Parent / guardian sign</p>
+            <div className="offline-form-sign-line" />
+            <p className="offline-form-section__hint">Date</p>
+          </div>
         </div>
-        <div>
-          <p className="text-[11px] font-bold uppercase text-slate-800 print:text-[10px]">Parent / guardian sign</p>
-          <div className="mt-8 min-h-[2rem] border-b border-slate-700 print:mt-6 print:border-black" />
-          <p className="mt-0.5 text-[9px] text-slate-500 print:text-[8px]">Date</p>
-        </div>
+
+        <footer className="offline-form-footer">
+          <p>
+            <strong>Format:</strong> {FORMAT.category} · {FORMAT.overs}-over T20 · {FORMAT.teams} teams · {SEASON_START}
+          </p>
+          <p className="mt-1">
+            <strong>Primary venue:</strong> {VENUE}
+          </p>
+          <p className="mt-1 text-center">Future Star U-15 · Offline registration · Page 2 of 2</p>
+        </footer>
       </div>
-
-      <footer className="mt-5 border-t border-slate-300 pt-3 text-[10px] font-medium leading-snug text-slate-600 print:mt-4 print:border-black print:pt-2 print:text-[9px]">
-        <p>
-          <strong className="text-slate-800">Format:</strong> {FORMAT.category} · {FORMAT.overs}-over T20 · {FORMAT.teams} teams · Season window ·{" "}
-          {SEASON_START}
-        </p>
-        <p className="mt-1">
-          <strong className="text-slate-800">Primary venue:</strong> {VENUE}
-        </p>
-        <p className="mt-2 text-center text-[9px] text-slate-500 print:text-[8px]">
-          Future Star U-15 · Offline registration · Print or save as PDF (A4 recommended).
-        </p>
-      </footer>
     </div>
   );
 }

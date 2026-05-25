@@ -9,7 +9,7 @@ import { LeagueProtectionSection } from "@/components/league-protection-section"
 import { TournamentFormatSplit } from "@/components/tournament-format-split";
 import { SectionHeader } from "@/components/section-header";
 import { SiteSection } from "@/components/site-section";
-import { BTN_PRIMARY, SITE_CONTAINER } from "@/lib/site-ui";
+import { BTN_PRIMARY } from "@/lib/site-ui";
 import { FORMAT, SEASON_START, VENUE } from "@/lib/league";
 import { getPublishedBanners, getPublishedTeamCount } from "@/lib/public-queries";
 

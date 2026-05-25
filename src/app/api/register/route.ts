@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getClientIp } from "@/lib/get-client-ip";
 import { registrationSchema } from "@/lib/registration-schema";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
-import { saveIdProof, savePaymentProof } from "@/lib/save-upload";
+import { saveIdProof, savePaymentProof, savePlayerPhoto } from "@/lib/save-upload";
 import { confirmRazorpayPayment, linkPaymentOrderToRegistration } from "@/lib/confirm-razorpay-payment";
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
 import { duplicateRegistrationMessage, findExistingRegistration } from "@/lib/registration-duplicate";
@@ -104,6 +104,23 @@ export async function POST(req: NextRequest) {
       paymentStatus = "manual";
     }
 
+    const photoFile = form.get("playerPhoto");
+    let playerPhotoPath: string | null = null;
+    if (photoFile && typeof photoFile !== "string" && photoFile.size > 0) {
+      try {
+        playerPhotoPath = await savePlayerPhoto(photoFile as File);
+      } catch (e) {
+        const code = e instanceof Error ? e.message : "";
+        if (code === "FILE_TOO_LARGE") {
+          return NextResponse.json({ error: "Player photo must be under 4 MB." }, { status: 400 });
+        }
+        if (code === "FILE_TYPE") {
+          return NextResponse.json({ error: "Player photo must be JPG, PNG, or WebP." }, { status: 400 });
+        }
+        throw e;
+      }
+    }
+
     const idFile = form.get("idProof");
     if (!idFile || typeof idFile === "string" || idFile.size === 0) {
       return NextResponse.json({ error: "Government ID proof upload is required (Aadhaar, passport, or birth certificate)." }, { status: 400 });
@@ -161,6 +178,7 @@ export async function POST(req: NextRequest) {
           shoeSize: parsed.data.shoeSize,
           idDocumentType: parsed.data.idDocumentType,
           idProofPath,
+          playerPhotoPath,
           paymentProofPath,
           transactionRef: razorpayEnabled ? storedPaymentId : parsed.data.transactionRef || null,
           achievementsAndAwards: parsed.data.achievementsAndAwards?.trim() || null,

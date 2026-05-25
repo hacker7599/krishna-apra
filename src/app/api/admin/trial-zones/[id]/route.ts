@@ -4,6 +4,8 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminMutation } from "@/lib/require-admin";
 import { trialZonePatchSchema } from "@/lib/admin-entity-schemas";
+import { revalidatePublicTrialZonePages } from "@/lib/revalidate-public-trial-zones";
+import { renumberTrialZoneSortOrders } from "@/lib/trial-zone-sort";
 
 export const runtime = "nodejs";
 
@@ -36,15 +38,16 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (raw.trialPlace !== undefined) data.trialPlace = raw.trialPlace.trim();
   if (raw.zone !== undefined) data.zone = raw.zone.trim();
   if (raw.address !== undefined) data.address = raw.address.trim();
-  if (raw.contactDetails !== undefined) data.contactDetails = raw.contactDetails.trim();
-  if (raw.navigationUrl !== undefined) {
-    data.navigationUrl = raw.navigationUrl.trim();
-  }
+  if (raw.contactDetails !== undefined) data.contactDetails = raw.contactDetails;
+  if (raw.navigationUrl !== undefined) data.navigationUrl = raw.navigationUrl;
   if (raw.sortOrder !== undefined) data.sortOrder = raw.sortOrder;
   if (raw.published !== undefined) data.published = raw.published;
 
   try {
-    const row = await prisma.trialZone.update({ where: { id }, data });
+    await prisma.trialZone.update({ where: { id }, data });
+    await renumberTrialZoneSortOrders(prisma);
+    revalidatePublicTrialZonePages();
+    const row = await prisma.trialZone.findUniqueOrThrow({ where: { id } });
     return NextResponse.json(row);
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -59,6 +62,8 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
 
   try {
     await prisma.trialZone.delete({ where: { id } });
+    await renumberTrialZoneSortOrders(prisma);
+    revalidatePublicTrialZonePages();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

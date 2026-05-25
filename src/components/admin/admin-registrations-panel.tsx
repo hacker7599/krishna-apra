@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { adminFetch } from "@/components/admin/admin-session-provider";
 import { AdminModal } from "@/components/admin/admin-modal";
 import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
-import { AdminBadge } from "@/components/admin/ui/admin-badge";
 import { AdminPagination } from "@/components/admin/ui/admin-pagination";
 import {
   AdminRegistrationFormFields,
@@ -14,10 +13,9 @@ import {
   type AdminRegistrationFormState,
 } from "@/components/admin/admin-registration-form-fields";
 import { AdminRegistrationPrintModal } from "@/components/admin/admin-registration-print-modal";
-import { formatRoleLabels } from "@/lib/registration-roles";
-import type { IdDocumentType } from "@/lib/registration-schema";
-import { ID_DOCUMENT_LABELS } from "@/lib/registration-schema";
+import { AdminRegistrationSubmissionModal } from "@/components/admin/admin-registration-submission-modal";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
+import { humanErrorFromResponse } from "@/lib/human-errors";
 
 type Row = {
   id: string;
@@ -34,6 +32,7 @@ type Row = {
   shoeSize: string | null;
   idDocumentType: string | null;
   idProofPath: string | null;
+  playerPhotoPath: string | null;
   paymentProofPath: string | null;
   transactionRef: string | null;
   paymentStatus: string | null;
@@ -52,19 +51,6 @@ type ListResponse = {
   limit: number;
   offset: number;
 };
-
-function formatRoles(json: string) {
-  try {
-    return formatRoleLabels(JSON.parse(json) as string[]).join(", ");
-  } catch {
-    return json;
-  }
-}
-
-function idLabel(t: string | null) {
-  if (!t) return "—";
-  return ID_DOCUMENT_LABELS[t as IdDocumentType] ?? t;
-}
 
 function formToPayload(form: AdminRegistrationFormState) {
   return {
@@ -110,10 +96,11 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   const PAGE_SIZE = 25;
   const [error, setError] = useState("");
 
-  const [viewRow, setViewRow] = useState<Row | null>(null);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [printId, setPrintId] = useState<string | null>(null);
+  const [printAutoStart, setPrintAutoStart] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [printId, setPrintId] = useState<string | null>(null);
   const [form, setForm] = useState<AdminRegistrationFormState>(emptyAdminRegistrationForm);
   const [saving, setSaving] = useState(false);
 
@@ -135,7 +122,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       return;
     }
     if (!res.ok) {
-      setError("Could not load registrations.");
+      setError("We could not load the registration list. Refresh the page or sign in again.");
       return;
     }
     setError("");
@@ -169,7 +156,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   async function saveCreate(e: React.FormEvent) {
     e.preventDefault();
     if (form.roles.length === 0) {
-      setError("Select at least one role.");
+      setError("Please select at least one playing role for this player.");
       return;
     }
     setSaving(true);
@@ -186,7 +173,9 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(typeof data.error === "string" ? data.error : "Create failed.");
+      setError(
+        humanErrorFromResponse(data, "We could not save the new registration. Check all required fields and try again."),
+      );
       return;
     }
     setCreateOpen(false);
@@ -198,7 +187,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     e.preventDefault();
     if (!editing) return;
     if (form.roles.length === 0) {
-      setError("Select at least one role.");
+      setError("Please select at least one playing role for this player.");
       return;
     }
     setSaving(true);
@@ -215,7 +204,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(typeof data.error === "string" ? data.error : "Save failed.");
+      setError(humanErrorFromResponse(data, "Your changes were not saved. Check the form and try again."));
       return;
     }
     setEditing(null);
@@ -231,7 +220,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       return;
     }
     if (res.ok) void load();
-    else setError("Delete failed.");
+    else setError("We could not delete this registration. Try again in a moment.");
   }
 
   function exportCsv() {
@@ -276,7 +265,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     setEditing(r);
     setForm(rowToAdminForm({ ...r, dateOfBirth: r.dateOfBirth }));
     setCreateOpen(false);
-    setViewRow(null);
+    setSubmissionId(null);
   }
 
   return (
@@ -395,13 +384,24 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
                   </td>
                   <td className="px-2 py-2 text-right">
                     <div className="flex flex-wrap justify-end gap-1">
-                      <button type="button" onClick={() => setViewRow(r)} className="rounded border border-slate-300 px-2 py-1 text-[10px] font-bold uppercase hover:bg-slate-50">
-                        View
+                      <button
+                        type="button"
+                        onClick={() => setSubmissionId(r.id)}
+                        className="rounded border border-[#1B365D]/30 bg-[#1B365D]/5 px-2 py-1 text-[10px] font-bold uppercase text-[#1B365D] hover:bg-[#1B365D]/10"
+                      >
+                        View form
                       </button>
                       <button type="button" onClick={() => startEdit(r)} className="rounded border border-slate-300 px-2 py-1 text-[10px] font-bold uppercase hover:bg-slate-50">
                         Edit
                       </button>
-                      <button type="button" onClick={() => setPrintId(r.id)} className="rounded border border-orange-300 px-2 py-1 text-[10px] font-bold uppercase text-orange-700 hover:bg-orange-50">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPrintAutoStart(false);
+                          setPrintId(r.id);
+                        }}
+                        className="rounded border border-orange-300 px-2 py-1 text-[10px] font-bold uppercase text-orange-700 hover:bg-orange-50"
+                      >
                         Print
                       </button>
                       <button type="button" onClick={() => void removeRow(r)} className="rounded border border-rose-300 px-2 py-1 text-[10px] font-bold uppercase text-rose-700 hover:bg-rose-50">
@@ -418,79 +418,15 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         </div>
       )}
 
-      <AdminModal
-        open={Boolean(viewRow)}
-        title="Registration details"
-        onClose={() => setViewRow(null)}
-        size="wide"
-      >
-        {viewRow && (
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">Reference</dt>
-              <dd className="font-mono text-xs">{viewRow.id}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">Submitted</dt>
-              <dd>{new Date(viewRow.createdAt).toLocaleString()}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-bold uppercase text-slate-500">Player</dt>
-              <dd className="font-bold">{viewRow.playerName}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-bold uppercase text-slate-500">Academy</dt>
-              <dd>{viewRow.academyName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">DOB</dt>
-              <dd>{new Date(viewRow.dateOfBirth).toLocaleDateString()}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">Roles</dt>
-              <dd>{formatRoles(viewRow.roles)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">Trial zone</dt>
-              <dd>
-                {viewRow.trialZone ? `${viewRow.trialZone.trialPlace} — ${viewRow.trialZone.zone}` : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">Email</dt>
-              <dd>{viewRow.email}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">Phone</dt>
-              <dd>{viewRow.phone}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-bold uppercase text-slate-500">Address</dt>
-              <dd>{viewRow.address ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">Payment</dt>
-              <dd>{viewRow.paymentStatus ?? "manual"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase text-slate-500">Razorpay payment ID</dt>
-              <dd className="font-mono text-xs">{viewRow.razorpayPaymentId ?? "—"}</dd>
-            </div>
-            <div className="sm:col-span-2 flex gap-3">
-              {viewRow.idProofPath && (
-                <a className="font-bold text-orange-600 underline" href={`/api/admin/proof?id=${viewRow.id}&kind=id`} target="_blank" rel="noreferrer">
-                  ID proof
-                </a>
-              )}
-              {viewRow.paymentProofPath && (
-                <a className="font-bold text-orange-600 underline" href={`/api/admin/proof?id=${viewRow.id}&kind=payment`} target="_blank" rel="noreferrer">
-                  Payment proof
-                </a>
-              )}
-            </div>
-          </dl>
-        )}
-      </AdminModal>
+      <AdminRegistrationSubmissionModal
+        registrationId={submissionId}
+        onClose={() => setSubmissionId(null)}
+        onPrintReceipt={(id) => {
+          setSubmissionId(null);
+          setPrintAutoStart(true);
+          setPrintId(id);
+        }}
+      />
 
       <AdminModal
         open={createOpen}
@@ -539,7 +475,14 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         </form>
       </AdminModal>
 
-      <AdminRegistrationPrintModal registrationId={printId} onClose={() => setPrintId(null)} />
+      <AdminRegistrationPrintModal
+        registrationId={printId}
+        autoPrint={printAutoStart}
+        onClose={() => {
+          setPrintId(null);
+          setPrintAutoStart(false);
+        }}
+      />
     </div>
   );
 }

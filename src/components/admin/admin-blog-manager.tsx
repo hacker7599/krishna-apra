@@ -211,10 +211,6 @@ export function AdminBlogManager() {
   }, [qs]);
 
   useEffect(() => {
-    setOffset(0);
-  }, [published, appliedQ]);
-
-  useEffect(() => {
     const id = window.setTimeout(() => void load(), 0);
     return () => clearTimeout(id);
   }, [load]);
@@ -638,7 +634,10 @@ export function AdminBlogManager() {
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Show</span>
           <select
             value={published}
-            onChange={(e) => setPublished(e.target.value as "all" | "true" | "false")}
+            onChange={(e) => {
+              setPublished(e.target.value as "all" | "true" | "false");
+              setOffset(0);
+            }}
             className={inputClass}
           >
             <option value="all">All</option>
@@ -646,7 +645,14 @@ export function AdminBlogManager() {
             <option value="false">Drafts only</option>
           </select>
         </label>
-        <button type="button" onClick={() => setAppliedQ(q.trim())} className={btnPrimary}>
+        <button
+          type="button"
+          onClick={() => {
+            setAppliedQ(q.trim());
+            setOffset(0);
+          }}
+          className={btnPrimary}
+        >
           Search
         </button>
       </div>

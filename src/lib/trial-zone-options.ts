@@ -4,6 +4,8 @@ export type TrialZoneOption = {
   zone: string;
 };
 
+import { trialVenueDisplayLabel } from "@/lib/trial-zone-catalog";
+
 export function trialZoneSelectLabel(z: TrialZoneOption): string {
-  return `${z.trialPlace} — ${z.zone}`;
+  return trialVenueDisplayLabel(z);
 }

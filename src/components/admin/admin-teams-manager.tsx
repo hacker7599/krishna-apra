@@ -82,10 +82,6 @@ export function AdminTeamsManager() {
     return () => clearTimeout(id);
   }, [load]);
 
-  useEffect(() => {
-    setOffset(0);
-  }, [published, appliedQ]);
-
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editing) return;
@@ -223,7 +219,12 @@ export function AdminTeamsManager() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && setAppliedQ(q.trim())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setAppliedQ(q.trim());
+                setOffset(0);
+              }
+            }}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
             placeholder="Name, city, slug…"
           />
@@ -232,7 +233,10 @@ export function AdminTeamsManager() {
           <span className="mb-1 block text-xs font-bold uppercase text-slate-600">Status</span>
           <select
             value={published}
-            onChange={(e) => setPublished(e.target.value as "all" | "true" | "false")}
+            onChange={(e) => {
+              setPublished(e.target.value as "all" | "true" | "false");
+              setOffset(0);
+            }}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
           >
             <option value="all">All</option>
@@ -242,7 +246,10 @@ export function AdminTeamsManager() {
         </label>
         <button
           type="button"
-          onClick={() => setAppliedQ(q.trim())}
+          onClick={() => {
+            setAppliedQ(q.trim());
+            setOffset(0);
+          }}
           className="rounded-lg bg-[#1B365D] px-4 py-2 text-sm font-bold text-white hover:bg-[#152a4a]"
         >
           Search

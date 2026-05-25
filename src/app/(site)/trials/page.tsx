@@ -39,7 +39,9 @@ export default async function TrialsPage() {
               <p className="text-xs font-bold uppercase tracking-wide text-orange-700">{z.zone}</p>
               <h2 className="mt-1 text-lg font-bold text-slate-900">{z.trialPlace}</h2>
               <p className="mt-3 flex-1 text-sm font-medium leading-relaxed text-slate-700">{z.address}</p>
-              <p className="mt-3 text-sm font-semibold text-slate-800">{z.contactDetails}</p>
+              {z.contactDetails ? (
+                <p className="mt-3 text-sm font-semibold text-slate-800">{z.contactDetails}</p>
+              ) : null}
               {z.navigationUrl ? (
                 <a
                   href={z.navigationUrl}

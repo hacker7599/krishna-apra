@@ -1,5 +1,6 @@
+import { PrintLayoutImage } from "@/components/print-layout-image";
 import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC, OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
-import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, TAGLINE, TRIAL_FEE_INR } from "@/lib/league";
+import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, TAGLINE } from "@/lib/league";
 import type { RegistrationConfirmation } from "@/lib/registration-confirmation";
 
 function formatSubmittedAt(iso: string) {
@@ -85,7 +86,7 @@ export function RegistrationSuccessDocument({ data }: { data: RegistrationConfir
         <header className="receipt-header border-b border-slate-300 pb-5 print:pb-3">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between print:flex-row print:gap-2">
             <div className="flex shrink-0 justify-center sm:justify-start">
-              <img
+              <PrintLayoutImage
                 src={OUTER_DELHI_WARRIORS_LOGO_SRC}
                 alt="Outer Delhi Warriors"
                 width={160}
@@ -103,7 +104,7 @@ export function RegistrationSuccessDocument({ data }: { data: RegistrationConfir
               <p className="mt-1 text-[11px] font-semibold text-slate-700">
                 {LEAGUE_NAME} · {LEAGUE_SUBTITLE} · Delhi NCR
               </p>
-              <img
+              <PrintLayoutImage
                 src={KRISHNA_APRA_LOGO_SRC}
                 alt="Krishna Apra — title sponsor"
                 width={180}
@@ -112,7 +113,13 @@ export function RegistrationSuccessDocument({ data }: { data: RegistrationConfir
               />
             </div>
             <div className="flex shrink-0 justify-center sm:justify-end">
-              <img src={LEAGUE_LOGO_SRC} alt="Future Star U15" width={80} height={80} className="h-12 w-12 object-contain" />
+              <PrintLayoutImage
+                src={LEAGUE_LOGO_SRC}
+                alt="Future Star U15"
+                width={80}
+                height={80}
+                className="h-12 w-12 object-contain"
+              />
             </div>
           </div>
 

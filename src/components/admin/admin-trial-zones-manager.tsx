@@ -13,8 +13,8 @@ type TrialZone = {
   trialPlace: string;
   zone: string;
   address: string;
-  navigationUrl: string;
-  contactDetails: string;
+  navigationUrl: string | null;
+  contactDetails: string | null;
   sortOrder: number;
   published: boolean;
 };
@@ -57,8 +57,8 @@ function rowToForm(z: TrialZone): TrialZoneForm {
     trialPlace: z.trialPlace,
     zone: z.zone,
     address: z.address,
-    navigationUrl: z.navigationUrl,
-    contactDetails: z.contactDetails,
+    navigationUrl: z.navigationUrl ?? "",
+    contactDetails: z.contactDetails ?? "",
     published: z.published,
   };
 }
@@ -109,10 +109,6 @@ export function AdminTrialZonesManager() {
   }, [qs]);
 
   useEffect(() => {
-    setOffset(0);
-  }, [published, appliedQ]);
-
-  useEffect(() => {
     const id = window.setTimeout(() => {
       void load();
     }, 0);
@@ -146,8 +142,8 @@ export function AdminTrialZonesManager() {
       trialPlace: form.trialPlace.trim(),
       zone: form.zone.trim(),
       address: form.address.trim(),
-      navigationUrl: form.navigationUrl.trim(),
-      contactDetails: form.contactDetails.trim(),
+      navigationUrl: form.navigationUrl.trim() || null,
+      contactDetails: form.contactDetails.trim() || null,
       published: form.published,
     };
   }
@@ -236,11 +232,19 @@ export function AdminTrialZonesManager() {
       <div className="rounded-lg border border-sky-100 bg-sky-50/80 px-3 py-2.5 text-sm text-slate-700">
         <p className="font-semibold text-slate-900">Shown on the public site</p>
         <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
-          Live zones appear on{" "}
+          <strong>Live</strong> zones show on{" "}
           <Link href="/trials" target="_blank" className="font-bold text-[#1B365D] underline hover:text-orange-700">
             /trials
-          </Link>{" "}
-          and in the registration form dropdown.
+          </Link>
+          ,{" "}
+          <Link href="/register" target="_blank" className="font-bold text-[#1B365D] underline hover:text-orange-700">
+            online registration
+          </Link>
+          , and the{" "}
+          <Link href="/register/offline" target="_blank" className="font-bold text-[#1B365D] underline hover:text-orange-700">
+            printable offline form
+          </Link>
+          . Hidden zones stay in admin only. Updates apply as soon as you save.
         </p>
       </div>
 
@@ -294,9 +298,10 @@ export function AdminTrialZonesManager() {
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Google Maps link</span>
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
+          Google Maps link <span className="font-normal normal-case text-slate-500">(optional)</span>
+        </span>
         <input
-          required
           value={form.navigationUrl}
           onChange={(e) => setForm((f) => ({ ...f, navigationUrl: e.target.value }))}
           className={`${inputClass} font-mono text-xs`}
@@ -317,9 +322,10 @@ export function AdminTrialZonesManager() {
       ) : null}
 
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Contact details</span>
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
+          Contact details <span className="font-normal normal-case text-slate-500">(optional)</span>
+        </span>
         <textarea
-          required
           rows={3}
           value={form.contactDetails}
           onChange={(e) => setForm((f) => ({ ...f, contactDetails: e.target.value }))}
@@ -363,7 +369,12 @@ export function AdminTrialZonesManager() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && setAppliedQ(q.trim())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setAppliedQ(q.trim());
+                setOffset(0);
+              }
+            }}
             className={inputClass}
             placeholder="Place, zone, address, contact…"
           />
@@ -372,7 +383,10 @@ export function AdminTrialZonesManager() {
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Status</span>
           <select
             value={published}
-            onChange={(e) => setPublished(e.target.value as "all" | "true" | "false")}
+            onChange={(e) => {
+              setPublished(e.target.value as "all" | "true" | "false");
+              setOffset(0);
+            }}
             className={inputClass}
           >
             <option value="all">All</option>
@@ -380,7 +394,14 @@ export function AdminTrialZonesManager() {
             <option value="false">Hidden</option>
           </select>
         </label>
-        <button type="button" onClick={() => setAppliedQ(q.trim())} className={btnPrimary}>
+        <button
+          type="button"
+          onClick={() => {
+            setAppliedQ(q.trim());
+            setOffset(0);
+          }}
+          className={btnPrimary}
+        >
           Search
         </button>
       </div>
@@ -441,20 +462,24 @@ export function AdminTrialZonesManager() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((z) => (
+                  {rows.map((z, index) => (
                     <tr key={z.id} className="border-b border-slate-100 align-top hover:bg-slate-50/80">
-                      <td className="px-4 py-3 text-slate-500">{z.sortOrder}</td>
+                      <td className="px-4 py-3 tabular-nums font-semibold text-slate-900">{offset + index + 1}</td>
                       <td className="px-4 py-3">
                         <p className="font-semibold text-slate-900">{z.trialPlace}</p>
-                        <a
-                          href={z.navigationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-0.5 inline-block max-w-[200px] truncate text-[11px] font-medium text-[#1B365D] underline hover:text-orange-700"
-                          title={z.navigationUrl}
-                        >
-                          Maps link
-                        </a>
+                        {z.navigationUrl ? (
+                          <a
+                            href={z.navigationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-0.5 inline-block max-w-[200px] truncate text-[11px] font-medium text-[#1B365D] underline hover:text-orange-700"
+                            title={z.navigationUrl}
+                          >
+                            Maps link
+                          </a>
+                        ) : (
+                          <p className="mt-0.5 text-[11px] text-slate-400">No maps link</p>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-orange-800 ring-1 ring-orange-200">
@@ -465,7 +490,11 @@ export function AdminTrialZonesManager() {
                         <p className="line-clamp-3 whitespace-pre-wrap text-xs leading-relaxed">{z.address}</p>
                       </td>
                       <td className="max-w-[180px] px-4 py-3 text-slate-700">
-                        <p className="line-clamp-3 whitespace-pre-wrap text-xs leading-relaxed">{z.contactDetails}</p>
+                        {z.contactDetails ? (
+                          <p className="line-clamp-3 whitespace-pre-wrap text-xs leading-relaxed">{z.contactDetails}</p>
+                        ) : (
+                          <p className="text-xs text-slate-400">—</p>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {z.published ? (

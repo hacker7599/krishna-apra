@@ -88,27 +88,31 @@ export const bannerPatchSchema = z.object({
 
 const mapsUrlMessage = "Navigation link must be a Google Maps URL (https://maps.google.com, maps.app.goo.gl, goo.gl, …).";
 
-const navigationUrl = z
-  .string()
-  .trim()
-  .min(8)
-  .max(2000)
-  .refine((s) => isSafeGoogleMapsUrl(s), { message: mapsUrlMessage });
-
-const navigationUrlOptionalPatch = z
-  .string()
-  .trim()
-  .min(8)
-  .max(2000)
+const optionalNavigationUrl = z
+  .union([z.string(), z.null()])
   .optional()
-  .refine((s) => s === undefined || isSafeGoogleMapsUrl(s), { message: mapsUrlMessage });
+  .transform((v) => {
+    if (v == null || v === undefined) return null;
+    const t = v.trim();
+    return t === "" ? null : t;
+  })
+  .refine((s) => s === null || isSafeGoogleMapsUrl(s), { message: mapsUrlMessage });
+
+const optionalContactDetails = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v == null || v === undefined) return null;
+    const t = v.trim();
+    return t === "" ? null : t;
+  });
 
 export const trialZoneCreateSchema = z.object({
   trialPlace: z.string().trim().min(1).max(160),
   zone: z.string().trim().min(1).max(120),
   address: z.string().trim().min(1).max(800),
-  navigationUrl: navigationUrl,
-  contactDetails: z.string().trim().min(1).max(600),
+  navigationUrl: optionalNavigationUrl,
+  contactDetails: optionalContactDetails,
   sortOrder: z.number().int().optional(),
   published: z.boolean().optional().default(true),
 });
@@ -117,8 +121,8 @@ export const trialZonePatchSchema = z.object({
   trialPlace: z.string().trim().min(1).max(160).optional(),
   zone: z.string().trim().min(1).max(120).optional(),
   address: z.string().trim().min(1).max(800).optional(),
-  navigationUrl: navigationUrlOptionalPatch,
-  contactDetails: z.string().trim().min(1).max(600).optional(),
+  navigationUrl: optionalNavigationUrl.optional(),
+  contactDetails: optionalContactDetails.optional(),
   sortOrder: z.number().int().optional(),
   published: z.boolean().optional(),
 });

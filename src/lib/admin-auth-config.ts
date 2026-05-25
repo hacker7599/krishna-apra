@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "crypto";
-import { decodeHashB64, hasAdminCredentialsFile, readAdminCredentialsFile } from "@/lib/admin-credentials-store";
+import { decodeHashB64, readAdminCredentialsFile } from "@/lib/admin-credentials-store";
 
 /** Reads bcrypt hash from data/admin-credentials.json first, then ADMIN_PASSWORD_HASH_B64 / ADMIN_PASSWORD_HASH. */
 export async function getAdminPasswordHash(): Promise<string | undefined> {

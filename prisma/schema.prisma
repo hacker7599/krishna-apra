@@ -124,6 +124,7 @@ model Registration {
   shoeSize              String?
   idDocumentType        String?
   idProofPath           String?
+  playerPhotoPath       String?
   paymentProofPath      String?
   transactionRef        String?
   achievementsAndAwards String?
@@ -167,8 +168,8 @@ model TrialZone {
   trialPlace     String
   zone           String
   address        String
-  navigationUrl  String
-  contactDetails String
+  navigationUrl  String?
+  contactDetails String?
   sortOrder      Int            @default(0)
   published      Boolean        @default(true)
   registrations  Registration[]

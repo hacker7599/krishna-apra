@@ -3,6 +3,7 @@ import Link from "next/link";
 import { COPYRIGHT_HOLDER, LEGAL_ENTITY } from "@/lib/site-legal";
 import { TitleSponsorMark } from "@/components/title-sponsor-mark";
 import { LEAGUE_LOGO_SRC } from "@/lib/branding";
+import { SocialMediaLinks } from "@/components/social-media-links";
 import { LEAGUE_NAME, REGION, TAGLINE, VENUE } from "@/lib/league";
 
 const legalLinks = [
@@ -55,6 +56,10 @@ export function SiteFooter() {
             </div>
             <p className="prose-league-muted mt-4 max-w-xs text-sm">{TAGLINE}</p>
             <TitleSponsorMark size="sm" align="start" className="mt-4" />
+            <div className="mt-5">
+              <p className="eyebrow">Follow us</p>
+              <SocialMediaLinks className="mt-3" />
+            </div>
           </div>
 
           <LinkColumn title="Explore" links={exploreLinks} />

@@ -7,6 +7,7 @@ const PHONE_RE = /^[0-9]{10}$/;
 const MAX_ID_BYTES = 4 * 1024 * 1024;
 const ID_ACCEPT = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const PAYMENT_PROOF_ACCEPT = ["image/jpeg", "image/png", "image/webp"];
+const PLAYER_PHOTO_ACCEPT = ["image/jpeg", "image/png", "image/webp"];
 
 export type RegistrationFormValues = {
   academyName: string;
@@ -19,6 +20,7 @@ export type RegistrationFormValues = {
   jerseySize: string;
   shoeSize: string;
   idDocumentType: string;
+  playerPhoto: File | null;
   idProof: File | null;
   paymentProof: File | null;
   transactionRef: string;
@@ -113,6 +115,9 @@ export function validateRegistrationForm(values: RegistrationFormValues): Record
     errors.idDocumentType = "Select ID document type.";
   }
 
+  const photoErr = validateFile(values.playerPhoto, false, "Player photo", PLAYER_PHOTO_ACCEPT);
+  if (photoErr) errors.playerPhoto = photoErr;
+
   const idErr = validateFile(values.idProof, true, "ID proof", ID_ACCEPT);
   if (idErr) errors.idProof = idErr;
 
@@ -131,6 +136,7 @@ export function validateRegistrationForm(values: RegistrationFormValues): Record
 
 export function readRegistrationFormValues(form: HTMLFormElement, roles: Set<RoleId>): RegistrationFormValues {
   const fd = new FormData(form);
+  const photoFile = fd.get("playerPhoto");
   const idFile = fd.get("idProof");
   const payFile = fd.get("paymentProof");
 
@@ -145,6 +151,7 @@ export function readRegistrationFormValues(form: HTMLFormElement, roles: Set<Rol
     jerseySize: String(fd.get("jerseySize") ?? ""),
     shoeSize: String(fd.get("shoeSize") ?? ""),
     idDocumentType: String(fd.get("idDocumentType") ?? ""),
+    playerPhoto: photoFile instanceof File && photoFile.size > 0 ? photoFile : null,
     idProof: idFile instanceof File && idFile.size > 0 ? idFile : null,
     paymentProof: payFile instanceof File && payFile.size > 0 ? payFile : null,
     transactionRef: String(fd.get("transactionRef") ?? ""),
@@ -158,6 +165,7 @@ export function firstRegistrationFormError(errors: Record<string, string>): stri
   const order = [
     "academyName",
     "playerName",
+    "playerPhoto",
     "fatherName",
     "address",
     "dateOfBirth",

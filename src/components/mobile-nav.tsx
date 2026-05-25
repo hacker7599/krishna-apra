@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-
 const links = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
@@ -16,11 +14,6 @@ const links = [
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -57,24 +50,21 @@ export function MobileNav() {
             aria-label="Mobile"
           >
             <ul className="space-y-1">
-              {links.map((l) => {
-                const active = pathname === l.href || (l.href !== "/" && pathname.startsWith(l.href));
-                return (
-                  <li key={l.href}>
-                    <Link
-                      href={l.href}
-                      className={`flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold ${
-                        active ? "bg-orange-50 text-orange-800" : "text-slate-800 hover:bg-slate-50"
-                      }`}
-                    >
-                      {l.label}
-                    </Link>
-                  </li>
-                );
-              })}
+              {links.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    onClick={() => setOpen(false)}
+                    className="flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
             <Link
               href="/register"
+              onClick={() => setOpen(false)}
               className="mt-3 flex min-h-11 w-full items-center justify-center rounded-lg bg-orange-600 text-sm font-bold uppercase tracking-wide text-white"
             >
               Register

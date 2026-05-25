@@ -1,5 +1,5 @@
 import { LEGAL_ENTITY } from "@/lib/site-legal";
-import { LEAGUE_NAME, PLAYER_AGE_CUTOFF_DATE, TRIAL_FEE_INR } from "@/lib/league";
+import { PLAYER_AGE_CUTOFF_DATE, TRIAL_FEE_INR } from "@/lib/league";
 
 export const LEGAL_LAST_UPDATED = "19 May 2026";
 

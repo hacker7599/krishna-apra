@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PlayerRolePicker } from "@/components/player-role-picker";
+import { RegisterFormField, RegisterFormSection, registerInputClass } from "@/components/register-form-ui";
+import { TrialVenuePicker } from "@/components/trial-venue-picker";
 import {
   FORMAT,
   PLAYER_AGE_CUTOFF_DATE,
@@ -13,7 +15,6 @@ import {
 } from "@/lib/league";
 import type { RoleId } from "@/lib/league";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
-import { trialZoneSelectLabel } from "@/lib/trial-zone-options";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 import {
   digitsOnlyPhoneInput,
@@ -23,23 +24,7 @@ import {
 } from "@/lib/registration-form-validation";
 import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
 import { openRazorpayCheckout } from "@/lib/open-razorpay-checkout";
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return (
-    <p className="mt-1.5 text-xs font-semibold text-rose-700" role="alert">
-      {message}
-    </p>
-  );
-}
-
-function fieldInputClass(hasError: boolean) {
-  return `w-full rounded-lg border bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
-    hasError
-      ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/25"
-      : "border-slate-300 focus:border-orange-500 focus:ring-orange-500/20"
-  }`;
-}
+import { humanErrorFromResponse, humanErrorMessage } from "@/lib/human-errors";
 
 function cutoffNote() {
   const [y, m, d] = PLAYER_AGE_CUTOFF_DATE.split("-").map(Number);
@@ -63,6 +48,7 @@ export function RegisterForm({ trialZones }: Props) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [roles, setRoles] = useState<Set<RoleId>>(() => new Set());
+  const [trialZoneId, setTrialZoneId] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "paying" | "ok" | "err">("idle");
   const [message, setMessage] = useState("");
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
@@ -109,10 +95,13 @@ export function RegisterForm({ trialZones }: Props) {
     });
     const data = await res.json().catch(() => ({}));
     if (res.status === 409) {
-      return typeof data.error === "string" ? data.error : "This email or mobile is already registered.";
+      return humanErrorFromResponse(
+        data,
+        "This email or mobile number is already registered. Use a different contact or check your registration status.",
+      );
     }
     if (!res.ok) {
-      return typeof data.error === "string" ? data.error : "Could not verify your details. Please try again.";
+      return humanErrorFromResponse(data, "We could not verify your details right now. Please try again in a moment.");
     }
     return null;
   }
@@ -123,9 +112,11 @@ export function RegisterForm({ trialZones }: Props) {
     if (!res.ok) {
       setStatus("err");
       if (res.status === 429 && typeof data.retryAfterSec === "number") {
-        setMessage(`Too many attempts. Please try again in ${data.retryAfterSec}s.`);
+        setMessage(`Too many attempts. Please wait ${data.retryAfterSec} seconds and try again.`);
       } else {
-        setMessage(typeof data.error === "string" ? data.error : "Something went wrong.");
+        setMessage(
+          humanErrorFromResponse(data, "We could not save your registration. Please try again or contact the league desk."),
+        );
       }
       return false;
     }
@@ -137,6 +128,7 @@ export function RegisterForm({ trialZones }: Props) {
     setMessage("Registration received. Our team will contact you with trial details.");
     formRef.current?.reset();
     setRoles(new Set());
+    setTrialZoneId("");
     setAcceptedTerms(false);
     return true;
   }
@@ -145,7 +137,7 @@ export function RegisterForm({ trialZones }: Props) {
     e.preventDefault();
     if (roles.size === 0) {
       setStatus("err");
-      setMessage("Select at least one player role.");
+      setMessage("Please select at least one playing role (batter, bowler, all-rounder, or wicketkeeper).");
       return;
     }
     if (razorpayEnabled && !acceptedTerms) {
@@ -161,13 +153,16 @@ export function RegisterForm({ trialZones }: Props) {
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       setStatus("err");
-      setMessage(firstRegistrationFormError(errors) ?? "Please fix the highlighted fields.");
+      setMessage(
+        firstRegistrationFormError(errors) ?? "Please check the form — some required fields are missing or incorrect.",
+      );
       const firstKey = Object.keys(errors)[0];
       const el =
         firstKey === "roles"
-          ? form.querySelector("fieldset")
-          : form.querySelector<HTMLElement>(`[name="${firstKey}"]`);
-      el?.focus();
+          ? form.querySelector("[role='group']")
+          : firstKey === "trialZoneId"
+            ? form.querySelector(".trial-venue-picker")
+            : form.querySelector<HTMLElement>(`[name="${firstKey}"]`);
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
@@ -176,6 +171,7 @@ export function RegisterForm({ trialZones }: Props) {
 
     const fd = new FormData(form);
     fd.set("roles", rolesJson);
+    fd.set("trialZoneId", trialZoneId);
     fd.set("phone", digitsOnlyPhoneInput(values.phone));
     fd.set("email", values.email.trim().toLowerCase());
 
@@ -194,7 +190,7 @@ export function RegisterForm({ trialZones }: Props) {
         await submitRegistration(fd);
       } catch {
         setStatus("err");
-        setMessage("Network error. Please try again.");
+        setMessage("Your internet connection may be down. Check your network and submit again.");
       }
       return;
     }
@@ -213,7 +209,9 @@ export function RegisterForm({ trialZones }: Props) {
       const orderData = await orderRes.json().catch(() => ({}));
       if (!orderRes.ok) {
         setStatus("err");
-        setMessage(typeof orderData.error === "string" ? orderData.error : "Could not start payment.");
+        setMessage(
+          humanErrorFromResponse(orderData, "We could not start the payment step. Please try again or contact the league desk."),
+        );
         return;
       }
 
@@ -247,7 +245,12 @@ export function RegisterForm({ trialZones }: Props) {
         return;
       }
       setStatus("err");
-      setMessage(err instanceof Error ? err.message : "Payment could not be completed. Please try again.");
+      setMessage(
+        humanErrorMessage(
+          err instanceof Error ? err.message : undefined,
+          "Payment could not be completed. Please try again or use another payment method.",
+        ),
+      );
     }
   }
 
@@ -260,350 +263,340 @@ export function RegisterForm({ trialZones }: Props) {
           ? `Pay ₹${TRIAL_FEE_INR.toLocaleString("en-IN")} & submit`
           : "Submit registration";
 
+  const fileInputClass = (hasError: boolean) =>
+    `register-form-file-input${hasError ? " register-form-file-input--error" : ""}`;
+
   return (
-    <form ref={formRef} onSubmit={onSubmit} className="card-elevated w-full space-y-8 rounded-2xl p-6 sm:p-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <form ref={formRef} onSubmit={onSubmit} className="register-form-shell w-full">
+      <div className="register-form-shell__bar">
         <div>
-          <h1 className="font-[family-name:var(--font-barlow)] text-3xl font-bold italic tracking-tight text-slate-900 sm:text-4xl">
-            Trial registration
-          </h1>
-          <p className="mt-1 text-sm font-semibold text-slate-700">
-            {FORMAT.category} · {FORMAT.overs}-over T20 · {FORMAT.teams} teams · Outer Delhi Warriors initiative
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Official trial registration</p>
+          <p className="mt-0.5 text-sm font-semibold text-slate-800">
+            {FORMAT.category} · {FORMAT.overs}-over T20 · {FORMAT.teams} franchises
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Trial fee</p>
-          <p className="font-[family-name:var(--font-bebas)] text-3xl text-slate-900">₹{TRIAL_FEE_INR.toLocaleString("en-IN")}</p>
-          <p className="mt-1 text-[11px] font-semibold text-slate-600">Includes jersey (per printed form)</p>
+        <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 text-right">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-orange-800">Trial fee</p>
+          <p className="font-[family-name:var(--font-bebas)] text-3xl leading-none text-slate-900">₹{TRIAL_FEE_INR.toLocaleString("en-IN")}</p>
+          <p className="text-[10px] font-semibold text-slate-600">Includes jersey</p>
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Name of the academy / club</span>
-          <input
-            name="academyName"
-            required
-            minLength={2}
-            maxLength={200}
-            autoComplete="organization"
-            className={fieldInputClass(!!fieldErrors.academyName)}
-            placeholder="e.g. Delhi Cricket Academy"
-            onInput={() => clearFieldError("academyName")}
-          />
-          <FieldError message={fieldErrors.academyName} />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Name of the player</span>
-          <input
-            name="playerName"
-            required
-            minLength={2}
-            maxLength={120}
-            autoComplete="name"
-            className={fieldInputClass(!!fieldErrors.playerName)}
-            placeholder="Full name as on ID"
-            onInput={() => clearFieldError("playerName")}
-          />
-          <FieldError message={fieldErrors.playerName} />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Father / guardian name</span>
-          <input
-            name="fatherName"
-            required
-            minLength={2}
-            maxLength={120}
-            autoComplete="name"
-            className={fieldInputClass(!!fieldErrors.fatherName)}
-            placeholder="As on government ID where applicable"
-            onInput={() => clearFieldError("fatherName")}
-          />
-          <FieldError message={fieldErrors.fatherName} />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Address</span>
-          <textarea
-            name="address"
-            required
-            minLength={10}
-            maxLength={600}
-            rows={3}
-            autoComplete="street-address"
-            className={fieldInputClass(!!fieldErrors.address)}
-            placeholder="Full postal address for correspondence"
-            onInput={() => clearFieldError("address")}
-          />
-          <FieldError message={fieldErrors.address} />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Player date of birth</span>
-          <input
-            name="dateOfBirth"
-            type="date"
-            required
-            min={PLAYER_AGE_MIN_BIRTH_DATE}
-            max={playerDateOfBirthMaxIso()}
-            className={fieldInputClass(!!fieldErrors.dateOfBirth)}
-            onChange={() => clearFieldError("dateOfBirth")}
-          />
-          <FieldError message={fieldErrors.dateOfBirth} />
-          <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-600">
-            Age cut-off per trial form: players must be born <span className="font-bold text-slate-900">after {cutoffNote()}</span> (any later year is
-            allowed). Dates on or before that day are not accepted.
-            Accepted age proof: Aadhaar, passport (3-year validity), or birth certificate — upload one below.
-          </p>
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Contact number</span>
-          <input
-            name="phone"
-            required
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            pattern="[0-9]{10}"
-            minLength={10}
-            maxLength={10}
-            title="Enter 10 digits only (no letters or spaces)"
-            className={fieldInputClass(!!fieldErrors.phone)}
-            placeholder="10-digit mobile"
-            onInput={(e) => {
-              e.currentTarget.value = digitsOnlyPhoneInput(e.currentTarget.value);
-              clearFieldError("phone");
+      <div className="register-form-shell__body space-y-0">
+        <RegisterFormSection number="1" title="Academy & player" description="Details as they appear on your academy records and government ID.">
+          <div className="register-form-grid register-form-grid--2">
+            <RegisterFormField label="Academy / club name" error={fieldErrors.academyName} className="register-form-field--wide">
+              <input
+                name="academyName"
+                required
+                minLength={2}
+                maxLength={200}
+                autoComplete="organization"
+                className={registerInputClass(!!fieldErrors.academyName)}
+                placeholder="e.g. Delhi Cricket Academy"
+                onInput={() => clearFieldError("academyName")}
+              />
+            </RegisterFormField>
+            <RegisterFormField label="Player full name" error={fieldErrors.playerName} className="register-form-field--wide">
+              <input
+                name="playerName"
+                required
+                minLength={2}
+                maxLength={120}
+                autoComplete="name"
+                className={registerInputClass(!!fieldErrors.playerName)}
+                placeholder="As on ID"
+                onInput={() => clearFieldError("playerName")}
+              />
+            </RegisterFormField>
+            <RegisterFormField label="Player photo" optional error={fieldErrors.playerPhoto} className="register-form-field--wide">
+              <input
+                name="playerPhoto"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className={fileInputClass(!!fieldErrors.playerPhoto)}
+                onChange={() => clearFieldError("playerPhoto")}
+              />
+              <ImageUploadSizeHint specKey="registrationPlayerPhoto" className="register-form-field__hint !mt-2" />
+            </RegisterFormField>
+            <RegisterFormField label="Father / guardian name" error={fieldErrors.fatherName} className="register-form-field--wide">
+              <input
+                name="fatherName"
+                required
+                minLength={2}
+                maxLength={120}
+                autoComplete="name"
+                className={registerInputClass(!!fieldErrors.fatherName)}
+                onInput={() => clearFieldError("fatherName")}
+              />
+            </RegisterFormField>
+            <RegisterFormField label="Full address" error={fieldErrors.address} className="register-form-field--wide">
+              <textarea
+                name="address"
+                required
+                minLength={10}
+                maxLength={600}
+                rows={3}
+                autoComplete="street-address"
+                className={registerInputClass(!!fieldErrors.address)}
+                placeholder="Postal address for correspondence"
+                onInput={() => clearFieldError("address")}
+              />
+            </RegisterFormField>
+          </div>
+        </RegisterFormSection>
+
+        <RegisterFormSection number="2" title="Contact & eligibility" description="We use these details for trial confirmation and duplicate checks.">
+          <div className="register-form-grid register-form-grid--2">
+            <RegisterFormField
+              label="Date of birth"
+              error={fieldErrors.dateOfBirth}
+              hint={`Must be born after ${cutoffNote()}. Upload age proof in section 6.`}
+            >
+              <input
+                name="dateOfBirth"
+                type="date"
+                required
+                min={PLAYER_AGE_MIN_BIRTH_DATE}
+                max={playerDateOfBirthMaxIso()}
+                className={registerInputClass(!!fieldErrors.dateOfBirth)}
+                onChange={() => clearFieldError("dateOfBirth")}
+              />
+            </RegisterFormField>
+            <RegisterFormField label="Mobile (10 digits)" error={fieldErrors.phone}>
+              <input
+                name="phone"
+                required
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                pattern="[0-9]{10}"
+                minLength={10}
+                maxLength={10}
+                title="10 digits only"
+                className={registerInputClass(!!fieldErrors.phone)}
+                placeholder="9876543210"
+                onInput={(e) => {
+                  e.currentTarget.value = digitsOnlyPhoneInput(e.currentTarget.value);
+                  clearFieldError("phone");
+                }}
+                onKeyDown={(e) => {
+                  if (e.ctrlKey || e.metaKey) return;
+                  const allowed = ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"];
+                  if (allowed.includes(e.key)) return;
+                  if (e.key.length === 1 && !/[0-9]/.test(e.key)) e.preventDefault();
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.value = digitsOnlyPhoneInput(e.clipboardData.getData("text"));
+                  clearFieldError("phone");
+                }}
+              />
+            </RegisterFormField>
+            <RegisterFormField label="Email" error={fieldErrors.email} className="register-form-field--wide">
+              <input
+                name="email"
+                type="email"
+                required
+                maxLength={200}
+                autoComplete="email"
+                className={registerInputClass(!!fieldErrors.email)}
+                placeholder="you@example.com"
+                onInput={() => clearFieldError("email")}
+              />
+            </RegisterFormField>
+          </div>
+        </RegisterFormSection>
+
+        <RegisterFormSection number="3" title="Kit sizing">
+          <div className="register-form-grid register-form-grid--2">
+            <RegisterFormField label="Jersey (t-shirt) size" error={fieldErrors.jerseySize}>
+              <select
+                name="jerseySize"
+                required
+                className={registerInputClass(!!fieldErrors.jerseySize)}
+                defaultValue=""
+                onChange={() => clearFieldError("jerseySize")}
+              >
+                <option value="" disabled>
+                  Select size
+                </option>
+                {JERSEY_SIZES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </RegisterFormField>
+            <RegisterFormField label="Shoe size" error={fieldErrors.shoeSize}>
+              <input
+                name="shoeSize"
+                required
+                maxLength={24}
+                className={registerInputClass(!!fieldErrors.shoeSize)}
+                placeholder="e.g. UK 5 / EU 38"
+                onInput={() => clearFieldError("shoeSize")}
+              />
+            </RegisterFormField>
+          </div>
+        </RegisterFormSection>
+
+        <RegisterFormSection number="4" title="Player details" description="Match the official paper form — batter, bowler, all-rounder, wicketkeeper.">
+          <PlayerRolePicker roles={roles} onChange={setRolesSelection} hasError={!!fieldErrors.roles} />
+          {fieldErrors.roles ? (
+            <p className="register-form-field__error !mt-0" role="alert">
+              {fieldErrors.roles}
+            </p>
+          ) : roles.size === 0 ? (
+            <p className="register-form-field__hint !mt-0">Select at least one role.</p>
+          ) : null}
+        </RegisterFormSection>
+
+        <RegisterFormSection number="5" title="Trial venue" description="Choose where you plan to attend trials.">
+          <TrialVenuePicker
+            trialZones={trialZones}
+            value={trialZoneId}
+            onChange={(id) => {
+              setTrialZoneId(id);
+              clearFieldError("trialZoneId");
             }}
-            onKeyDown={(e) => {
-              if (e.ctrlKey || e.metaKey) return;
-              const allowed = ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"];
-              if (allowed.includes(e.key)) return;
-              if (e.key.length === 1 && !/[0-9]/.test(e.key)) e.preventDefault();
-            }}
-            onPaste={(e) => {
-              e.preventDefault();
-              const pasted = e.clipboardData.getData("text");
-              e.currentTarget.value = digitsOnlyPhoneInput(pasted);
-              clearFieldError("phone");
-            }}
+            hasError={!!fieldErrors.trialZoneId}
           />
-          <FieldError message={fieldErrors.phone} />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Email</span>
-          <input
-            name="email"
-            type="email"
-            required
-            maxLength={200}
-            autoComplete="email"
-            className={fieldInputClass(!!fieldErrors.email)}
-            placeholder="you@example.com"
-            onInput={() => clearFieldError("email")}
-          />
-          <FieldError message={fieldErrors.email} />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Jersey (t-shirt) size</span>
-          <select
-            name="jerseySize"
-            required
-            className={fieldInputClass(!!fieldErrors.jerseySize)}
-            defaultValue=""
-            onChange={() => clearFieldError("jerseySize")}
-          >
-            <option value="" disabled>
-              Select size
-            </option>
-            {JERSEY_SIZES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <FieldError message={fieldErrors.jerseySize} />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Shoe size</span>
-          <input
-            name="shoeSize"
-            required
-            maxLength={24}
-            className={fieldInputClass(!!fieldErrors.shoeSize)}
-            placeholder="e.g. UK 5 / EU 38"
-            onInput={() => clearFieldError("shoeSize")}
-          />
-          <FieldError message={fieldErrors.shoeSize} />
-        </label>
-      </div>
+          {fieldErrors.trialZoneId ? (
+            <p className="register-form-field__error" role="alert">
+              {fieldErrors.trialZoneId}
+            </p>
+          ) : null}
+        </RegisterFormSection>
 
-      <PlayerRolePicker roles={roles} onChange={setRolesSelection} hasError={!!fieldErrors.roles} />
-      <FieldError message={fieldErrors.roles} />
-      {roles.size === 0 && !fieldErrors.roles ? (
-        <p className="-mt-2 text-sm font-semibold text-slate-700">Select at least one role.</p>
-      ) : null}
-
-      <label className="block">
-        <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Preferred trial zone</span>
-        <select
-          name="trialZoneId"
-          required
-          defaultValue=""
-          disabled={trialZones.length === 0}
-          className={fieldInputClass(!!fieldErrors.trialZoneId)}
-          onChange={() => clearFieldError("trialZoneId")}
-        >
-          <option value="" disabled>
-            {trialZones.length === 0 ? "No trial zones available — contact the league desk" : "Select trial zone"}
-          </option>
-          {trialZones.map((z) => (
-            <option key={z.id} value={z.id}>
-              {trialZoneSelectLabel(z)}
-            </option>
-          ))}
-        </select>
-        <FieldError message={fieldErrors.trialZoneId} />
-        <p className="mt-1.5 text-xs font-medium text-slate-600">Choose where you plan to attend trials. Venues are managed by the league and shown on the Trials page.</p>
-      </label>
-
-      <label className="block">
-        <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">
-          Achievements &amp; awards <span className="font-semibold normal-case text-slate-500">(optional)</span>
-        </span>
-        <textarea
-          name="achievementsAndAwards"
-          rows={4}
-          maxLength={2000}
-          className={fieldInputClass(!!fieldErrors.achievementsAndAwards)}
-          placeholder="e.g. District U-14 best batter 2024, school tournament MVP, academy player of the year…"
-          onInput={() => clearFieldError("achievementsAndAwards")}
-        />
-        <FieldError message={fieldErrors.achievementsAndAwards} />
-        <p className="mt-1.5 text-xs font-medium text-slate-600">List cricket honours, selections, and awards — helps scouts review your profile.</p>
-      </label>
-
-      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4">
-        <p className="text-sm font-bold text-slate-900">Government ID proof (required)</p>
-        <p className="mt-1 text-sm font-medium leading-relaxed text-slate-700">
-          Upload a clear scan or photo of one document: Aadhaar card, passport (minimum 3-year validity), or birth certificate.
-        </p>
-        <label className="mt-4 block max-w-md">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Document type</span>
-          <select
-            name="idDocumentType"
-            required
-            className={fieldInputClass(!!fieldErrors.idDocumentType)}
-            defaultValue=""
-            onChange={() => clearFieldError("idDocumentType")}
-          >
-            <option value="" disabled>
-              Select document
-            </option>
-            {ID_DOCUMENT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {ID_DOCUMENT_LABELS[t]}
-              </option>
-            ))}
-          </select>
-          <FieldError message={fieldErrors.idDocumentType} />
-        </label>
-        <label className="mt-3 block max-w-md">
-          <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Upload ID proof</span>
-          <input
-            name="idProof"
-            type="file"
-            required
-            accept="image/jpeg,image/png,image/webp,application/pdf"
-            className={`w-full text-sm font-medium text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white ${
-              fieldErrors.idProof ? "rounded-lg ring-2 ring-rose-500/40" : ""
-            }`}
-            onChange={() => clearFieldError("idProof")}
-          />
-          <ImageUploadSizeHint specKey="registrationIdScan" />
-          <FieldError message={fieldErrors.idProof} />
-        </label>
-      </div>
-
-      {razorpayEnabled ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
-          <p className="text-sm font-bold text-slate-900">Online payment (Razorpay)</p>
-          <p className="mt-1 text-sm font-medium leading-relaxed text-slate-700">
-            When you submit, you will pay the trial fee of ₹{TRIAL_FEE_INR.toLocaleString("en-IN")} securely via Razorpay (UPI, cards, netbanking).
-            Registration is saved only after successful payment.
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-bold text-slate-900">Payment</p>
-          <p className="mt-1 text-sm font-medium leading-relaxed text-slate-700">
-            Pay the trial fee via your club coordinator or the official UPI / QR from the league desk. You may add a transaction reference and upload
-            proof (screenshot) for faster verification.
-          </p>
-          <label className="mt-4 block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Transaction reference (optional)</span>
-            <input
-              name="transactionRef"
-              maxLength={120}
-              className={fieldInputClass(!!fieldErrors.transactionRef)}
-              placeholder="UPI ref / bank ref"
-              onInput={() => clearFieldError("transactionRef")}
+        <RegisterFormSection number="6" title="Achievements" description="Optional — helps scouts review your profile.">
+          <RegisterFormField label="Achievements & awards" optional error={fieldErrors.achievementsAndAwards}>
+            <textarea
+              name="achievementsAndAwards"
+              rows={4}
+              maxLength={2000}
+              className={registerInputClass(!!fieldErrors.achievementsAndAwards)}
+              placeholder="District selections, tournament awards, academy honours…"
+              onInput={() => clearFieldError("achievementsAndAwards")}
             />
-            <FieldError message={fieldErrors.transactionRef} />
-          </label>
-          <label className="mt-3 block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-900">Payment proof (optional)</span>
-            <input
-              name="paymentProof"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className={`w-full text-sm font-medium text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white ${
-                fieldErrors.paymentProof ? "rounded-lg ring-2 ring-rose-500/40" : ""
-              }`}
-              onChange={() => clearFieldError("paymentProof")}
-            />
-            <ImageUploadSizeHint specKey="registrationPaymentProof" />
-            <FieldError message={fieldErrors.paymentProof} />
-          </label>
+          </RegisterFormField>
+        </RegisterFormSection>
+
+        <RegisterFormSection number="7" title="Age proof (required)" description="Upload a clear scan or photo of one government ID.">
+          <div className="register-form-callout register-form-callout--amber">
+            <p className="register-form-callout__title">Accepted documents</p>
+            <p className="register-form-callout__text">Aadhaar card, passport (minimum 3-year validity), or birth certificate.</p>
+          </div>
+          <div className="register-form-grid register-form-grid--2">
+            <RegisterFormField label="Document type" error={fieldErrors.idDocumentType}>
+              <select
+                name="idDocumentType"
+                required
+                className={registerInputClass(!!fieldErrors.idDocumentType)}
+                defaultValue=""
+                onChange={() => clearFieldError("idDocumentType")}
+              >
+                <option value="" disabled>
+                  Select document
+                </option>
+                {ID_DOCUMENT_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {ID_DOCUMENT_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+            </RegisterFormField>
+            <RegisterFormField label="Upload ID proof" error={fieldErrors.idProof}>
+              <input
+                name="idProof"
+                type="file"
+                required
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                className={fileInputClass(!!fieldErrors.idProof)}
+                onChange={() => clearFieldError("idProof")}
+              />
+              <ImageUploadSizeHint specKey="registrationIdScan" className="register-form-field__hint !mt-2" />
+            </RegisterFormField>
+          </div>
+        </RegisterFormSection>
+
+        <RegisterFormSection number="8" title="Payment">
+          <div className="register-form-payment-block">
+            {razorpayEnabled ? (
+              <div className="register-form-callout register-form-callout--emerald">
+                <p className="register-form-callout__title">Online payment (Razorpay)</p>
+                <p className="register-form-callout__text">
+                  Pay ₹{TRIAL_FEE_INR.toLocaleString("en-IN")} securely via UPI, cards, or netbanking. Registration is saved only after successful payment.
+                </p>
+              </div>
+            ) : (
+              <div className="register-form-callout register-form-callout--slate">
+                <p className="register-form-callout__title">Manual / offline payment</p>
+                <p className="register-form-callout__text">
+                  Pay via your club coordinator or league desk UPI. Add a transaction reference and upload proof for faster verification.
+                </p>
+                <div className="mt-4 register-form-grid register-form-grid--2">
+                  <RegisterFormField label="Transaction reference" optional error={fieldErrors.transactionRef}>
+                    <input
+                      name="transactionRef"
+                      maxLength={120}
+                      className={registerInputClass(!!fieldErrors.transactionRef)}
+                      placeholder="UPI / bank reference"
+                      onInput={() => clearFieldError("transactionRef")}
+                    />
+                  </RegisterFormField>
+                  <RegisterFormField label="Payment proof" optional error={fieldErrors.paymentProof}>
+                    <input
+                      name="paymentProof"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className={fileInputClass(!!fieldErrors.paymentProof)}
+                      onChange={() => clearFieldError("paymentProof")}
+                    />
+                    <ImageUploadSizeHint specKey="registrationPaymentProof" className="register-form-field__hint !mt-2" />
+                  </RegisterFormField>
+                </div>
+              </div>
+            )}
+
+            {razorpayEnabled ? (
+              <label className="register-form-terms">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="register-form-terms__input"
+                />
+                <span className="register-form-terms__text">
+                  I agree to the{" "}
+                  <Link href="/terms" className="font-bold text-orange-600 underline hover:text-orange-700" target="_blank">
+                    Terms &amp; Conditions
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="font-bold text-orange-600 underline hover:text-orange-700" target="_blank">
+                    Privacy Policy
+                  </Link>
+                  , and authorise payment of the trial registration fee.
+                </span>
+              </label>
+            ) : null}
+          </div>
+        </RegisterFormSection>
+
+        <div className="register-form-actions">
+          {status !== "idle" ? (
+            <div className={`register-form-status ${status === "ok" ? "register-form-status--ok" : "register-form-status--err"}`}>{message}</div>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={status === "loading" || status === "paying" || roles.size === 0 || (razorpayEnabled && !acceptedTerms)}
+            className="register-form-submit"
+          >
+            {submitLabel}
+          </button>
         </div>
-      )}
-
-      {razorpayEnabled && (
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <input
-            type="checkbox"
-            checked={acceptedTerms}
-            onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
-          />
-          <span className="text-sm font-medium leading-relaxed text-slate-700">
-            I agree to the{" "}
-            <Link href="/terms" className="font-bold text-orange-600 underline hover:text-orange-700" target="_blank">
-              Terms &amp; Conditions
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="font-bold text-orange-600 underline hover:text-orange-700" target="_blank">
-              Privacy Policy
-            </Link>
-            , and authorise payment of the trial registration fee.
-          </span>
-        </label>
-      )}
-
-      {status !== "idle" && (
-        <div
-          className={`rounded-lg border px-4 py-3 text-sm font-semibold ${
-            status === "ok" ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-rose-300 bg-rose-50 text-rose-900"
-          }`}
-        >
-          {message}
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={status === "loading" || status === "paying" || roles.size === 0 || (razorpayEnabled && !acceptedTerms)}
-        className="w-full rounded-lg bg-orange-600 py-3.5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {submitLabel}
-      </button>
+      </div>
     </form>
   );
 }

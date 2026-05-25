@@ -5,6 +5,8 @@ import { parseAdminPagination, paginationMeta } from "@/lib/admin-pagination";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireAdminMutation } from "@/lib/require-admin";
 import { trialZoneCreateSchema } from "@/lib/admin-entity-schemas";
+import { revalidatePublicTrialZonePages } from "@/lib/revalidate-public-trial-zones";
+import { renumberTrialZoneSortOrders } from "@/lib/trial-zone-sort";
 
 export const runtime = "nodejs";
 
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
   const [items, total] = await Promise.all([
     prisma.trialZone.findMany({
       where,
-      orderBy: [{ sortOrder: "asc" }, { trialPlace: "asc" }],
+      orderBy: [{ published: "desc" }, { sortOrder: "asc" }, { trialPlace: "asc" }],
       take: limit,
       skip: offset,
     }),
@@ -66,12 +68,15 @@ export async function POST(req: NextRequest) {
       trialPlace: data.trialPlace.trim(),
       zone: data.zone.trim(),
       address: data.address.trim(),
-      navigationUrl: data.navigationUrl.trim(),
-      contactDetails: data.contactDetails.trim(),
+      navigationUrl: data.navigationUrl,
+      contactDetails: data.contactDetails,
       sortOrder,
       published: data.published ?? true,
     },
   });
 
-  return NextResponse.json(row);
+  await renumberTrialZoneSortOrders(prisma);
+  revalidatePublicTrialZonePages();
+  const refreshed = await prisma.trialZone.findUniqueOrThrow({ where: { id: row.id } });
+  return NextResponse.json(refreshed);
 }

@@ -1,8 +1,9 @@
 "use client";
 
+import { PlayerRolePicker } from "@/components/player-role-picker";
 import { PLAYER_AGE_MIN_BIRTH_DATE, playerDateOfBirthMaxIso } from "@/lib/league";
 import type { RoleId } from "@/lib/league";
-import { ROLE_OPTION_GROUPS, toggleRegistrationRole } from "@/lib/registration-roles";
+import { isRoleId } from "@/lib/registration-roles";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
 import { trialZoneSelectLabel } from "@/lib/trial-zone-options";
@@ -58,12 +59,7 @@ type Props = {
 };
 
 export function AdminRegistrationFormFields({ form, setForm, trialZones, disabled }: Props) {
-  function toggleRole(id: RoleId) {
-    setForm((prev) => {
-      const next = toggleRegistrationRole(new Set(prev.roles as RoleId[]), id);
-      return { ...prev, roles: [...next] };
-    });
-  }
+  const roleSet = new Set(form.roles.filter((r): r is RoleId => isRoleId(r)));
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -142,37 +138,13 @@ export function AdminRegistrationFormFields({ form, setForm, trialZones, disable
           className={inputClass}
         />
       </label>
-      <fieldset className="sm:col-span-2">
-        <legend className="mb-2 text-xs font-bold uppercase text-slate-700">Roles</legend>
-        <div className="space-y-3">
-          {ROLE_OPTION_GROUPS.map((group) => (
-            <div key={group.label}>
-              <p className="text-[10px] font-bold uppercase text-slate-600">
-                {group.label}
-                {"hint" in group && group.hint ? ` (${group.hint})` : ""}
-              </p>
-              <div className="mt-1.5 flex flex-wrap gap-2">
-                {group.options.map((r) => {
-                  const on = form.roles.includes(r.id);
-                  return (
-                    <button
-                      key={r.id}
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => toggleRole(r.id)}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-bold uppercase ${
-                        on ? "border-orange-600 bg-orange-600 text-white" : "border-slate-300 bg-white text-slate-800"
-                      }`}
-                    >
-                      {r.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </fieldset>
+      <div className="sm:col-span-2">
+        <PlayerRolePicker
+          roles={roleSet}
+          disabled={disabled}
+          onChange={(next) => setForm((p) => ({ ...p, roles: [...next] }))}
+        />
+      </div>
       <label className="block sm:col-span-2">
         <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Trial zone (optional)</span>
         <select

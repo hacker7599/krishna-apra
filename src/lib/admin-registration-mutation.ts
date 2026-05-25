@@ -70,6 +70,7 @@ export function buildRegistrationCreateData(input: AdminRegistrationCreateInput)
     coachName: input.coachName?.trim() || null,
     paymentStatus: input.paymentStatus ?? "manual",
     idProofPath: null,
+    playerPhotoPath: null,
     paymentProofPath: null,
   };
 }
