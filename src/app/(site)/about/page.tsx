@@ -12,7 +12,7 @@ import { LEAGUE_NAME, TAGLINE } from "@/lib/league";
 export const metadata: Metadata = {
   title: `About us · ${LEAGUE_NAME}`,
   description:
-    "Future Star U-15 Championship — Krishna Apra, Outer Delhi Warriors, and league leadership building grassroots franchise cricket in Delhi NCR.",
+    "Future Star U-15 Championship — Krishna Apra and league leadership building grassroots franchise cricket in Delhi NCR.",
 };
 
 export default function AboutPage() {

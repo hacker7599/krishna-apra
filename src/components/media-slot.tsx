@@ -5,7 +5,7 @@ type Props = {
   src?: string;
   alt: string;
   label: string;
-  /** Shown when empty — e.g. `/home/odw/priyansh.jpg` */
+  /** Shown when empty — e.g. `/home/about/naresh.jpg` */
   suggestedPath?: string;
   aspectClassName?: string;
   className?: string;

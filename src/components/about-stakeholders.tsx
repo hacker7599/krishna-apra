@@ -17,9 +17,8 @@ function StakeholderVisual({
   id: string;
 }) {
   if (logoSrc) {
-    const isLargeLogo = id === "outer-delhi-warriors" || id === "krishna-apra";
-    const logoEyebrow =
-      id === "outer-delhi-warriors" ? "Franchise partner" : id === "krishna-apra" ? "Title sponsor" : "Partner";
+    const isLargeLogo = id === "krishna-apra";
+    const logoEyebrow = id === "krishna-apra" ? "Title sponsor" : "Partner";
     return (
       <div className={`flex w-full flex-col items-center gap-2 ${isLargeLogo ? "max-w-[320px]" : "max-w-[200px]"}`}>
         <span className="eyebrow">{logoEyebrow}</span>
@@ -78,7 +77,7 @@ export function AboutStakeholders() {
       <div className={SITE_CONTAINER_NARROW}>
         <SectionHeader
           title="People & partners behind the league"
-          lead="Future Star U-15 is built through the combined leadership of our title sponsor, league stewards, and the Outer Delhi Warriors franchise initiative."
+          lead="Future Star U-15 is built through the combined leadership of our title sponsor and league stewards across Delhi NCR."
         />
 
         <ul className="mt-12 space-y-12">
@@ -91,7 +90,7 @@ export function AboutStakeholders() {
             >
               <div
                 className={`mx-auto flex shrink-0 justify-center lg:mx-0 lg:justify-start ${
-                  person.logoSrc && (person.id === "outer-delhi-warriors" || person.id === "krishna-apra")
+                  person.logoSrc && person.id === "krishna-apra"
                     ? "w-full max-w-[320px] sm:w-[320px]"
                     : "w-[220px]"
                 }`}

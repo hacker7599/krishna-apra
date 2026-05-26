@@ -50,7 +50,7 @@ export {
 } from "@/lib/registration-roles";
 
 export const TEAMS = [
-  { name: "Outer Delhi Warriors", city: "Outer Delhi", accent: "#22c55e" },
+  { name: "Central Delhi Titans", city: "Central Delhi", accent: "#22c55e" },
   { name: "North Delhi Strikers", city: "North Delhi", accent: "#38bdf8" },
   { name: "South Delhi Royals", city: "South Delhi", accent: "#f472b6" },
   { name: "East Delhi Thunder", city: "East Delhi", accent: "#fbbf24" },

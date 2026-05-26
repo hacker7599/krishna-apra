@@ -2,8 +2,6 @@
 
 export const LEAGUE_LOGO_SRC = "/branding/logo.png";
 export const KRISHNA_APRA_LOGO_SRC = "/branding/krishna-apra.png";
-/** Official Outer Delhi Warriors mark (PNG, transparent where applicable) */
-export const OUTER_DELHI_WARRIORS_LOGO_SRC = "/branding/outer-delhi-warriors.png";
 
 /** Krishna Apra brand palette (from official logo) */
 export const KA_NAVY = "#1B365D";

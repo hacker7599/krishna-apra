@@ -1,5 +1,3 @@
-import { OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
-
 /** Leadership & partners — About page. Order matches published site sequence. */
 
 export type AboutStakeholder = {
@@ -23,17 +21,6 @@ export const ABOUT_PARTNERS: AboutStakeholder[] = [
       "Krishna Apra Group brings an innovative, professional approach to real estate across Delhi NCR. With a legacy of more than 28 years, the group is a trusted name in residential and commercial development — known for quality construction, on-time delivery, and ethical standards in every project.",
       "The group’s track record includes over 20 lakh sq. ft. of delivered residential space and 10 lakh sq. ft. of commercial development, with landmark projects from Krishna Apra Garden and Residency to business and retail destinations across Noida and New Delhi. Krishna Apra has long stood for trust — building communities where families live, work, and grow.",
       "As title sponsor of Future Star U-15 Season 1, Krishna Apra extends that same commitment to youth cricket in Delhi NCR: supporting structured trials, franchise standards, and a pathway where young players compete in a professional, broadcast-ready environment.",
-    ],
-  },
-  {
-    id: "outer-delhi-warriors",
-    name: "Outer Delhi Warriors",
-    role: "DPL franchise · League initiative partner",
-    logoSrc: OUTER_DELHI_WARRIORS_LOGO_SRC,
-    paragraphs: [
-      "Outer Delhi Warriors are a Delhi Premier League (DPL) franchise and the driving initiative behind Future Star U-15. The franchise brings franchise cricket culture — branding, match-day energy, and competitive standards — to the Under-15 age group.",
-      "From trials and team identity to broadcast-style production and the High Performance Camp pathway, Outer Delhi Warriors embed the same values that define their senior franchise: community pride in Outer Delhi, disciplined cricket, and a platform where the region’s best school-age talent is seen and developed.",
-      "The Warriors’ leadership team work with academies across Delhi NCR to fill eight franchises, run structured league and knockout phases, and connect standout players to the next level of training and mentorship.",
     ],
   },
 ];

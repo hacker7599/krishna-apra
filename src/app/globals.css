@@ -1245,13 +1245,20 @@ html.receipt-standalone-page .print-only-hide {
 }
 
 .offline-form-header__logos {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.offline-form-header__brand {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
 }
 
 .offline-form-header__logo {
+  flex-shrink: 0;
   height: 4.5rem;
   width: auto;
   max-width: 100%;
@@ -1285,7 +1292,7 @@ html.receipt-standalone-page .print-only-hide {
 }
 
 .offline-form-header__sponsor {
-  margin: 0.5rem auto 0;
+  margin: 0.5rem 0 0;
   height: 3.25rem;
   width: auto;
   max-width: 11rem;

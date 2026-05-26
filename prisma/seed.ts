@@ -7,7 +7,7 @@ import { cricketMatchWide, cricketTeamGame } from "../src/lib/remote-images";
 const prisma = new PrismaClient();
 
 const defaultTeams = [
-  { slug: "outer-delhi-warriors", name: "Outer Delhi Warriors", city: "Outer Delhi", accentColor: "#22c55e", description: "Franchise colours and match-day identity—finalised post trials." },
+  { slug: "central-delhi-titans", name: "Central Delhi Titans", city: "Central Delhi", accentColor: "#22c55e", description: "Franchise colours and match-day identity—finalised post trials." },
   { slug: "north-delhi-strikers", name: "North Delhi Strikers", city: "North Delhi", accentColor: "#38bdf8", description: "Franchise colours and match-day identity—finalised post trials." },
   { slug: "south-delhi-royals", name: "South Delhi Royals", city: "South Delhi", accentColor: "#f472b6", description: "Franchise colours and match-day identity—finalised post trials." },
   { slug: "east-delhi-thunder", name: "East Delhi Thunder", city: "East Delhi", accentColor: "#fbbf24", description: "Franchise colours and match-day identity—finalised post trials." },

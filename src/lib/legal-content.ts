@@ -89,7 +89,7 @@ export const PRIVACY_POLICY: {
         "We do not sell or rent personal data. We may share information only as described below:",
       ],
       list: [
-        "Franchise and initiative partners (including Outer Delhi Warriors) involved in organising trials and Season operations.",
+        "Franchise and league partners involved in organising trials and Season operations.",
         "Title sponsors and commercial partners, only where necessary for sponsorship obligations and with appropriate confidentiality expectations.",
         "Broadcast and streaming partners for match-day production, highlights, and archival use as described in our Terms & Conditions.",
         "Service providers who host our website, store uploads, process payments, or provide email and administrative tools — bound by contract to use data only for our instructions.",
@@ -200,7 +200,7 @@ export const TERMS_AND_CONDITIONS: {
         `"League" means the ${LEGAL_ENTITY.tradeName} Season 1 and related activities organised by the Company and its partners.`,
         `"Registration" means the official trial registration form submitted online or offline with applicable fees.`,
         `"Selection" means any invitation to trials, camps, franchise allocation, or tournament squad — at the League's sole discretion.`,
-        `"Partners" includes title sponsors (e.g. Krishna Apra), franchise initiatives (e.g. Outer Delhi Warriors), broadcast partners, and approved service providers.`,
+        `"Partners" includes title sponsors (e.g. Krishna Apra), franchise teams, broadcast partners, and approved service providers.`,
       ],
     },
     {

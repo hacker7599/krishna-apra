@@ -1,5 +1,5 @@
 import { PrintLayoutImage } from "@/components/print-layout-image";
-import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC, OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
+import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC } from "@/lib/branding";
 import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, TAGLINE } from "@/lib/league";
 import type { RegistrationConfirmation } from "@/lib/registration-confirmation";
 
@@ -85,15 +85,6 @@ export function RegistrationSuccessDocument({ data }: { data: RegistrationConfir
       <div className="receipt-body px-6 py-6 sm:px-8 sm:py-7 print:px-0 print:py-0">
         <header className="receipt-header border-b border-slate-300 pb-5 print:pb-3">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between print:flex-row print:gap-2">
-            <div className="flex shrink-0 justify-center sm:justify-start">
-              <PrintLayoutImage
-                src={OUTER_DELHI_WARRIORS_LOGO_SRC}
-                alt="Outer Delhi Warriors"
-                width={160}
-                height={107}
-                className="h-12 w-auto object-contain"
-              />
-            </div>
             <div className="min-w-0 flex-1 px-1 text-center sm:px-2">
               <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-slate-500">
                 Official acknowledgement · Season 1

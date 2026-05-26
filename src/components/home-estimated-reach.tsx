@@ -7,7 +7,7 @@ import {
   ESTIMATED_REACH_METRICS,
   type ReachMetric,
 } from "@/lib/estimated-reach";
-import { LEAGUE_LOGO_SRC, OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
+import { LEAGUE_LOGO_SRC } from "@/lib/branding";
 import { cn } from "@/lib/cn";
 import { SITE_CONTAINER } from "@/lib/site-ui";
 
@@ -177,16 +177,7 @@ export function HomeEstimatedReach() {
             lead="Projected audience and impression footprint across broadcast, print, radio, social, in-venue, and non-traditional channels for Future Star U-15."
             className="max-w-2xl"
           />
-          <div className="flex shrink-0 items-center gap-5 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
-            <Image
-              src={OUTER_DELHI_WARRIORS_LOGO_SRC}
-              alt="Outer Delhi Warriors"
-              width={160}
-              height={107}
-              unoptimized
-              className="h-11 w-auto object-contain"
-            />
-            <span className="h-10 w-px bg-slate-200" aria-hidden />
+          <div className="flex shrink-0 items-center rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
             <Image src={LEAGUE_LOGO_SRC} alt="Future Star U-15" width={56} height={56} className="h-11 w-11 rounded-md object-cover ring-1 ring-slate-200" />
           </div>
         </div>
@@ -229,7 +220,7 @@ export function HomeEstimatedReach() {
         </ol>
 
         <p className="mt-8 text-center text-[11px] font-medium text-slate-400">
-          Reach breakdown by channel · Outer Delhi Warriors × Future Star U-15
+          Reach breakdown by channel · Future Star U-15 Season 1
         </p>
       </div>
     </section>

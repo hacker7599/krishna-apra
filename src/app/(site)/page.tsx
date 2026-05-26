@@ -4,7 +4,6 @@ import { HomeIntroBand } from "@/components/home-intro-band";
 import { HomeStatsStrip } from "@/components/home-stats-strip";
 import { HomeBroadcastLeadership } from "@/components/home-broadcast-leadership";
 import { HomeEstimatedReach } from "@/components/home-estimated-reach";
-import { OuterDelhiWarriorsSection } from "@/components/outer-delhi-warriors-section";
 import { LeagueProtectionSection } from "@/components/league-protection-section";
 import { TournamentFormatSplit } from "@/components/tournament-format-split";
 import { SectionHeader } from "@/components/section-header";
@@ -46,7 +45,6 @@ export default async function Home() {
       <HomeIntroBand teamsStat={teamsStat} />
       <HomeStatsStrip teamsStat={teamsStat} />
 
-      <OuterDelhiWarriorsSection />
       <TournamentFormatSplit showAboutLink imagePriority />
       <HomeBroadcastLeadership />
       <HomeEstimatedReach />

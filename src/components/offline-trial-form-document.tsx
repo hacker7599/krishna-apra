@@ -2,7 +2,7 @@ import { OfflinePlayerRoleFields } from "@/components/offline-player-role-fields
 import { PrintLayoutImage } from "@/components/print-layout-image";
 import { OfflineFieldLine, OfflineFormSection, OfflinePrintCheckbox } from "@/components/offline-form-primitives";
 import { OfflineTrialVenueFields } from "@/components/offline-trial-venue-fields";
-import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC, OUTER_DELHI_WARRIORS_LOGO_SRC } from "@/lib/branding";
+import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC } from "@/lib/branding";
 import { FORMAT, LEAGUE_NAME, LEAGUE_SUBTITLE, PLAYER_AGE_CUTOFF_DATE, SEASON_START, TAGLINE, TRIAL_FEE_INR, VENUE } from "@/lib/league";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
@@ -21,15 +21,8 @@ function FormHeader() {
   return (
     <header className="offline-form-header">
       <div className="offline-form-header__logos">
-        <PrintLayoutImage
-          src={OUTER_DELHI_WARRIORS_LOGO_SRC}
-          alt="Outer Delhi Warriors"
-          width={160}
-          height={107}
-          className="offline-form-header__logo"
-        />
-        <div className="text-center">
-          <p className="offline-form-header__eyebrow">An Outer Delhi Warriors initiative (DPL franchise)</p>
+        <div className="offline-form-header__brand">
+          <p className="offline-form-header__eyebrow">Official trial registration · Season 1</p>
           <h1 className="offline-form-header__title">Future Star U-15 Cricket Tournament</h1>
           <PrintLayoutImage
             src={KRISHNA_APRA_LOGO_SRC}
@@ -48,7 +41,7 @@ function FormHeader() {
           alt="Future Star U15 league logo"
           width={112}
           height={112}
-          className="offline-form-header__logo offline-form-header__logo--end offline-form-header__logo--league"
+          className="offline-form-header__logo offline-form-header__logo--league"
         />
       </div>
     </header>

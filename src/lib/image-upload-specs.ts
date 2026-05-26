@@ -60,16 +60,6 @@ export const IMAGE_UPLOAD_SPECS = {
     maxMb: 4,
     note: "Place file in public/home/ (see path in admin or codebase).",
   },
-  odwSquadPortrait: {
-    id: "odw-squad",
-    label: "Outer Delhi Warriors squad portrait",
-    width: 660,
-    height: 880,
-    aspectLabel: "3∶4 portrait",
-    formats: "JPG or PNG",
-    maxMb: 4,
-    note: "Place file in public/home/odw/ — shown in squad grid.",
-  },
   registrationPlayerPhoto: {
     id: "registration-player-photo",
     label: "Player photo",
