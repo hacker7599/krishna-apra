@@ -12,6 +12,10 @@ const EXACT: Record<string, string> = {
   "Save failed.": "Your changes were not saved. Check the form and try again.",
   "Delete failed.": "We could not delete this registration. Try again in a moment.",
   "Something went wrong.": "Something went wrong on our side. Please try again in a moment.",
+  "The system is busy saving your information. Please wait a moment and try again.":
+    "The system is busy saving your information. Please wait a moment and try again.",
+  "Registration services are temporarily unavailable. Please try again in a few minutes.":
+    "Registration services are temporarily unavailable. Please try again in a few minutes.",
   "Network error. Please try again.": "Your internet connection may be down. Check your network and try again.",
   "Payment was not completed. Your registration was not submitted.":
     "Payment was cancelled or failed, so your registration was not submitted. You can try again.",

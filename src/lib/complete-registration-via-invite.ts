@@ -3,15 +3,20 @@ import {
   assertEligibleDateOfBirth,
   buildRegistrationCreateData,
 } from "@/lib/admin-registration-mutation";
-import { loadValidCompletionInvite, type CompletionInviteContext } from "@/lib/registration-completion-invite";
+import { loadValidCompletionInvite, markCompletionInviteUsed, type CompletionInviteContext } from "@/lib/registration-completion-invite";
 import { finalizeRegistrationFromCapturedPayment } from "@/lib/finalize-registration-payment";
-import { parseRegistrationFormFields, saveRegistrationUploads } from "@/lib/parse-registration-form-data";
+import {
+  type ParsedRegistrationForm,
+  parseRegistrationFormFields,
+  saveRegistrationUploads,
+} from "@/lib/parse-registration-form-data";
 import { normalizePhone } from "@/lib/normalize-phone";
 import { prisma } from "@/lib/prisma";
 import { findExistingRegistration } from "@/lib/registration-duplicate";
 import { REGISTRATION_PAYMENT_PAID, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
+import { withDbRetry } from "@/lib/sqlite-resilience";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 
 function registrationToPrefill(reg: Registration) {
@@ -107,6 +112,83 @@ function assertContactMatchesOrder(
   return null;
 }
 
+async function persistRegistrationDraft(
+  ctx: CompletionInviteContext,
+  registrationPayload: {
+    academyName: string;
+    playerName: string;
+    dateOfBirth: Date;
+    roles: string;
+    email: string;
+    phone: string;
+    fatherName: string;
+    address: string;
+    jerseySize: string;
+    shoeSize: string;
+    idDocumentType: string;
+    idProofPath: string;
+    playerPhotoPath: string;
+    achievementsAndAwards: string | null;
+    trialZoneId: string;
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+  },
+  data: ParsedRegistrationForm["data"],
+  trialZoneId: string,
+): Promise<string> {
+  const { order } = ctx;
+
+  return withDbRetry(() =>
+    prisma.$transaction(async (tx) => {
+    if (ctx.registration) {
+      await tx.registration.update({
+        where: { id: ctx.registration.id },
+        data: registrationPayload,
+      });
+      return ctx.registration.id;
+    }
+
+    const created = await tx.registration.create({
+      data: {
+        ...buildRegistrationCreateData(
+          {
+            academyName: data.academyName,
+            playerName: data.playerName,
+            dateOfBirth: data.dateOfBirth,
+            roles: data.roles,
+            trialZoneId,
+            email: data.email,
+            phone: data.phone,
+            fatherName: data.fatherName,
+            address: data.address,
+            jerseySize: data.jerseySize,
+            shoeSize: data.shoeSize,
+            idDocumentType: data.idDocumentType,
+            achievementsAndAwards: data.achievementsAndAwards ?? null,
+            paymentStatus: "manual",
+          },
+          {
+            playerPhotoPath: registrationPayload.playerPhotoPath,
+            idProofPath: registrationPayload.idProofPath,
+          },
+        ),
+        paymentStatus: REGISTRATION_PAYMENT_PENDING,
+        razorpayOrderId: order.razorpayOrderId,
+        razorpayPaymentId: order.razorpayPaymentId,
+        transactionRef: order.razorpayPaymentId,
+      },
+    });
+
+    await tx.paymentOrder.update({
+      where: { id: order.id },
+      data: { registrationId: created.id },
+    });
+
+    return created.id;
+  }),
+  );
+}
+
 export async function submitRegistrationViaCompletionInvite(
   plainToken: string,
   form: FormData,
@@ -189,8 +271,8 @@ export async function submitRegistrationViaCompletionInvite(
     jerseySize: data.jerseySize,
     shoeSize: data.shoeSize,
     idDocumentType: data.idDocumentType,
-    idProofPath: uploads.paths.idProofPath || ctx.registration?.idProofPath || null,
-    playerPhotoPath: uploads.paths.playerPhotoPath || ctx.registration?.playerPhotoPath || null,
+    idProofPath: uploads.paths.idProofPath || ctx.registration?.idProofPath || "",
+    playerPhotoPath: uploads.paths.playerPhotoPath || ctx.registration?.playerPhotoPath || "",
     paymentProofPath: null as string | null,
     transactionRef: order.razorpayPaymentId,
     achievementsAndAwards: data.achievementsAndAwards?.trim() || null,
@@ -204,76 +286,33 @@ export async function submitRegistrationViaCompletionInvite(
     return { ok: false, error: "Player photo and ID proof are required.", status: 400 };
   }
 
-  let registrationId = ctx.registration?.id ?? "";
-
-  await prisma.$transaction(async (tx) => {
-    if (ctx.registration) {
-      await tx.registration.update({
-        where: { id: ctx.registration.id },
-        data: registrationPayload,
-      });
-      registrationId = ctx.registration.id;
-    } else {
-      const created = await tx.registration.create({
-        data: {
-          ...buildRegistrationCreateData(
-            {
-              academyName: data.academyName,
-              playerName: data.playerName,
-              dateOfBirth: data.dateOfBirth,
-              roles: data.roles,
-              trialZoneId: trialZone.id,
-              email: emailNorm,
-              phone: phoneNorm,
-              fatherName: data.fatherName,
-              address: data.address,
-              jerseySize: data.jerseySize,
-              shoeSize: data.shoeSize,
-              idDocumentType: data.idDocumentType,
-              achievementsAndAwards: data.achievementsAndAwards ?? null,
-              paymentStatus: "manual",
-            },
-            {
-              playerPhotoPath: registrationPayload.playerPhotoPath,
-              idProofPath: registrationPayload.idProofPath,
-            },
-          ),
-          paymentStatus: REGISTRATION_PAYMENT_PENDING,
-          razorpayOrderId: order.razorpayOrderId,
-          razorpayPaymentId: order.razorpayPaymentId,
-          transactionRef: order.razorpayPaymentId,
-        },
-      });
-      registrationId = created.id;
-      await tx.paymentOrder.update({
-        where: { id: order.id },
-        data: { registrationId: created.id },
-      });
-    }
-
-    await tx.registrationCompletionInvite.update({
-      where: { id: invite.id },
-      data: { usedAt: new Date(), registrationId },
-    });
-  });
+  let registrationId: string;
+  try {
+    registrationId = await persistRegistrationDraft(ctx, registrationPayload, data, trialZone.id);
+  } catch {
+    return { ok: false, error: "Could not save your registration. Please try again.", status: 500 };
+  }
 
   const finalized = await finalizeRegistrationFromCapturedPayment(order.razorpayOrderId, order.razorpayPaymentId);
-  if (!finalized.ok && finalized.reason !== "not_pending") {
-    const reg = await prisma.registration.findUnique({ where: { id: registrationId! } });
+  if (!finalized.ok) {
+    const reg = await prisma.registration.findUnique({ where: { id: registrationId } });
     if (reg?.paymentStatus !== REGISTRATION_PAYMENT_PAID) {
       return {
         ok: false,
-        error: "Your details were saved but enrollment could not be confirmed. Contact the league desk.",
-        status: 500,
+        error:
+          "Your details were saved but enrollment could not be confirmed yet. Please try submitting again in a few minutes or contact the league desk.",
+        status: 503,
       };
     }
   }
 
+  await markCompletionInviteUsed(invite.id, registrationId);
+
   let emailSent = false;
   try {
-    const token = await signRegistrationConfirmationToken(registrationId!);
+    const token = await signRegistrationConfirmationToken(registrationId);
     const emailResult = await sendRegistrationConfirmationEmail({
-      registrationId: registrationId!,
+      registrationId,
       email: emailNorm,
       playerName: data.playerName,
       confirmationToken: token,
@@ -283,5 +322,5 @@ export async function submitRegistrationViaCompletionInvite(
     emailSent = false;
   }
 
-  return { ok: true, registrationId: registrationId!, emailSent };
+  return { ok: true, registrationId, emailSent };
 }

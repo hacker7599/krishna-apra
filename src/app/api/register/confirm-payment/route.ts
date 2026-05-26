@@ -7,6 +7,7 @@ import {
   registrationSuccessResponse,
 } from "@/lib/finalize-registration-payment";
 import { prisma } from "@/lib/prisma";
+import { jsonFromDbError } from "@/lib/db-http-error";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
 
 export const runtime = "nodejs";
@@ -42,31 +43,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Payment confirmation data is incomplete." }, { status: 400 });
   }
 
-  const registration = await prisma.registration.findUnique({
-    where: { id: parsed.data.registrationId },
-  });
-  if (!registration) {
-    return NextResponse.json({ error: "Registration not found. Please submit the form again." }, { status: 404 });
+  try {
+    const registration = await prisma.registration.findUnique({
+      where: { id: parsed.data.registrationId },
+    });
+    if (!registration) {
+      return NextResponse.json({ error: "Registration not found. Please submit the form again." }, { status: 404 });
+    }
+
+    const result = await finalizeRegistrationAfterPayment(
+      parsed.data.registrationId,
+      {
+        razorpayOrderId: parsed.data.razorpayOrderId,
+        razorpayPaymentId: parsed.data.razorpayPaymentId,
+        razorpaySignature: parsed.data.razorpaySignature,
+      },
+      {
+        email: registration.email,
+        phone: registration.phone,
+        playerName: registration.playerName,
+      },
+      ip,
+    );
+
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    return registrationSuccessResponse(req, result.registration.id, result.emailSent);
+  } catch (e) {
+    console.error(e);
+    return jsonFromDbError(e, "Could not confirm your payment. Please try again or contact the league desk.");
   }
-
-  const result = await finalizeRegistrationAfterPayment(
-    parsed.data.registrationId,
-    {
-      razorpayOrderId: parsed.data.razorpayOrderId,
-      razorpayPaymentId: parsed.data.razorpayPaymentId,
-      razorpaySignature: parsed.data.razorpaySignature,
-    },
-    {
-      email: registration.email,
-      phone: registration.phone,
-      playerName: registration.playerName,
-    },
-    ip,
-  );
-
-  if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
-  }
-
-  return registrationSuccessResponse(req, result.registration.id, result.emailSent);
 }

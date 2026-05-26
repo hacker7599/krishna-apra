@@ -2,8 +2,9 @@ import crypto from "crypto";
 import type { PaymentOrder, Registration, RegistrationCompletionInvite } from "@prisma/client";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
-import { isEnrolledPaymentStatus, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
+import { isEnrolledPaymentStatus, REGISTRATION_PAYMENT_PAID, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { getRegistrationSigningSecret } from "@/lib/secrets";
+import { withDbRetry } from "@/lib/sqlite-resilience";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -53,6 +54,16 @@ export async function loadValidCompletionInvite(plainToken: string): Promise<
     return { ok: false, error: "This link is invalid or has already been used.", status: 404 };
   }
   if (invite.usedAt) {
+    const regId = invite.registrationId;
+    if (regId) {
+      const reg = await prisma.registration.findUnique({
+        where: { id: regId },
+        select: { paymentStatus: true },
+      });
+      if (reg?.paymentStatus === REGISTRATION_PAYMENT_PAID) {
+        return { ok: false, error: "This registration is already complete.", status: 410 };
+      }
+    }
     return { ok: false, error: "This link has already been used. Contact the league desk if you need help.", status: 410 };
   }
   if (invite.expiresAt.getTime() < Date.now()) {
@@ -82,6 +93,28 @@ export async function loadValidCompletionInvite(plainToken: string): Promise<
     ok: true,
     ctx: { invite, order, registration },
   };
+}
+
+/** Mark invite used only after enrollment succeeds. Returns false if another request already completed. */
+export async function markCompletionInviteUsed(
+  inviteId: string,
+  registrationId: string,
+): Promise<"marked" | "already_completed"> {
+  const updated = await prisma.registrationCompletionInvite.updateMany({
+    where: { id: inviteId, usedAt: null },
+    data: { usedAt: new Date(), registrationId },
+  });
+  if (updated.count > 0) return "marked";
+
+  const reg = await prisma.registration.findUnique({
+    where: { id: registrationId },
+    select: { paymentStatus: true },
+  });
+  if (reg?.paymentStatus === REGISTRATION_PAYMENT_PAID) {
+    return "already_completed";
+  }
+
+  return "already_completed";
 }
 
 export async function createCompletionInviteForPaymentOrder(paymentOrderId: string): Promise<
@@ -118,20 +151,22 @@ export async function createCompletionInviteForPaymentOrder(paymentOrderId: stri
   const { plain, hash } = generateCompletionInviteToken();
   const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
 
-  await prisma.$transaction(async (tx) => {
-    await tx.registrationCompletionInvite.deleteMany({
-      where: { paymentOrderId: order.id },
-    });
-    await tx.registrationCompletionInvite.create({
-      data: {
-        tokenHash: hash,
-        paymentOrderId: order.id,
-        registrationId: order.registrationId,
-        email,
-        expiresAt,
-      },
-    });
-  });
+  await withDbRetry(() =>
+    prisma.$transaction(async (tx) => {
+      await tx.registrationCompletionInvite.deleteMany({
+        where: { paymentOrderId: order.id },
+      });
+      await tx.registrationCompletionInvite.create({
+        data: {
+          tokenHash: hash,
+          paymentOrderId: order.id,
+          registrationId: order.registrationId,
+          email,
+          expiresAt,
+        },
+      });
+    }),
+  );
 
   return {
     ok: true,
@@ -141,11 +176,4 @@ export async function createCompletionInviteForPaymentOrder(paymentOrderId: stri
     email,
     registrationId: order.registrationId,
   };
-}
-
-export async function burnCompletionInvite(inviteId: string): Promise<void> {
-  await prisma.registrationCompletionInvite.update({
-    where: { id: inviteId },
-    data: { usedAt: new Date() },
-  });
 }

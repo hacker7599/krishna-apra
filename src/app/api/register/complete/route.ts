@@ -4,6 +4,7 @@ import { getCompletionInvitePayload, submitRegistrationViaCompletionInvite } fro
 import { getClientIp } from "@/lib/get-client-ip";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
 import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cookie";
+import { jsonFromDbError } from "@/lib/db-http-error";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 
 export const runtime = "nodejs";
@@ -14,13 +15,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing completion link token." }, { status: 400 });
   }
 
-  const payload = await getCompletionInvitePayload(token);
-  if (!("ok" in payload) || !payload.ok) {
-    const err = payload as { error: string; status: number };
-    return NextResponse.json({ error: err.error }, { status: err.status });
-  }
+  try {
+    const payload = await getCompletionInvitePayload(token);
+    if (!("ok" in payload) || !payload.ok) {
+      const err = payload as { error: string; status: number };
+      return NextResponse.json({ error: err.error }, { status: err.status });
+    }
 
-  return NextResponse.json({
+    return NextResponse.json({
     playerName: payload.playerName,
     email: payload.email,
     phone: payload.phone,
@@ -28,7 +30,11 @@ export async function GET(req: NextRequest) {
     paidAt: payload.paidAt,
     prefill: payload.prefill,
     lockedFields: payload.lockedFields,
-  });
+    });
+  } catch (e) {
+    console.error(e);
+    return jsonFromDbError(e, "Could not load your completion form. Please try again.");
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -55,17 +61,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid form data." }, { status: 400 });
   }
 
-  const result = await submitRegistrationViaCompletionInvite(token, form);
-  if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
-  }
+  try {
+    const result = await submitRegistrationViaCompletionInvite(token, form);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
 
-  const confirmationToken = await signRegistrationConfirmationToken(result.registrationId);
-  const res = NextResponse.json({
-    ok: true,
-    registrationId: result.registrationId,
-    emailSent: result.emailSent,
-  });
-  attachRegistrationReceiptCookie(res, confirmationToken, req);
-  return res;
+    const confirmationToken = await signRegistrationConfirmationToken(result.registrationId);
+    const res = NextResponse.json({
+      ok: true,
+      registrationId: result.registrationId,
+      emailSent: result.emailSent,
+    });
+    attachRegistrationReceiptCookie(res, confirmationToken, req);
+    return res;
+  } catch (e) {
+    console.error(e);
+    return jsonFromDbError(e, "Could not submit your registration. Please try again.");
+  }
 }

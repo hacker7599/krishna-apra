@@ -4,6 +4,7 @@ import { getClientIp } from "@/lib/get-client-ip";
 import { parseRegistrationFormFields, saveRegistrationUploads } from "@/lib/parse-registration-form-data";
 import { prepareOnlineRegistration } from "@/lib/prepare-online-registration";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
+import { jsonFromDbError } from "@/lib/db-http-error";
 import { isRazorpayConfigured } from "@/lib/razorpay-config";
 
 export const runtime = "nodejs";
@@ -61,9 +62,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error(e);
-    return NextResponse.json(
-      { error: "Could not save your registration. Please try again or contact the league desk." },
-      { status: 500 },
-    );
+    return jsonFromDbError(e, "Could not save your registration. Please try again or contact the league desk.");
   }
 }

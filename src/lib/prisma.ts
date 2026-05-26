@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { applySqlitePragmas, bindSqlitePragmaReady, isSqliteDatabaseUrl } from "@/lib/sqlite-resilience";
 
 const g = globalThis as typeof globalThis & { prisma?: PrismaClient };
 
@@ -22,6 +23,17 @@ function createPrismaClient(): PrismaClient {
       "Prisma client is out of date (missing BlogPost or other models). Run: npx prisma generate && npx prisma db push — then restart the server.",
     );
   }
+
+  if (isSqliteDatabaseUrl()) {
+    bindSqlitePragmaReady(
+      applySqlitePragmas(client).catch((error) => {
+        console.warn("[sqlite-pragmas] Could not apply WAL/busy_timeout:", error);
+      }),
+    );
+  } else {
+    bindSqlitePragmaReady(Promise.resolve());
+  }
+
   return client;
 }
 

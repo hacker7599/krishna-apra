@@ -1,6 +1,6 @@
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { mapDbError } from "@/lib/db-http-error";
 import { prisma } from "@/lib/prisma";
 import { getClientIp } from "@/lib/get-client-ip";
 import { parseRegistrationFormFields, saveRegistrationUploads } from "@/lib/parse-registration-form-data";
@@ -12,6 +12,7 @@ import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-to
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 import { REGISTRATION_PAYMENT_MANUAL } from "@/lib/registration-payment-status";
+import { withDbRetry } from "@/lib/sqlite-resilience";
 
 export const runtime = "nodejs";
 
@@ -67,7 +68,8 @@ export async function POST(req: NextRequest) {
 
     const dob = new Date(`${data.dateOfBirth}T00:00:00.000Z`);
 
-    const registration = await prisma.$transaction(async (tx) => {
+    const registration = await withDbRetry(() =>
+      prisma.$transaction(async (tx) => {
       const dup = await findExistingRegistration(emailNorm, phoneNorm, tx);
       if (dup) {
         return { duplicate: dup } as const;
@@ -95,7 +97,8 @@ export async function POST(req: NextRequest) {
         },
       });
       return { row } as const;
-    });
+    }),
+    );
 
     if ("duplicate" in registration && registration.duplicate) {
       return NextResponse.json(
@@ -132,12 +135,21 @@ export async function POST(req: NextRequest) {
     return res;
   } catch (e) {
     console.error(e);
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      return NextResponse.json(
-        { error: "This email or mobile number is already registered.", duplicate: true },
-        { status: 409 },
-      );
-    }
-    return NextResponse.json({ error: "Could not save registration. Please try again or contact the league desk." }, { status: 500 });
+    const mapped = mapDbError(e);
+    const message =
+      mapped.status === 500
+        ? "Could not save registration. Please try again or contact the league desk."
+        : mapped.message;
+    return NextResponse.json(
+      {
+        error: message,
+        retryable: mapped.retryable,
+        ...(mapped.status === 409 ? { duplicate: true } : {}),
+      },
+      {
+        status: mapped.status,
+        headers: mapped.retryable ? { "Retry-After": "3" } : undefined,
+      },
+    );
   }
 }

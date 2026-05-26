@@ -12,28 +12,31 @@ import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cook
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
 import { ensurePaymentCapturedOnRazorpay } from "@/lib/razorpay";
+import { withDbRetry } from "@/lib/sqlite-resilience";
 
 async function markRegistrationPaid(
   registrationId: string,
   razorpayOrderId: string,
   razorpayPaymentId: string,
 ): Promise<Registration> {
-  const updated = await prisma.$transaction(async (tx) => {
-    const row = await tx.registration.update({
-      where: { id: registrationId },
-      data: {
-        paymentStatus: REGISTRATION_PAYMENT_PAID,
-        razorpayOrderId,
-        razorpayPaymentId,
-        transactionRef: razorpayPaymentId,
-      },
-    });
-    await tx.paymentOrder.updateMany({
-      where: { razorpayOrderId },
-      data: { registrationId: row.id, status: "paid", razorpayPaymentId },
-    });
-    return row;
-  });
+  const updated = await withDbRetry(() =>
+    prisma.$transaction(async (tx) => {
+      const row = await tx.registration.update({
+        where: { id: registrationId },
+        data: {
+          paymentStatus: REGISTRATION_PAYMENT_PAID,
+          razorpayOrderId,
+          razorpayPaymentId,
+          transactionRef: razorpayPaymentId,
+        },
+      });
+      await tx.paymentOrder.updateMany({
+        where: { razorpayOrderId },
+        data: { registrationId: row.id, status: "paid", razorpayPaymentId },
+      });
+      return row;
+    }),
+  );
 
   await linkPaymentOrderToRegistration(razorpayOrderId, razorpayPaymentId, updated.id);
   return updated;

@@ -10,6 +10,7 @@ import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status"
 import { getRazorpayPublicKeyId, TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { getRazorpay } from "@/lib/razorpay";
 import { LEAGUE_NAME } from "@/lib/league";
+import { withDbRetry } from "@/lib/sqlite-resilience";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 
 export async function prepareOnlineRegistration(
@@ -47,28 +48,7 @@ export async function prepareOnlineRegistration(
 
   const dob = new Date(`${data.dateOfBirth}T00:00:00.000Z`);
   const existingContact = await findRegistrationByContact(emailNorm, phoneNorm);
-
-  const rzp = getRazorpay();
   const receipt = `fsu15_${Date.now().toString(36)}`;
-
-  const razorpayOrder = await rzp.orders.create({
-    amount: TRIAL_FEE_PAISE,
-    currency: "INR",
-    receipt,
-    notes: {
-      playerName: data.playerName,
-      email: emailNorm,
-      phone: phoneNorm,
-    },
-    payment: {
-      capture: "automatic",
-      capture_options: {
-        automatic_expiry_period: 720,
-        manual_expiry_period: 720,
-        refund_speed: "normal",
-      },
-    },
-  });
 
   const registrationData = {
     academyName: data.academyName,
@@ -89,56 +69,102 @@ export async function prepareOnlineRegistration(
     achievementsAndAwards: data.achievementsAndAwards?.trim() || null,
     trialZoneId: trialZone.id,
     paymentStatus: REGISTRATION_PAYMENT_PENDING,
-    razorpayOrderId: razorpayOrder.id,
+    razorpayOrderId: null as string | null,
     razorpayPaymentId: null as string | null,
   };
 
-  const registration = await prisma.$transaction(async (tx) => {
-    let row;
-    if (existingContact?.paymentStatus === REGISTRATION_PAYMENT_PENDING) {
-      row = await tx.registration.update({
-        where: { id: existingContact.id },
-        data: registrationData,
-      });
-      await tx.paymentOrder.deleteMany({
-        where: {
-          registrationId: existingContact.id,
-          status: { not: "paid" },
-        },
-      });
-    } else if (existingContact) {
-      throw new Error("CONTACT_CONFLICT");
-    } else {
-      row = await tx.registration.create({ data: registrationData });
-    }
-
-    await tx.paymentOrder.create({
-      data: {
-        razorpayOrderId: razorpayOrder.id,
-        amountPaise: TRIAL_FEE_PAISE,
-        currency: "INR",
-        email: emailNorm,
-        phone: phoneNorm,
-        playerName: data.playerName,
-        receipt,
-        registrationId: row.id,
-      },
-    });
-
-    return row;
-  }).catch((e) => {
+  const draft = await withDbRetry(() =>
+    prisma.$transaction(async (tx) => {
+      let row;
+      if (existingContact?.paymentStatus === REGISTRATION_PAYMENT_PENDING) {
+        row = await tx.registration.update({
+          where: { id: existingContact.id },
+          data: registrationData,
+        });
+        await tx.paymentOrder.deleteMany({
+          where: {
+            registrationId: existingContact.id,
+            status: { not: "paid" },
+          },
+        });
+      } else if (existingContact) {
+        throw new Error("CONTACT_CONFLICT");
+      } else {
+        row = await tx.registration.create({ data: registrationData });
+      }
+      return row;
+    }),
+  ).catch((e) => {
     if (e instanceof Error && e.message === "CONTACT_CONFLICT") {
       return null;
     }
     throw e;
   });
 
-  if (!registration) {
+  if (!draft) {
     return {
       ok: false,
       error: "This email or mobile is already in use. Contact the league desk if you need help.",
       status: 409,
       duplicate: true,
+    };
+  }
+
+  const rzp = getRazorpay();
+  let razorpayOrder;
+  try {
+    razorpayOrder = await rzp.orders.create({
+      amount: TRIAL_FEE_PAISE,
+      currency: "INR",
+      receipt,
+      notes: {
+        playerName: data.playerName,
+        email: emailNorm,
+        phone: phoneNorm,
+      },
+      payment: {
+        capture: "automatic",
+        capture_options: {
+          automatic_expiry_period: 720,
+          manual_expiry_period: 720,
+          refund_speed: "normal",
+        },
+      },
+    });
+  } catch {
+    return {
+      ok: false,
+      error: "Payment could not be started. Your details are saved — please try Pay again in a moment.",
+      status: 502,
+    };
+  }
+
+  try {
+    await withDbRetry(() =>
+      prisma.$transaction(async (tx) => {
+        await tx.registration.update({
+          where: { id: draft.id },
+          data: { razorpayOrderId: razorpayOrder.id },
+        });
+        await tx.paymentOrder.create({
+          data: {
+            razorpayOrderId: razorpayOrder.id,
+            amountPaise: TRIAL_FEE_PAISE,
+            currency: "INR",
+            email: emailNorm,
+            phone: phoneNorm,
+            playerName: data.playerName,
+            receipt,
+            registrationId: draft.id,
+          },
+        });
+      }),
+    );
+  } catch {
+    return {
+      ok: false,
+      error: "Payment could not be started. Your details are saved — please try Pay again in a moment.",
+      status: 503,
     };
   }
 
@@ -152,7 +178,7 @@ export async function prepareOnlineRegistration(
     email: emailNorm,
     phone: phoneNorm,
     playerName: data.playerName,
-    registrationId: registration.id,
+    registrationId: draft.id,
     clientIp,
     success: true,
     metadata: { receipt },
@@ -160,7 +186,7 @@ export async function prepareOnlineRegistration(
 
   return {
     ok: true,
-    registrationId: registration.id,
+    registrationId: draft.id,
     orderId: razorpayOrder.id,
     amount: Number(razorpayOrder.amount),
     currency: razorpayOrder.currency ?? "INR",
