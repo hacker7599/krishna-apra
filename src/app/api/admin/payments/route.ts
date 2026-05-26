@@ -2,9 +2,12 @@ import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { parseAdminPagination, paginationMeta } from "@/lib/admin-pagination";
+import {
+  attachRegistrationPaymentStatus,
+  paidOrphanPaymentOrderFilter,
+} from "@/lib/payment-order-registration-lookup";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
-import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 
 export const runtime = "nodejs";
 
@@ -18,16 +21,12 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q")?.trim().toLowerCase();
   const orphanOnly = searchParams.get("orphan") === "true" || searchParams.get("orphan") === "1";
 
-  const where: Prisma.PaymentOrderWhereInput = {};
+  let where: Prisma.PaymentOrderWhereInput = {};
   if (status && ["created", "paid", "failed", "refunded"].includes(status)) {
     where.status = status;
   }
   if (orphanOnly) {
-    where.status = "paid";
-    where.OR = [
-      { registrationId: null },
-      { registration: { paymentStatus: REGISTRATION_PAYMENT_PENDING } },
-    ];
+    where = await paidOrphanPaymentOrderFilter();
   }
 
   const whereClause = Object.keys(where).length > 0 ? where : undefined;
@@ -35,16 +34,9 @@ export async function GET(req: NextRequest) {
   const orders = await prisma.paymentOrder.findMany({
     where: whereClause,
     orderBy: { createdAt: "desc" },
-    include: { registration: { select: { paymentStatus: true } } },
   });
 
-  let mapped = orders.map((o) => {
-    const { registration, ...rest } = o;
-    return {
-      ...rest,
-      registrationPaymentStatus: registration?.paymentStatus ?? null,
-    };
-  });
+  let mapped = await attachRegistrationPaymentStatus(orders);
 
   if (q) {
     mapped = mapped.filter(
@@ -61,17 +53,11 @@ export async function GET(req: NextRequest) {
   const total = mapped.length;
   const items = mapped.slice(offset, offset + limit);
 
+  const orphanWhere = await paidOrphanPaymentOrderFilter();
+
   const [paidCount, orphanPaid, totalRevenuePaise] = await Promise.all([
     prisma.paymentOrder.count({ where: { status: "paid" } }),
-    prisma.paymentOrder.count({
-      where: {
-        status: "paid",
-        OR: [
-          { registrationId: null },
-          { registration: { paymentStatus: REGISTRATION_PAYMENT_PENDING } },
-        ],
-      },
-    }),
+    prisma.paymentOrder.count({ where: orphanWhere }),
     prisma.paymentOrder.aggregate({
       where: { status: "paid" },
       _sum: { amountPaise: true },

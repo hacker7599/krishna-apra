@@ -79,7 +79,7 @@ export async function finalizeRegistrationAfterPayment(
     return { ok: false, error: "This registration cannot accept an online payment in its current state." };
   }
 
-  const confirmed = await confirmRazorpayPayment(proof, registrant, clientIp);
+  const confirmed = await confirmRazorpayPayment(proof, registrant, clientIp, registrationId);
   if (!confirmed.ok) {
     return { ok: false, error: confirmed.error };
   }

@@ -25,6 +25,7 @@ model PaymentOrder {
   registrationId    String?       @unique
   registration      Registration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
   logs              PaymentLog[]
+  completionInvite  RegistrationCompletionInvite?
 }
 
 model PaymentLog {
@@ -92,6 +93,21 @@ model RateLimitEvent {
   bucket    String
 
   @@index([bucket, createdAt])
+}
+
+model RegistrationCompletionInvite {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime
+  usedAt          DateTime?
+  tokenHash       String    @unique
+  paymentOrderId  String    @unique
+  paymentOrder    PaymentOrder @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+  registrationId  String?
+  email           String
+
+  @@index([expiresAt])
+  @@index([usedAt])
 }
 
 model RegistrationAccessOtp {

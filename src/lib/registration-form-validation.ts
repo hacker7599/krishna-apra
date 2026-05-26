@@ -56,7 +56,17 @@ export function digitsOnlyPhoneInput(value: string): string {
   return value.replace(/\D/g, "").slice(0, 10);
 }
 
-export function validateRegistrationForm(values: RegistrationFormValues): Record<string, string> {
+export type ValidateRegistrationOptions = {
+  requirePlayerPhoto?: boolean;
+  requireIdProof?: boolean;
+};
+
+export function validateRegistrationForm(
+  values: RegistrationFormValues,
+  options?: ValidateRegistrationOptions,
+): Record<string, string> {
+  const requirePlayerPhoto = options?.requirePlayerPhoto ?? true;
+  const requireIdProof = options?.requireIdProof ?? true;
   const errors: Record<string, string> = {};
 
   const academy = values.academyName.trim();
@@ -115,10 +125,10 @@ export function validateRegistrationForm(values: RegistrationFormValues): Record
     errors.idDocumentType = "Select ID document type.";
   }
 
-  const photoErr = validateFile(values.playerPhoto, true, "Player photo", PLAYER_PHOTO_ACCEPT);
+  const photoErr = validateFile(values.playerPhoto, requirePlayerPhoto, "Player photo", PLAYER_PHOTO_ACCEPT);
   if (photoErr) errors.playerPhoto = photoErr;
 
-  const idErr = validateFile(values.idProof, true, "ID proof", ID_ACCEPT);
+  const idErr = validateFile(values.idProof, requireIdProof, "ID proof", ID_ACCEPT);
   if (idErr) errors.idProof = idErr;
 
   const payErr = validateFile(values.paymentProof, false, "Payment proof", PAYMENT_PROOF_ACCEPT);

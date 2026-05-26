@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
-import { ENROLLED_PAYMENT_STATUSES, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
+import { paidOrphanPaymentOrderFilter } from "@/lib/payment-order-registration-lookup";
+import { ENROLLED_PAYMENT_STATUSES } from "@/lib/registration-payment-status";
 import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 
 export const runtime = "nodejs";
@@ -33,15 +34,7 @@ export async function GET() {
     prisma.trialZone.count({ where: { published: true } }),
     prisma.registration.count({ where: { paymentStatus: "paid" } }),
     prisma.registration.count({ where: { paymentStatus: "manual" } }),
-    prisma.paymentOrder.count({
-      where: {
-        status: "paid",
-        OR: [
-          { registrationId: null },
-          { registration: { paymentStatus: REGISTRATION_PAYMENT_PENDING } },
-        ],
-      },
-    }),
+    prisma.paymentOrder.count({ where: await paidOrphanPaymentOrderFilter() }),
     prisma.paymentOrder.count(),
     prisma.registration.findMany({
       orderBy: { createdAt: "desc" },

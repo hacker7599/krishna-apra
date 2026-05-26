@@ -10,6 +10,7 @@ import { AdminBadge } from "@/components/admin/ui/admin-badge";
 import { AdminStatCard } from "@/components/admin/ui/admin-stat-card";
 import { AdminPagination } from "@/components/admin/ui/admin-pagination";
 import { TRIAL_FEE_INR } from "@/lib/league";
+import { humanErrorFromResponse } from "@/lib/human-errors";
 import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
 
@@ -41,6 +42,10 @@ function formatDt(iso: string) {
   return new Date(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 }
 
+function copyToClipboard(text: string) {
+  void navigator.clipboard.writeText(text).catch(() => undefined);
+}
+
 type PanelProps = {
   trialZones: TrialZoneOption[];
 };
@@ -60,6 +65,9 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [completeOrder, setCompleteOrder] = useState<OrphanPaymentRow | null>(null);
+  const [sendingLinkId, setSendingLinkId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [linkNotice, setLinkNotice] = useState("");
   const ORDERS_PAGE = 25;
   const LOGS_PAGE = 50;
   const [ordersOffset, setOrdersOffset] = useState(0);
@@ -113,6 +121,66 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
     return o.registrationPaymentStatus === REGISTRATION_PAYMENT_PENDING;
   }
 
+  async function sendCompletionLink(o: PaymentOrder) {
+    if (!o.email?.trim()) {
+      setLinkNotice("This payment has no email — cannot send a completion link.");
+      return;
+    }
+    setSendingLinkId(o.id);
+    setLinkNotice("");
+    const res = await adminFetch(`/api/admin/payments/${encodeURIComponent(o.id)}/send-completion-link`, {
+      method: "POST",
+    });
+    setSendingLinkId(null);
+    if (res.status === 401) {
+      router.replace("/admin/login");
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setLinkNotice(humanErrorFromResponse(data, "Could not send the completion link."));
+      return;
+    }
+    const url = typeof data.completionUrl === "string" ? data.completionUrl : "";
+    if (url) copyToClipboard(url);
+    const emailPart = data.emailSent
+      ? `Email sent to ${data.email}.`
+      : `Email was not sent${data.emailError ? `: ${data.emailError}` : ""}.`;
+    const copyPart = url ? " Link copied to clipboard." : "";
+    setLinkNotice(`${emailPart}${copyPart}`);
+  }
+
+  async function deleteOrder(o: PaymentOrder) {
+    const label = o.playerName?.trim() || o.email?.trim() || o.razorpayOrderId;
+    const pendingDraft = o.registrationPaymentStatus === REGISTRATION_PAYMENT_PENDING;
+    const message = pendingDraft
+      ? `Delete payment for “${label}” and remove the incomplete registration draft? This cannot be undone.`
+      : o.registrationId
+        ? `Delete payment record for “${label}”? The linked registration is not a draft — you may need to remove it from Registrations separately.`
+        : `Delete payment order for “${label}”? This only removes the record in your database, not money in Razorpay.`;
+
+    if (!window.confirm(message)) return;
+
+    setDeletingId(o.id);
+    setErr("");
+    setLinkNotice("");
+    const res = await adminFetch(`/api/admin/payments/${encodeURIComponent(o.id)}`, { method: "DELETE" });
+    setDeletingId(null);
+    if (res.status === 401) {
+      router.replace("/admin/login");
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setErr(humanErrorFromResponse(data, "Could not delete this payment record."));
+      return;
+    }
+    if (data.deletedRegistration) {
+      setLinkNotice(`Payment and incomplete registration draft for “${label}” were deleted.`);
+    }
+    void load();
+  }
+
   return (
     <div className="admin-panel mx-auto max-w-7xl space-y-8">
       <AdminPageHeader
@@ -135,8 +203,9 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
             {summary.orphanPaid} paid order{summary.orphanPaid === 1 ? "" : "s"} not yet fully enrolled
           </p>
           <p className="mt-1 leading-relaxed text-amber-900/90">
-            These players paid online but did not finish the form (or the save failed). Use{" "}
-            <strong>Complete registration</strong> on each row to add them to{" "}
+            These players paid online but did not finish enrollment. Use{" "}
+            <strong>Email completion link</strong> so they can fill the form themselves, or{" "}
+            <strong>Complete in admin</strong> to add them to{" "}
             <Link href="/admin/registrations" className="font-semibold underline hover:text-orange-800">
               Registrations
             </Link>
@@ -230,6 +299,9 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
       </div>
 
       {err ? <p className="text-sm font-semibold text-rose-700">{err}</p> : null}
+      {linkNotice ? (
+        <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-950">{linkNotice}</p>
+      ) : null}
       {loading ? <p className="text-sm text-slate-600">Loading…</p> : null}
 
       {!loading && tab === "orders" ? (
@@ -286,23 +358,44 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {isOrphanRow(o) ? (
+                        <div className="flex flex-col gap-1.5">
+                          {isOrphanRow(o) ? (
+                            <>
+                              <button
+                                type="button"
+                                disabled={sendingLinkId === o.id || deletingId === o.id}
+                                onClick={() => void sendCompletionLink(o)}
+                                className="whitespace-nowrap rounded-lg bg-[#1B365D] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#152a4a] disabled:opacity-50"
+                              >
+                                {sendingLinkId === o.id ? "Sending…" : "Email completion link"}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={deletingId === o.id}
+                                onClick={() => setCompleteOrder(o)}
+                                className="whitespace-nowrap rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-bold text-orange-800 hover:bg-orange-50 disabled:opacity-50"
+                              >
+                                Complete in admin
+                              </button>
+                            </>
+                          ) : o.registrationId ? (
+                            <button
+                              type="button"
+                              onClick={() => router.push("/admin/registrations")}
+                              className="text-left text-xs font-semibold text-[#1B365D] underline hover:text-orange-700"
+                            >
+                              View registrations
+                            </button>
+                          ) : null}
                           <button
                             type="button"
-                            onClick={() => setCompleteOrder(o)}
-                            className="whitespace-nowrap rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-orange-700"
+                            disabled={deletingId === o.id || sendingLinkId === o.id}
+                            onClick={() => void deleteOrder(o)}
+                            className="whitespace-nowrap rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                           >
-                            Complete registration
+                            {deletingId === o.id ? "Deleting…" : "Delete"}
                           </button>
-                        ) : o.registrationId ? (
-                          <button
-                            type="button"
-                            onClick={() => router.push("/admin/registrations")}
-                            className="text-xs font-semibold text-[#1B365D] underline hover:text-orange-700"
-                          >
-                            View registrations
-                          </button>
-                        ) : null}
+                        </div>
                       </td>
                       <td className="px-4 py-3 font-mono text-[10px] text-slate-500">
                         <div className="max-w-[160px] truncate" title={o.razorpayOrderId}>

@@ -3,6 +3,7 @@ import { logPaymentEvent } from "@/lib/payment-log";
 import { paymentOrderMatchesRegistrant, paymentOrderMismatchMessage } from "@/lib/payment-order-match";
 import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { recordPaymentCapturedInDb } from "@/lib/payment-order-sync";
+import { isEnrolledPaymentStatus, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { ensurePaymentCapturedOnRazorpay, isOrderPaidOnRazorpay, verifyPaymentSignature } from "@/lib/razorpay";
 
 export type RazorpayPaymentProof = {
@@ -21,6 +22,7 @@ export async function confirmRazorpayPayment(
   proof: RazorpayPaymentProof,
   registrant: RegistrantIdentity,
   clientIp?: string,
+  expectedRegistrationId?: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = proof;
 
@@ -40,11 +42,6 @@ export async function confirmRazorpayPayment(
     };
   }
 
-  const existingReg = await prisma.registration.findUnique({ where: { razorpayOrderId } });
-  if (existingReg) {
-    return { ok: false, error: "This payment has already been used for a registration." };
-  }
-
   const order = await prisma.paymentOrder.findUnique({ where: { razorpayOrderId } });
   if (!order) {
     await logPaymentEvent({
@@ -57,8 +54,37 @@ export async function confirmRazorpayPayment(
     });
     return { ok: false, error: "Payment order not found. Please try paying again." };
   }
+
+  const existingReg = await prisma.registration.findUnique({ where: { razorpayOrderId } });
+  if (existingReg) {
+    if (isEnrolledPaymentStatus(existingReg.paymentStatus)) {
+      if (
+        expectedRegistrationId &&
+        existingReg.id === expectedRegistrationId &&
+        existingReg.razorpayPaymentId === razorpayPaymentId
+      ) {
+        return { ok: true };
+      }
+      return { ok: false, error: "This payment has already been used for a registration." };
+    }
+    if (expectedRegistrationId && existingReg.id !== expectedRegistrationId) {
+      return { ok: false, error: "This payment belongs to another registration." };
+    }
+    if (existingReg.paymentStatus !== REGISTRATION_PAYMENT_PENDING) {
+      return { ok: false, error: "This registration cannot accept an online payment in its current state." };
+    }
+  }
+
   if (order.registrationId) {
-    return { ok: false, error: "This payment has already been used for a registration." };
+    if (expectedRegistrationId && order.registrationId !== expectedRegistrationId) {
+      return { ok: false, error: "This payment belongs to another registration." };
+    }
+    if (!expectedRegistrationId) {
+      const linked = await prisma.registration.findUnique({ where: { id: order.registrationId } });
+      if (linked && isEnrolledPaymentStatus(linked.paymentStatus)) {
+        return { ok: false, error: "This payment has already been used for a registration." };
+      }
+    }
   }
 
   if (!paymentOrderMatchesRegistrant(order, registrant)) {
