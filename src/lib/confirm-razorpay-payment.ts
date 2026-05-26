@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { logPaymentEvent } from "@/lib/payment-log";
 import { paymentOrderMatchesRegistrant, paymentOrderMismatchMessage } from "@/lib/payment-order-match";
 import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
-import { isOrderPaidOnRazorpay, verifyPaymentSignature } from "@/lib/razorpay";
+import { recordPaymentCapturedInDb } from "@/lib/payment-order-sync";
+import { ensurePaymentCapturedOnRazorpay, isOrderPaidOnRazorpay, verifyPaymentSignature } from "@/lib/razorpay";
 
 export type RazorpayPaymentProof = {
   razorpayOrderId: string;
@@ -33,7 +34,10 @@ export async function confirmRazorpayPayment(
       success: false,
       message: "HMAC verification failed",
     });
-    return { ok: false, error: "Payment verification failed. Please contact the league desk with your payment reference." };
+    return {
+      ok: false,
+      error: "Payment could not be verified. No registration was created. Please try the payment again.",
+    };
   }
 
   const existingReg = await prisma.registration.findUnique({ where: { razorpayOrderId } });
@@ -81,7 +85,12 @@ export async function confirmRazorpayPayment(
   let paid = order.status === "paid" && order.razorpayPaymentId === razorpayPaymentId;
   if (!paid) {
     try {
-      paid = await isOrderPaidOnRazorpay(razorpayOrderId, razorpayPaymentId);
+      const capture = await ensurePaymentCapturedOnRazorpay(razorpayOrderId, razorpayPaymentId);
+      if (!capture.ok) {
+        paid = await isOrderPaidOnRazorpay(razorpayOrderId, razorpayPaymentId);
+      } else {
+        paid = true;
+      }
     } catch (e) {
       console.error(e);
       return { ok: false, error: "Could not confirm payment with Razorpay. Please try again in a few minutes." };
@@ -89,32 +98,21 @@ export async function confirmRazorpayPayment(
   }
 
   if (!paid) {
-    return { ok: false, error: "Payment is not completed yet. Please wait and try again, or contact the league desk." };
+    return {
+      ok: false,
+      error: "Payment was not successful. No registration was created. Please complete payment and try again.",
+    };
   }
 
-  await prisma.paymentOrder.update({
-    where: { razorpayOrderId },
-    data: {
-      status: "paid",
-      razorpayPaymentId,
-      paidAt: order.paidAt ?? new Date(),
-    },
-  });
-
-  await logPaymentEvent({
-    source: "register",
-    eventType: "payment_confirmed",
+  await recordPaymentCapturedInDb({
     razorpayOrderId,
     razorpayPaymentId,
-    paymentOrderId: order.id,
-    amountPaise: order.amountPaise,
-    currency: order.currency,
-    status: "paid",
+    source: "register",
+    eventType: "payment_confirmed",
     email: registrant.email,
     phone: registrant.phone,
     playerName: registrant.playerName,
-    clientIp,
-    success: true,
+    amountPaise: order.amountPaise,
   });
 
   return { ok: true };

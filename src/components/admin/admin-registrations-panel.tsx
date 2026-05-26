@@ -15,6 +15,7 @@ import {
 import { AdminRegistrationPrintModal } from "@/components/admin/admin-registration-print-modal";
 import { AdminRegistrationSubmissionModal } from "@/components/admin/admin-registration-submission-modal";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
+import { adminRegistrationFormToFormData, adminRegistrationFormToPayload } from "@/lib/admin-registration-payload";
 import { humanErrorFromResponse } from "@/lib/human-errors";
 
 type Row = {
@@ -52,28 +53,6 @@ type ListResponse = {
   offset: number;
 };
 
-function formToPayload(form: AdminRegistrationFormState) {
-  return {
-    academyName: form.academyName,
-    playerName: form.playerName,
-    dateOfBirth: form.dateOfBirth,
-    roles: form.roles,
-    email: form.email,
-    phone: form.phone,
-    fatherName: form.fatherName,
-    address: form.address,
-    jerseySize: form.jerseySize,
-    shoeSize: form.shoeSize,
-    idDocumentType: form.idDocumentType,
-    achievementsAndAwards: form.achievementsAndAwards || null,
-    trialZoneId: form.trialZoneId || null,
-    transactionRef: form.transactionRef || null,
-    feeReceivedDate: form.feeReceivedDate || null,
-    coachName: form.coachName || null,
-    paymentStatus: form.paymentStatus,
-  };
-}
-
 type PanelProps = {
   trialZones: TrialZoneOption[];
 };
@@ -102,7 +81,15 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   const [editing, setEditing] = useState<Row | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<AdminRegistrationFormState>(emptyAdminRegistrationForm);
+  const [playerPhotoFile, setPlayerPhotoFile] = useState<File | null>(null);
+  const [playerPhotoError, setPlayerPhotoError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  function resetFormState() {
+    setForm(emptyAdminRegistrationForm);
+    setPlayerPhotoFile(null);
+    setPlayerPhotoError("");
+  }
 
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
@@ -159,12 +146,19 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       setError("Please select at least one playing role for this player.");
       return;
     }
+    if (!playerPhotoFile || playerPhotoFile.size === 0) {
+      setPlayerPhotoError("Player photo is required.");
+      return;
+    }
+    setPlayerPhotoError("");
     setSaving(true);
     setError("");
+    const fd = adminRegistrationFormToFormData(adminRegistrationFormToPayload(form), {
+      playerPhoto: playerPhotoFile,
+    });
     const res = await adminFetch("/api/admin/registrations", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formToPayload(form)),
+      body: fd,
     });
     setSaving(false);
     if (res.status === 401) {
@@ -179,7 +173,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       return;
     }
     setCreateOpen(false);
-    setForm(emptyAdminRegistrationForm);
+    resetFormState();
     void load();
   }
 
@@ -190,12 +184,20 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       setError("Please select at least one playing role for this player.");
       return;
     }
+    const needsPhoto = !editing.playerPhotoPath?.trim();
+    if (needsPhoto && (!playerPhotoFile || playerPhotoFile.size === 0)) {
+      setPlayerPhotoError("Player photo is required.");
+      return;
+    }
+    setPlayerPhotoError("");
     setSaving(true);
     setError("");
+    const fd = adminRegistrationFormToFormData(adminRegistrationFormToPayload(form), {
+      playerPhoto: playerPhotoFile,
+    });
     const res = await adminFetch(`/api/admin/registrations/${editing.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formToPayload(form)),
+      body: fd,
     });
     setSaving(false);
     if (res.status === 401) {
@@ -208,7 +210,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       return;
     }
     setEditing(null);
-    setForm(emptyAdminRegistrationForm);
+    resetFormState();
     void load();
   }
 
@@ -264,8 +266,16 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   function startEdit(r: Row) {
     setEditing(r);
     setForm(rowToAdminForm({ ...r, dateOfBirth: r.dateOfBirth }));
+    setPlayerPhotoFile(null);
+    setPlayerPhotoError("");
     setCreateOpen(false);
     setSubmissionId(null);
+  }
+
+  function openCreate() {
+    setCreateOpen(true);
+    setEditing(null);
+    resetFormState();
   }
 
   return (
@@ -277,11 +287,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
           <>
             <button
               type="button"
-              onClick={() => {
-                setCreateOpen(true);
-                setEditing(null);
-                setForm(emptyAdminRegistrationForm);
-              }}
+              onClick={openCreate}
               className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700"
             >
               Add registration
@@ -445,7 +451,18 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         }
       >
         <form id="admin-reg-create" onSubmit={saveCreate}>
-          <AdminRegistrationFormFields form={form} setForm={setForm} trialZones={trialZones} disabled={saving} />
+          <AdminRegistrationFormFields
+            form={form}
+            setForm={setForm}
+            trialZones={trialZones}
+            disabled={saving}
+            requirePlayerPhoto
+            onPlayerPhotoChange={(file) => {
+              setPlayerPhotoFile(file);
+              if (file) setPlayerPhotoError("");
+            }}
+            playerPhotoError={playerPhotoError}
+          />
         </form>
       </AdminModal>
 
@@ -466,7 +483,19 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         }
       >
         <form id="admin-reg-edit" onSubmit={saveEdit}>
-          <AdminRegistrationFormFields form={form} setForm={setForm} trialZones={trialZones} disabled={saving} />
+          <AdminRegistrationFormFields
+            form={form}
+            setForm={setForm}
+            trialZones={trialZones}
+            disabled={saving}
+            requirePlayerPhoto={!editing?.playerPhotoPath?.trim()}
+            hasExistingPlayerPhoto={Boolean(editing?.playerPhotoPath?.trim())}
+            onPlayerPhotoChange={(file) => {
+              setPlayerPhotoFile(file);
+              if (file) setPlayerPhotoError("");
+            }}
+            playerPhotoError={playerPhotoError}
+          />
           {editing?.razorpayPaymentId && (
             <p className="mt-4 text-xs font-medium text-slate-600">
               Razorpay payment ID (read-only): <span className="font-mono">{editing.razorpayPaymentId}</span>

@@ -78,7 +78,7 @@ export const IMAGE_UPLOAD_SPECS = {
     aspectLabel: "4∶5 portrait",
     formats: "JPG, PNG, or WebP",
     maxMb: 4,
-    note: "Recent head-and-shoulders or full-length cricket photo — optional but helps scouts.",
+    note: "Recent head-and-shoulders or full-length cricket photo (required for all registrations).",
   },
   registrationIdScan: {
     id: "registration-id",

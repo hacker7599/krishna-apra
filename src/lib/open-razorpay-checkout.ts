@@ -14,6 +14,7 @@ type CheckoutParams = {
   prefill: { name: string; email: string; contact: string };
   onSuccess: (response: RazorpaySuccessResponse) => void | Promise<void>;
   onDismiss?: () => void;
+  onPaymentFailed?: (message: string) => void;
 };
 
 type RazorpayInstance = {
@@ -92,7 +93,9 @@ export async function openRazorpayCheckout(params: CheckoutParams): Promise<void
     });
 
     rzp.on("payment.failed", (response) => {
-      reject(new Error(response.error?.description || "Payment failed."));
+      const message = response.error?.description?.trim() || "Payment failed.";
+      params.onPaymentFailed?.(message);
+      reject(new Error("PAYMENT_FAILED"));
     });
 
     rzp.open();

@@ -47,7 +47,15 @@ export async function findDuplicateRegistrationExcluding(
   return null;
 }
 
-export function buildRegistrationCreateData(input: AdminRegistrationCreateInput): Prisma.RegistrationCreateInput {
+export type AdminRegistrationFilePaths = {
+  playerPhotoPath?: string | null;
+  idProofPath?: string | null;
+};
+
+export function buildRegistrationCreateData(
+  input: AdminRegistrationCreateInput,
+  files?: AdminRegistrationFilePaths,
+): Prisma.RegistrationCreateInput {
   const dob = new Date(`${input.dateOfBirth}T00:00:00.000Z`);
   return {
     academyName: input.academyName,
@@ -69,10 +77,19 @@ export function buildRegistrationCreateData(input: AdminRegistrationCreateInput)
     feeReceivedDate: input.feeReceivedDate?.trim() || null,
     coachName: input.coachName?.trim() || null,
     paymentStatus: input.paymentStatus ?? "manual",
-    idProofPath: null,
-    playerPhotoPath: null,
+    idProofPath: files?.idProofPath ?? null,
+    playerPhotoPath: files?.playerPhotoPath ?? null,
     paymentProofPath: null,
   };
+}
+
+export function applyRegistrationFilePathsToPatch(
+  data: Prisma.RegistrationUpdateInput,
+  files?: AdminRegistrationFilePaths,
+): Prisma.RegistrationUpdateInput {
+  if (files?.playerPhotoPath) data.playerPhotoPath = files.playerPhotoPath;
+  if (files?.idProofPath) data.idProofPath = files.idProofPath;
+  return data;
 }
 
 export function buildRegistrationPatchData(input: AdminRegistrationPatchInput): Prisma.RegistrationUpdateInput {

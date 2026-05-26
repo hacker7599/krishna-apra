@@ -20,7 +20,8 @@ npx prisma db push   # applies RateLimitEvent, unique email + phone on Registrat
 - Trial fee amount is fixed server-side; signature verified with `timingSafeEqual`.
 - Payment order is bound to registrant email, phone, and name at order creation.
 - `razorpayOrderId` is unique per registration — one payment cannot complete two sign-ups.
-- Webhook requires valid HMAC and exact `payment.amount` before marking paid.
+- Orders use automatic capture; if a payment stays `authorized`, the server calls Razorpay capture API.
+- Webhook (`payment.captured`, `payment.authorized`) requires valid HMAC and exact `payment.amount` before marking paid.
 
 ## Registrations & receipts
 

@@ -24,7 +24,7 @@ import {
 } from "@/lib/registration-form-validation";
 import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
 import { openRazorpayCheckout } from "@/lib/open-razorpay-checkout";
-import { humanErrorFromResponse, humanErrorMessage } from "@/lib/human-errors";
+import { humanErrorFromResponse } from "@/lib/human-errors";
 
 function cutoffNote() {
   const [y, m, d] = PLAYER_AGE_CUTOFF_DATE.split("-").map(Number);
@@ -106,6 +106,46 @@ export function RegisterForm({ trialZones }: Props) {
     return null;
   }
 
+  async function confirmPayment(registrationId: string, proof: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) {
+    const res = await fetch("/api/register/confirm-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        registrationId,
+        razorpayOrderId: proof.razorpay_order_id,
+        razorpayPaymentId: proof.razorpay_payment_id,
+        razorpaySignature: proof.razorpay_signature,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setStatus("err");
+      if (res.status === 429 && typeof data.retryAfterSec === "number") {
+        setMessage(`Too many attempts. Please wait ${data.retryAfterSec} seconds and try again.`);
+      } else {
+        setMessage(
+          humanErrorFromResponse(
+            data,
+            "Payment was received but we could not confirm your registration. Your details are saved — try again or contact the league desk.",
+          ),
+        );
+      }
+      return false;
+    }
+    if (data.ok) {
+      router.push("/register/success");
+      return true;
+    }
+    setStatus("err");
+    setMessage("Registration could not be completed. Please contact the league desk.");
+    return false;
+  }
+
   async function submitRegistration(fd: FormData) {
     const res = await fetch("/api/register", { method: "POST", body: fd, credentials: "include" });
     const data = await res.json().catch(() => ({}));
@@ -114,9 +154,10 @@ export function RegisterForm({ trialZones }: Props) {
       if (res.status === 429 && typeof data.retryAfterSec === "number") {
         setMessage(`Too many attempts. Please wait ${data.retryAfterSec} seconds and try again.`);
       } else {
-        setMessage(
-          humanErrorFromResponse(data, "We could not save your registration. Please try again or contact the league desk."),
-        );
+        const fallback = razorpayEnabled
+          ? "Your payment was received but we could not save your registration. No account was created — please try again or contact the league desk with your payment reference."
+          : "We could not save your registration. Please try again or contact the league desk.";
+        setMessage(humanErrorFromResponse(data, fallback));
       }
       return false;
     }
@@ -195,32 +236,36 @@ export function RegisterForm({ trialZones }: Props) {
       return;
     }
 
-    setStatus("paying");
+    setStatus("loading");
+    setMessage("Saving your details securely…");
+
     try {
-      const orderRes = await fetch("/api/payments/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerName: String(fd.get("playerName") ?? ""),
-          email: String(fd.get("email") ?? ""),
-          phone: String(fd.get("phone") ?? ""),
-        }),
-      });
-      const orderData = await orderRes.json().catch(() => ({}));
-      if (!orderRes.ok) {
+      const prepareRes = await fetch("/api/register/prepare", { method: "POST", body: fd, credentials: "include" });
+      const prepareData = await prepareRes.json().catch(() => ({}));
+      if (!prepareRes.ok) {
         setStatus("err");
         setMessage(
-          humanErrorFromResponse(orderData, "We could not start the payment step. Please try again or contact the league desk."),
+          humanErrorFromResponse(prepareData, "We could not save your registration. Check the form and try again."),
         );
         return;
       }
 
+      const registrationId = String(prepareData.registrationId ?? "");
+      if (!registrationId) {
+        setStatus("err");
+        setMessage("We could not save your registration. Please try again.");
+        return;
+      }
+
+      setStatus("paying");
+      setMessage("Details saved. Opening secure payment…");
+
       await openRazorpayCheckout({
-        keyId: orderData.keyId as string,
-        orderId: orderData.orderId as string,
-        amount: orderData.amount as number,
-        currency: (orderData.currency as string) || "INR",
-        name: (orderData.name as string) || "Future Star U-15",
+        keyId: prepareData.keyId as string,
+        orderId: prepareData.orderId as string,
+        amount: prepareData.amount as number,
+        currency: (prepareData.currency as string) || "INR",
+        name: (prepareData.name as string) || "Future Star U-15",
         description: `Trial registration fee — ₹${TRIAL_FEE_INR.toLocaleString("en-IN")}`,
         prefill: {
           name: String(fd.get("playerName") ?? ""),
@@ -228,29 +273,42 @@ export function RegisterForm({ trialZones }: Props) {
           contact: String(fd.get("phone") ?? ""),
         },
         onSuccess: async (response) => {
-          fd.set("razorpayOrderId", response.razorpay_order_id);
-          fd.set("razorpayPaymentId", response.razorpay_payment_id);
-          fd.set("razorpaySignature", response.razorpay_signature);
+          const orderId = response.razorpay_order_id?.trim();
+          const paymentId = response.razorpay_payment_id?.trim();
+          const signature = response.razorpay_signature?.trim();
+          if (!orderId || !paymentId || !signature) {
+            setStatus("err");
+            setMessage(
+              "Payment could not be verified. Your form is saved — try payment again or contact the league desk.",
+            );
+            return;
+          }
           setStatus("loading");
-          setMessage("Payment received. Saving registration…");
-          await submitRegistration(fd);
+          setMessage("Payment successful. Confirming your registration…");
+          await confirmPayment(registrationId, response);
         },
         onDismiss: () => {
           setStatus("err");
-          setMessage("Payment was not completed. Your registration was not submitted.");
+          setMessage(
+            "Payment was cancelled. Your details are saved on our server — you can submit the form again to retry payment.",
+          );
+        },
+        onPaymentFailed: () => {
+          setStatus("err");
+          setMessage(
+            "Payment failed. Your details are saved — fix your payment method and submit the form again to retry.",
+          );
         },
       });
     } catch (err) {
       if (err instanceof Error && err.message === "PAYMENT_DISMISSED") {
         return;
       }
+      if (err instanceof Error && err.message === "PAYMENT_FAILED") {
+        return;
+      }
       setStatus("err");
-      setMessage(
-        humanErrorMessage(
-          err instanceof Error ? err.message : undefined,
-          "Payment could not be completed. Please try again or use another payment method.",
-        ),
-      );
+      setMessage("Payment could not be completed. Your details may already be saved — try submitting again.");
     }
   }
 
@@ -309,11 +367,12 @@ export function RegisterForm({ trialZones }: Props) {
                 onInput={() => clearFieldError("playerName")}
               />
             </RegisterFormField>
-            <RegisterFormField label="Player photo" optional error={fieldErrors.playerPhoto} className="register-form-field--wide">
+            <RegisterFormField label="Player photo" error={fieldErrors.playerPhoto} className="register-form-field--wide">
               <input
                 name="playerPhoto"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
+                required
                 className={fileInputClass(!!fieldErrors.playerPhoto)}
                 onChange={() => clearFieldError("playerPhoto")}
               />

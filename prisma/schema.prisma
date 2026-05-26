@@ -22,7 +22,8 @@ model PaymentOrder {
   receipt           String?
   paidAt            DateTime?
   paymentMethod     String?
-  registrationId    String?   @unique
+  registrationId    String?       @unique
+  registration      Registration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
   logs              PaymentLog[]
 }
 
@@ -131,8 +132,9 @@ model Registration {
   feeReceivedDate       String?
   coachName             String?
   paymentStatus         String?
-  razorpayOrderId       String?    @unique
+  razorpayOrderId       String?       @unique
   razorpayPaymentId     String?
+  paymentOrder          PaymentOrder?
 }
 
 model Team {

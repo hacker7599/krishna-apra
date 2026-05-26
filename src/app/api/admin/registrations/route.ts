@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { registrationAdminCreateSchema } from "@/lib/admin-entity-schemas";
 import {
   assertEligibleDateOfBirth,
   buildRegistrationCreateData,
   findDuplicateRegistrationExcluding,
 } from "@/lib/admin-registration-mutation";
+import { parseAdminRegistrationCreateMultipart } from "@/lib/admin-registration-form-data";
 import { listRegistrationsForAdmin } from "@/lib/admin-registrations-query";
 import { logAdminAudit } from "@/lib/admin-audit";
 import { getClientIp } from "@/lib/get-client-ip";
@@ -41,24 +41,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: auth.status === 403 ? "Forbidden" : "Unauthorized" }, { status: auth.status });
   }
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.includes("multipart/form-data")) {
+    return NextResponse.json(
+      { error: "Desk registration requires a player photo upload. Submit the form with photo attached." },
+      { status: 400 },
+    );
   }
 
-  const parsed = registrationAdminCreateSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid data", details: parsed.error.flatten() }, { status: 400 });
+  const parsed = await parseAdminRegistrationCreateMultipart(req);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status });
   }
 
-  const dobError = assertEligibleDateOfBirth(parsed.data.dateOfBirth);
+  const { data, paths } = parsed;
+  if (!paths.playerPhotoPath) {
+    return NextResponse.json({ error: "Player photo is required." }, { status: 400 });
+  }
+
+  const dobError = assertEligibleDateOfBirth(data.dateOfBirth);
   if (dobError) {
     return NextResponse.json({ error: dobError }, { status: 400 });
   }
 
-  const dup = await findDuplicateRegistrationExcluding(parsed.data.email, parsed.data.phone);
+  const dup = await findDuplicateRegistrationExcluding(data.email, data.phone);
   if (dup) {
     const msg =
       dup.matched === "email"
@@ -69,7 +75,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const registration = await prisma.registration.create({
-      data: buildRegistrationCreateData(parsed.data),
+      data: buildRegistrationCreateData(data, {
+        playerPhotoPath: paths.playerPhotoPath,
+        idProofPath: paths.idProofPath,
+      }),
     });
     await logAdminAudit({
       action: "create",

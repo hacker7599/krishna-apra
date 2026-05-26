@@ -1,5 +1,6 @@
 "use client";
 
+import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
 import { PlayerRolePicker } from "@/components/player-role-picker";
 import { PLAYER_AGE_MIN_BIRTH_DATE, playerDateOfBirthMaxIso } from "@/lib/league";
 import type { RoleId } from "@/lib/league";
@@ -56,9 +57,28 @@ type Props = {
   setForm: React.Dispatch<React.SetStateAction<AdminRegistrationFormState>>;
   trialZones: TrialZoneOption[];
   disabled?: boolean;
+  /** Lock fields that must match an existing payment order */
+  readOnlyFields?: ("email" | "phone")[];
+  /** Desk create / orphan complete — photo required unless editing with existing file */
+  requirePlayerPhoto?: boolean;
+  hasExistingPlayerPhoto?: boolean;
+  onPlayerPhotoChange?: (file: File | null) => void;
+  playerPhotoError?: string;
 };
 
-export function AdminRegistrationFormFields({ form, setForm, trialZones, disabled }: Props) {
+export function AdminRegistrationFormFields({
+  form,
+  setForm,
+  trialZones,
+  disabled,
+  readOnlyFields = [],
+  requirePlayerPhoto = false,
+  hasExistingPlayerPhoto = false,
+  onPlayerPhotoChange,
+  playerPhotoError,
+}: Props) {
+  const lockEmail = readOnlyFields.includes("email");
+  const lockPhone = readOnlyFields.includes("phone");
   const roleSet = new Set(form.roles.filter((r): r is RoleId => isRoleId(r)));
 
   return (
@@ -83,6 +103,34 @@ export function AdminRegistrationFormFields({ form, setForm, trialZones, disable
           className={inputClass}
         />
       </label>
+      {(requirePlayerPhoto || hasExistingPlayerPhoto || onPlayerPhotoChange) && (
+        <label className="block sm:col-span-2">
+          <span className="mb-1 block text-xs font-bold uppercase text-slate-700">
+            Player photo
+            {requirePlayerPhoto && !hasExistingPlayerPhoto ? "" : hasExistingPlayerPhoto ? " (replace)" : ""}
+          </span>
+          <input
+            type="file"
+            name="playerPhoto"
+            accept="image/jpeg,image/png,image/webp"
+            required={requirePlayerPhoto && !hasExistingPlayerPhoto}
+            disabled={disabled}
+            onChange={(e) => onPlayerPhotoChange?.(e.target.files?.[0] ?? null)}
+            className={`w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-800 ${
+              playerPhotoError ? "rounded-lg border border-rose-400" : ""
+            }`}
+          />
+          <ImageUploadSizeHint specKey="registrationPlayerPhoto" className="mt-2 text-xs font-medium text-slate-500" />
+          {hasExistingPlayerPhoto && !requirePlayerPhoto ? (
+            <p className="mt-1 text-xs text-slate-500">A photo is already on file. Upload only to replace it.</p>
+          ) : null}
+          {playerPhotoError ? (
+            <p className="mt-1 text-xs font-semibold text-rose-700" role="alert">
+              {playerPhotoError}
+            </p>
+          ) : null}
+        </label>
+      )}
       <label className="block">
         <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Date of birth</span>
         <input
@@ -100,7 +148,8 @@ export function AdminRegistrationFormFields({ form, setForm, trialZones, disable
         <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Mobile</span>
         <input
           required
-          disabled={disabled}
+          disabled={disabled || lockPhone}
+          readOnly={lockPhone}
           value={form.phone}
           onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
           className={inputClass}
@@ -111,7 +160,8 @@ export function AdminRegistrationFormFields({ form, setForm, trialZones, disable
         <input
           type="email"
           required
-          disabled={disabled}
+          disabled={disabled || lockEmail}
+          readOnly={lockEmail}
           value={form.email}
           onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
           className={inputClass}

@@ -106,8 +106,8 @@ export function AdminDashboardHome() {
       {p.orphanPayments > 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           <strong>{p.orphanPayments}</strong> payment{p.orphanPayments === 1 ? "" : "s"} received without a linked registration.{" "}
-          <Link href="/admin/payments" className="font-semibold underline">
-            Review in Payments →
+          <Link href="/admin/payments?orphan=true" className="font-semibold underline">
+            Complete in Payments →
           </Link>
         </div>
       ) : null}

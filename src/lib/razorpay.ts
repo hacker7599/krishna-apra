@@ -37,12 +37,59 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
   }
 }
 
-export async function isOrderPaidOnRazorpay(razorpayOrderId: string, razorpayPaymentId: string): Promise<boolean> {
+function paymentIsCaptured(payment: { status?: string; captured?: boolean }): boolean {
+  return payment.status === "captured" || payment.captured === true;
+}
+
+/**
+ * Ensures Razorpay payment is captured (auto-capture on order, or manual capture API if still authorized).
+ */
+export async function ensurePaymentCapturedOnRazorpay(
+  razorpayOrderId: string,
+  razorpayPaymentId: string,
+): Promise<{ ok: true } | { ok: false; status: string }> {
   const rzp = getRazorpay();
-  const payment = await rzp.payments.fetch(razorpayPaymentId);
-  return (
-    payment.order_id === razorpayOrderId &&
-    payment.status === "captured" &&
-    Number(payment.amount) === TRIAL_FEE_PAISE
-  );
+  let payment = await rzp.payments.fetch(razorpayPaymentId);
+
+  if (payment.order_id !== razorpayOrderId) {
+    return { ok: false, status: "order_mismatch" };
+  }
+  if (Number(payment.amount) !== TRIAL_FEE_PAISE) {
+    return { ok: false, status: "amount_mismatch" };
+  }
+
+  if (paymentIsCaptured(payment)) {
+    return { ok: true };
+  }
+
+  if (payment.status === "authorized") {
+    const currency = payment.currency || "INR";
+    try {
+      payment = await rzp.payments.capture(razorpayPaymentId, TRIAL_FEE_PAISE, currency);
+    } catch {
+      payment = await rzp.payments.fetch(razorpayPaymentId);
+    }
+  }
+
+  if (paymentIsCaptured(payment)) {
+    return { ok: true };
+  }
+
+  return { ok: false, status: payment.status ?? "unknown" };
+}
+
+/** Retries capture verification — handles webhook/authorize lag after checkout success. */
+export async function isOrderPaidOnRazorpay(razorpayOrderId: string, razorpayPaymentId: string): Promise<boolean> {
+  const delays = [0, 400, 900, 1800];
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i] > 0) {
+      await new Promise((r) => setTimeout(r, delays[i]));
+    }
+    const result = await ensurePaymentCapturedOnRazorpay(razorpayOrderId, razorpayPaymentId);
+    if (result.ok) return true;
+    if (result.status === "order_mismatch" || result.status === "amount_mismatch") {
+      return false;
+    }
+  }
+  return false;
 }

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 export type PaymentLogInput = {
-  source: "create_order" | "webhook" | "register" | "admin";
+  source: "create_order" | "webhook" | "register" | "admin" | "prepare_registration";
   eventType: string;
   razorpayOrderId?: string | null;
   razorpayPaymentId?: string | null;

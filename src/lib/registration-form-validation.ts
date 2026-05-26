@@ -115,7 +115,7 @@ export function validateRegistrationForm(values: RegistrationFormValues): Record
     errors.idDocumentType = "Select ID document type.";
   }
 
-  const photoErr = validateFile(values.playerPhoto, false, "Player photo", PLAYER_PHOTO_ACCEPT);
+  const photoErr = validateFile(values.playerPhoto, true, "Player photo", PLAYER_PHOTO_ACCEPT);
   if (photoErr) errors.playerPhoto = photoErr;
 
   const idErr = validateFile(values.idProof, true, "ID proof", ID_ACCEPT);
