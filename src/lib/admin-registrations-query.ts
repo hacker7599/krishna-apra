@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { ENROLLED_PAYMENT_STATUSES, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
+import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 
 export type RegistrationListRow = Awaited<ReturnType<typeof prisma.registration.findMany>>[number];
 
@@ -48,10 +48,13 @@ export async function listRegistrationsForAdmin(opts: {
   offset: number;
 }) {
   const where: Prisma.RegistrationWhereInput = buildDateFilter(opts.from, opts.to);
-  if (opts.paymentStatus && ["paid", "manual", "pending", "refunded", REGISTRATION_PAYMENT_PENDING].includes(opts.paymentStatus)) {
-    where.paymentStatus = opts.paymentStatus;
-  } else if (!opts.paymentStatus) {
-    where.paymentStatus = { in: [...ENROLLED_PAYMENT_STATUSES] };
+  const normalizedPaymentStatus =
+    opts.paymentStatus === "pending" ? REGISTRATION_PAYMENT_PENDING : opts.paymentStatus;
+  if (
+    normalizedPaymentStatus &&
+    ["paid", "manual", "refunded", REGISTRATION_PAYMENT_PENDING].includes(normalizedPaymentStatus)
+  ) {
+    where.paymentStatus = normalizedPaymentStatus;
   }
 
   let rows = await prisma.registration.findMany({

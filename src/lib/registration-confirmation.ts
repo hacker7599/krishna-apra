@@ -67,7 +67,7 @@ export function toRegistrationConfirmation(row: RegistrationWithZone): Registrat
     trialZone: row.trialZone ? trialVenueDisplayLabel(row.trialZone) : null,
     payment: {
       status: row.paymentStatus ?? "manual",
-      method: paidOnline ? "Razorpay (online)" : "Manual / offline verification",
+      method: paidOnline ? "Approved by admin" : "Pending manual verification",
       amountInr: TRIAL_FEE_INR,
       currency: "INR",
       razorpayOrderId: row.razorpayOrderId,

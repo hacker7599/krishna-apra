@@ -74,6 +74,10 @@ export async function savePlayerPhoto(file: File | null): Promise<string | null>
   return saveToSubdir(file as File, PAYMENT_TYPES, "player-photos");
 }
 
+export async function savePaymentQr(file: File): Promise<string> {
+  return saveToSubdir(file, PAYMENT_TYPES, "payment-qr");
+}
+
 const BANNER_TYPES = new Map([
   ["image/jpeg", "jpg"],
   ["image/png", "png"],

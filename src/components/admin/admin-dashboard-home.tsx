@@ -91,13 +91,13 @@ export function AdminDashboardHome() {
         <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Registrations & revenue</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <AdminStatCard label="Total registrations" value={s.registrations} href="/admin/registrations" accent="navy" />
-          <AdminStatCard label="Paid online (Razorpay)" value={p.paidOnline} accent="green" />
-          <AdminStatCard label="Manual / offline" value={p.manualRegistrations} accent="orange" />
+          <AdminStatCard label="Approved payments" value={p.paidOnline} accent="green" />
+          <AdminStatCard label="Pending / manual" value={p.manualRegistrations} accent="orange" />
           <AdminStatCard
             label="Revenue collected"
             value={formatInr(p.revenuePaise)}
-            hint={`${TRIAL_FEE_INR} × paid online`}
-            href="/admin/payments"
+            hint={`${TRIAL_FEE_INR} × approved`}
+            href="/admin/registrations"
             accent="green"
           />
         </div>
@@ -105,10 +105,7 @@ export function AdminDashboardHome() {
 
       {p.orphanPayments > 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          <strong>{p.orphanPayments}</strong> payment{p.orphanPayments === 1 ? "" : "s"} received without a linked registration.{" "}
-          <Link href="/admin/payments?orphan=true" className="font-semibold underline">
-            Complete in Payments →
-          </Link>
+          <strong>{p.orphanPayments}</strong> legacy payment record{p.orphanPayments === 1 ? "" : "s"} remain from older flow.
         </div>
       ) : null}
 

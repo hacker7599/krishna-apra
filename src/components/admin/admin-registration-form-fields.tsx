@@ -4,7 +4,7 @@ import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
 import { PlayerRolePicker } from "@/components/player-role-picker";
 import { PLAYER_AGE_MIN_BIRTH_DATE, playerDateOfBirthMaxIso } from "@/lib/league";
 import type { RoleId } from "@/lib/league";
-import { isRoleId } from "@/lib/registration-roles";
+import { isRoleId, normalizeRoleIds } from "@/lib/registration-roles";
 import { ID_DOCUMENT_LABELS, ID_DOCUMENT_TYPES, JERSEY_SIZES } from "@/lib/registration-schema";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
 import { trialZoneSelectLabel } from "@/lib/trial-zone-options";
@@ -45,7 +45,7 @@ export const emptyAdminRegistrationForm: AdminRegistrationFormState = {
   transactionRef: "",
   feeReceivedDate: "",
   coachName: "",
-  paymentStatus: "manual",
+  paymentStatus: "pending",
   trialZoneId: "",
 };
 
@@ -277,10 +277,10 @@ export function AdminRegistrationFormFields({
           onChange={(e) => setForm((p) => ({ ...p, paymentStatus: e.target.value }))}
           className={inputClass}
         >
-          <option value="manual">Manual / pending verification</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="refunded">Refunded</option>
+          <option value="pending">Pending verification</option>
+          <option value="paid">Approved</option>
+          <option value="refunded">Disapproved</option>
+          <option value="manual">Manual</option>
         </select>
       </label>
       <label className="block">
@@ -336,7 +336,7 @@ export function rowToAdminForm(row: {
 }): AdminRegistrationFormState {
   let roles: string[] = [];
   try {
-    roles = JSON.parse(row.roles) as string[];
+    roles = normalizeRoleIds(JSON.parse(row.roles) as string[]);
   } catch {
     roles = [];
   }
@@ -356,7 +356,7 @@ export function rowToAdminForm(row: {
     transactionRef: row.transactionRef ?? "",
     feeReceivedDate: row.feeReceivedDate ?? "",
     coachName: row.coachName ?? "",
-    paymentStatus: row.paymentStatus ?? "manual",
+    paymentStatus: row.paymentStatus ?? "pending",
     trialZoneId: row.trialZoneId ?? "",
   };
 }

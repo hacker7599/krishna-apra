@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { PLAYER_AGE_CUTOFF_DATE } from "@/lib/league";
 import { normalizePhone } from "@/lib/normalize-phone";
-import { ROLE_IDS } from "@/lib/registration-roles";
+import { normalizeRoleIds, ROLE_IDS } from "@/lib/registration-roles";
 
 const roleEnum = z.enum(ROLE_IDS);
+const rolesSchema = z.preprocess((value) => {
+  if (!Array.isArray(value)) return value;
+  return normalizeRoleIds(value.map((item) => String(item ?? "")));
+}, z.array(roleEnum).min(1).max(5));
 
 export const ID_DOCUMENT_TYPES = ["AADHAAR", "PASSPORT", "BIRTH_CERTIFICATE"] as const;
 export type IdDocumentType = (typeof ID_DOCUMENT_TYPES)[number];
@@ -24,7 +28,7 @@ export const registrationSchema = z
     academyName: z.string().trim().min(2).max(200),
     playerName: z.string().trim().min(2).max(120),
     dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    roles: z.array(roleEnum).min(1).max(5),
+    roles: rolesSchema,
     trialZoneId: z.string().trim().min(1, "Select a trial zone."),
     email: z.string().trim().email().max(200),
     phone: z

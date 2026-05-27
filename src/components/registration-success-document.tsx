@@ -148,26 +148,12 @@ export function RegistrationSuccessDocument({ data }: { data: RegistrationConfir
               </p>
             </div>
           </div>
-          {(data.payment.razorpayPaymentId || data.payment.transactionRef) && (
+          {data.payment.transactionRef && (
             <div className="border-t border-slate-200 bg-white px-4 py-2.5 text-[11px]">
-              {data.payment.razorpayPaymentId && (
-                <p>
-                  <span className="font-bold text-slate-600">Razorpay payment ID: </span>
-                  <span className="font-mono text-slate-900">{data.payment.razorpayPaymentId}</span>
-                </p>
-              )}
-              {data.payment.razorpayOrderId && (
-                <p className={data.payment.razorpayPaymentId ? "mt-1" : ""}>
-                  <span className="font-bold text-slate-600">Razorpay order ID: </span>
-                  <span className="font-mono text-slate-900">{data.payment.razorpayOrderId}</span>
-                </p>
-              )}
-              {data.payment.transactionRef && !data.payment.razorpayPaymentId && (
-                <p>
-                  <span className="font-bold text-slate-600">Transaction reference: </span>
-                  <span className="font-mono text-slate-900">{data.payment.transactionRef}</span>
-                </p>
-              )}
+              <p>
+                <span className="font-bold text-slate-600">Transaction reference: </span>
+                <span className="font-mono text-slate-900">{data.payment.transactionRef}</span>
+              </p>
             </div>
           )}
         </section>

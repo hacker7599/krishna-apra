@@ -5,13 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { getClientIp } from "@/lib/get-client-ip";
 import { parseRegistrationFormFields, saveRegistrationUploads } from "@/lib/parse-registration-form-data";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
-import { isRazorpayConfigured } from "@/lib/razorpay-config";
 import { duplicateRegistrationMessage, findExistingRegistration } from "@/lib/registration-duplicate";
 import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cookie";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
-import { REGISTRATION_PAYMENT_MANUAL } from "@/lib/registration-payment-status";
 import { withDbRetry } from "@/lib/sqlite-resilience";
 
 export const runtime = "nodejs";
@@ -26,16 +24,6 @@ export async function POST(req: NextRequest) {
     );
     res.headers.set("Retry-After", String(limited.retryAfterSec));
     return res;
-  }
-
-  if (isRazorpayConfigured()) {
-    return NextResponse.json(
-      {
-        error:
-          "Online registration must use the payment flow. Submit the form once — your details are saved before payment.",
-      },
-      { status: 400 },
-    );
   }
 
   try {
@@ -61,6 +49,7 @@ export async function POST(req: NextRequest) {
       requirePlayerPhoto: true,
       requireIdProof: true,
       allowPaymentProof: true,
+      requirePaymentProof: true,
     });
     if (!uploads.ok) {
       return NextResponse.json({ error: uploads.error }, { status: 400 });
@@ -93,7 +82,7 @@ export async function POST(req: NextRequest) {
           transactionRef: data.transactionRef || null,
           achievementsAndAwards: data.achievementsAndAwards?.trim() || null,
           trialZoneId: trialZone.id,
-          paymentStatus: REGISTRATION_PAYMENT_MANUAL,
+          paymentStatus: "pending",
         },
       });
       return { row } as const;

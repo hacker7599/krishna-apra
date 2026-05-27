@@ -76,7 +76,7 @@ function uploadErrorMessage(e: unknown, label: string): string {
 
 export async function saveRegistrationUploads(
   form: FormData,
-  options: { requirePlayerPhoto: boolean; requireIdProof: boolean; allowPaymentProof: boolean },
+  options: { requirePlayerPhoto: boolean; requireIdProof: boolean; allowPaymentProof: boolean; requirePaymentProof?: boolean },
 ): Promise<{ ok: true; paths: SavedUploadPaths } | { ok: false; error: string }> {
   const photoFile = form.get("playerPhoto");
   const idFile = form.get("idProof");
@@ -133,6 +133,10 @@ export async function saveRegistrationUploads(
     } catch (e) {
       return { ok: false, error: uploadErrorMessage(e, "Payment proof") };
     }
+  }
+
+  if (options.requirePaymentProof && !paymentProofPath) {
+    return { ok: false, error: "Payment screenshot is required." };
   }
 
   return {

@@ -84,6 +84,18 @@ export const LEGACY_ROLE_LABELS: Record<string, string> = {
   ALL_ROUNDER_BATSMAN: "All rounder",
 };
 
+const LEGACY_ROLE_ID_MAP: Record<string, RoleId> = {
+  BATSMAN: "BATTER_TOP_ORDER",
+  BATSMAN_OPENER: "BATTER_TOP_ORDER",
+  BATSMAN_MIDDLE: "BATTER_MIDDLE_ORDER",
+  BOWLER: "BOWLER_FAST",
+  SPINNER: "BOWLER_SPINNER",
+  BOWLER_SPIN: "BOWLER_SPINNER",
+  ALL_ROUNDER_BOWLER: "ALL_ROUNDER",
+  ALL_ROUNDER_BATSMAN: "ALL_ROUNDER",
+  WICKETKEEPER: "WICKET_KEEPER",
+};
+
 const MUTEX_GROUPS: RoleId[][] = [
   ["BATTER_TOP_ORDER", "BATTER_MIDDLE_ORDER"],
   ["BOWLER_FAST", "BOWLER_SPINNER"],
@@ -96,6 +108,19 @@ const roleLabelMap = Object.fromEntries([
 
 export function isRoleId(id: string): id is RoleId {
   return ROLE_IDS.includes(id as RoleId);
+}
+
+export function normalizeRoleId(id: string): string {
+  return LEGACY_ROLE_ID_MAP[id] ?? id;
+}
+
+export function normalizeRoleIds(ids: string[]): RoleId[] {
+  const seen = new Set<RoleId>();
+  for (const raw of ids) {
+    const normalized = normalizeRoleId(raw);
+    if (isRoleId(normalized)) seen.add(normalized);
+  }
+  return [...seen];
 }
 
 export function toggleRegistrationRole(prev: Set<RoleId>, id: RoleId): Set<RoleId> {

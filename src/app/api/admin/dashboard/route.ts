@@ -20,7 +20,7 @@ export async function GET() {
     publishedBanners,
     publishedTrialZones,
     paidOnline,
-    manualRegistrations,
+    pendingOrManualRegistrations,
     orphanPayments,
     paymentOrdersTotal,
     recentRegistrations,
@@ -33,7 +33,7 @@ export async function GET() {
     prisma.heroBanner.count({ where: { published: true } }),
     prisma.trialZone.count({ where: { published: true } }),
     prisma.registration.count({ where: { paymentStatus: "paid" } }),
-    prisma.registration.count({ where: { paymentStatus: "manual" } }),
+    prisma.registration.count({ where: { paymentStatus: { in: ["manual", "pending"] } } }),
     prisma.paymentOrder.count({ where: await paidOrphanPaymentOrderFilter() }),
     prisma.paymentOrder.count(),
     prisma.registration.findMany({
@@ -62,7 +62,7 @@ export async function GET() {
     publishedTrialZones,
     payments: {
       paidOnline,
-      manualRegistrations,
+      manualRegistrations: pendingOrManualRegistrations,
       orphanPayments,
       paymentOrdersTotal,
       revenuePaise,

@@ -12,7 +12,6 @@ const sections = [
     items: [
       { href: "/admin", label: "Dashboard" },
       { href: "/admin/registrations", label: "Registrations" },
-      { href: "/admin/payments", label: "Payments" },
       { href: "/admin/activity", label: "Activity log" },
       { href: "/admin/emails", label: "Email log" },
     ],

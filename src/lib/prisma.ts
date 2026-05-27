@@ -1,28 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { applySqlitePragmas, bindSqlitePragmaReady, isSqliteDatabaseUrl } from "@/lib/sqlite-resilience";
 
-const g = globalThis as typeof globalThis & { prisma?: PrismaClient };
-
-function clientHasCurrentDelegates(client: PrismaClient): boolean {
-  const c = client as unknown as Record<string, Record<string, unknown> | undefined>;
-  return (
-    typeof c.team?.findMany === "function" &&
-    typeof c.heroBanner?.findMany === "function" &&
-    typeof c.trialZone?.findMany === "function" &&
-    typeof c.paymentOrder?.create === "function" &&
-    typeof c.paymentLog?.findMany === "function" &&
-    typeof c.adminAuditLog?.findMany === "function" &&
-    typeof c.blogPost?.findMany === "function"
-  );
-}
+const globalForPrisma = globalThis as typeof globalThis & { prisma?: PrismaClient };
 
 function createPrismaClient(): PrismaClient {
   const client = new PrismaClient();
-  if (!clientHasCurrentDelegates(client)) {
-    throw new Error(
-      "Prisma client is out of date (missing BlogPost or other models). Run: npx prisma generate && npx prisma db push — then restart the server.",
-    );
-  }
 
   if (isSqliteDatabaseUrl()) {
     bindSqlitePragmaReady(
@@ -38,20 +20,13 @@ function createPrismaClient(): PrismaClient {
 }
 
 export function getPrisma(): PrismaClient {
-  const cached = g.prisma;
-  if (cached && clientHasCurrentDelegates(cached)) {
-    return cached;
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient();
   }
-  if (cached) {
-    void cached.$disconnect().catch(() => undefined);
-    g.prisma = undefined;
-  }
-  const client = createPrismaClient();
-  g.prisma = client;
-  return client;
+  return globalForPrisma.prisma;
 }
 
-/** Lazy proxy so HMR never keeps a stale client reference. */
+/** Lazy proxy so HMR does not keep a stale client reference on the prisma object itself. */
 export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
   get(_target, prop, receiver) {
     const client = getPrisma();

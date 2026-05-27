@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { isEmptyEditorHtml } from "@/lib/blog-content-utils";
-import { ROLE_IDS } from "@/lib/registration-roles";
+import { normalizeRoleIds, ROLE_IDS } from "@/lib/registration-roles";
 import { isSafeBannerCtaHref, isSafeGoogleMapsUrl } from "@/lib/safe-public-href";
 
 const blogOgImageUrl = z
@@ -128,6 +128,10 @@ export const trialZonePatchSchema = z.object({
 });
 
 const roleEnum = z.enum(ROLE_IDS);
+const rolesSchema = z.preprocess((value) => {
+  if (!Array.isArray(value)) return value;
+  return normalizeRoleIds(value.map((item) => String(item ?? "")));
+}, z.array(roleEnum).min(1).max(5));
 const idDocumentTypeEnum = z.enum(["AADHAAR", "PASSPORT", "BIRTH_CERTIFICATE"]);
 const jerseySizeEnum = z.enum(["XS", "S", "M", "L", "XL", "XXL", "XXXL"]);
 const paymentStatusEnum = z.enum(["paid", "manual", "pending", "refunded"]);
@@ -136,7 +140,7 @@ const registrationCore = {
   academyName: z.string().trim().min(2).max(200),
   playerName: z.string().trim().min(2).max(120),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  roles: z.array(roleEnum).min(1).max(5),
+  roles: rolesSchema,
   trialZoneId: z.string().trim().min(1).optional().nullable(),
   email: z.string().trim().email().max(200),
   phone: z

@@ -131,7 +131,7 @@ export function validateRegistrationForm(
   const idErr = validateFile(values.idProof, requireIdProof, "ID proof", ID_ACCEPT);
   if (idErr) errors.idProof = idErr;
 
-  const payErr = validateFile(values.paymentProof, false, "Payment proof", PAYMENT_PROOF_ACCEPT);
+  const payErr = validateFile(values.paymentProof, true, "Payment screenshot", PAYMENT_PROOF_ACCEPT);
   if (payErr) errors.paymentProof = payErr;
 
   const ref = values.transactionRef.trim();

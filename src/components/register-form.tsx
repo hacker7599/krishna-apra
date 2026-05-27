@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { PlayerRolePicker } from "@/components/player-role-picker";
 import { RegisterFormField, RegisterFormSection, registerInputClass } from "@/components/register-form-ui";
@@ -23,7 +24,6 @@ import {
   validateRegistrationForm,
 } from "@/lib/registration-form-validation";
 import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
-import { openRazorpayCheckout } from "@/lib/open-razorpay-checkout";
 import { humanErrorFromResponse } from "@/lib/human-errors";
 
 function cutoffNote() {
@@ -33,11 +33,11 @@ function cutoffNote() {
 }
 
 type PaymentConfig = {
-  enabled: boolean;
-  keyId?: string;
-  amountPaise?: number;
+  enabled?: boolean;
   amountInr?: number;
   currency?: string;
+  paymentMode?: string;
+  qrImageUrl?: string | null;
 };
 
 type Props = {
@@ -49,14 +49,15 @@ export function RegisterForm({ trialZones }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
   const [roles, setRoles] = useState<Set<RoleId>>(() => new Set());
   const [trialZoneId, setTrialZoneId] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "paying" | "ok" | "err">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "err">("idle");
   const [message, setMessage] = useState("");
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isQrPreviewOpen, setIsQrPreviewOpen] = useState(false);
 
   const rolesJson = useMemo(() => JSON.stringify([...roles]), [roles]);
-  const razorpayEnabled = paymentConfig?.enabled === true;
+  const qrImageUrl = paymentConfig?.qrImageUrl ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +73,17 @@ export function RegisterForm({ trialZones }: Props) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isQrPreviewOpen) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsQrPreviewOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isQrPreviewOpen]);
 
   function clearFieldError(name: string) {
     setFieldErrors((prev) => {
@@ -106,46 +118,6 @@ export function RegisterForm({ trialZones }: Props) {
     return null;
   }
 
-  async function confirmPayment(registrationId: string, proof: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature: string;
-  }) {
-    const res = await fetch("/api/register/confirm-payment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        registrationId,
-        razorpayOrderId: proof.razorpay_order_id,
-        razorpayPaymentId: proof.razorpay_payment_id,
-        razorpaySignature: proof.razorpay_signature,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setStatus("err");
-      if (res.status === 429 && typeof data.retryAfterSec === "number") {
-        setMessage(`Too many attempts. Please wait ${data.retryAfterSec} seconds and try again.`);
-      } else {
-        setMessage(
-          humanErrorFromResponse(
-            data,
-            "Payment was received but we could not confirm your registration. Your details are saved — try again or contact the league desk.",
-          ),
-        );
-      }
-      return false;
-    }
-    if (data.ok) {
-      router.push("/register/success");
-      return true;
-    }
-    setStatus("err");
-    setMessage("Registration could not be completed. Please contact the league desk.");
-    return false;
-  }
-
   async function submitRegistration(fd: FormData) {
     const res = await fetch("/api/register", { method: "POST", body: fd, credentials: "include" });
     const data = await res.json().catch(() => ({}));
@@ -154,10 +126,7 @@ export function RegisterForm({ trialZones }: Props) {
       if (res.status === 429 && typeof data.retryAfterSec === "number") {
         setMessage(`Too many attempts. Please wait ${data.retryAfterSec} seconds and try again.`);
       } else {
-        const fallback = razorpayEnabled
-          ? "Your payment was received but we could not save your registration. No account was created — please try again or contact the league desk with your payment reference."
-          : "We could not save your registration. Please try again or contact the league desk.";
-        setMessage(humanErrorFromResponse(data, fallback));
+        setMessage(humanErrorFromResponse(data, "We could not save your registration. Please try again or contact the league desk."));
       }
       return false;
     }
@@ -181,7 +150,7 @@ export function RegisterForm({ trialZones }: Props) {
       setMessage("Please select at least one playing role (batter, bowler, all-rounder, or wicketkeeper).");
       return;
     }
-    if (razorpayEnabled && !acceptedTerms) {
+    if (!acceptedTerms) {
       setStatus("err");
       setMessage("Please accept the Terms & Conditions and Privacy Policy to continue.");
       return;
@@ -226,100 +195,18 @@ export function RegisterForm({ trialZones }: Props) {
       return;
     }
 
-    if (!razorpayEnabled) {
-      try {
-        await submitRegistration(fd);
-      } catch {
-        setStatus("err");
-        setMessage("Your internet connection may be down. Check your network and submit again.");
-      }
-      return;
-    }
-
-    setStatus("loading");
-    setMessage("Saving your details securely…");
-
     try {
-      const prepareRes = await fetch("/api/register/prepare", { method: "POST", body: fd, credentials: "include" });
-      const prepareData = await prepareRes.json().catch(() => ({}));
-      if (!prepareRes.ok) {
-        setStatus("err");
-        setMessage(
-          humanErrorFromResponse(prepareData, "We could not save your registration. Check the form and try again."),
-        );
-        return;
-      }
-
-      const registrationId = String(prepareData.registrationId ?? "");
-      if (!registrationId) {
-        setStatus("err");
-        setMessage("We could not save your registration. Please try again.");
-        return;
-      }
-
-      setStatus("paying");
-      setMessage("Details saved. Opening secure payment…");
-
-      await openRazorpayCheckout({
-        keyId: prepareData.keyId as string,
-        orderId: prepareData.orderId as string,
-        amount: prepareData.amount as number,
-        currency: (prepareData.currency as string) || "INR",
-        name: (prepareData.name as string) || "Future Star U-15",
-        description: `Trial registration fee — ₹${TRIAL_FEE_INR.toLocaleString("en-IN")}`,
-        prefill: {
-          name: String(fd.get("playerName") ?? ""),
-          email: String(fd.get("email") ?? ""),
-          contact: String(fd.get("phone") ?? ""),
-        },
-        onSuccess: async (response) => {
-          const orderId = response.razorpay_order_id?.trim();
-          const paymentId = response.razorpay_payment_id?.trim();
-          const signature = response.razorpay_signature?.trim();
-          if (!orderId || !paymentId || !signature) {
-            setStatus("err");
-            setMessage(
-              "Payment could not be verified. Your form is saved — try payment again or contact the league desk.",
-            );
-            return;
-          }
-          setStatus("loading");
-          setMessage("Payment successful. Confirming your registration…");
-          await confirmPayment(registrationId, response);
-        },
-        onDismiss: () => {
-          setStatus("err");
-          setMessage(
-            "Payment was cancelled. Your details are saved on our server — you can submit the form again to retry payment.",
-          );
-        },
-        onPaymentFailed: () => {
-          setStatus("err");
-          setMessage(
-            "Payment failed. Your details are saved — fix your payment method and submit the form again to retry.",
-          );
-        },
-      });
-    } catch (err) {
-      if (err instanceof Error && err.message === "PAYMENT_DISMISSED") {
-        return;
-      }
-      if (err instanceof Error && err.message === "PAYMENT_FAILED") {
-        return;
-      }
+      await submitRegistration(fd);
+    } catch {
       setStatus("err");
-      setMessage("Payment could not be completed. Your details may already be saved — try submitting again.");
+      setMessage("Your internet connection may be down. Check your network and submit again.");
     }
   }
 
   const submitLabel =
     status === "loading"
       ? "Submitting…"
-      : status === "paying"
-        ? "Opening payment…"
-        : razorpayEnabled
-          ? `Pay ₹${TRIAL_FEE_INR.toLocaleString("en-IN")} & submit`
-          : "Submit registration";
+      : "Submit registration";
 
   const fileInputClass = (hasError: boolean) =>
     `register-form-file-input${hasError ? " register-form-file-input--error" : ""}`;
@@ -581,64 +468,77 @@ export function RegisterForm({ trialZones }: Props) {
 
         <RegisterFormSection number="8" title="Payment">
           <div className="register-form-payment-block">
-            {razorpayEnabled ? (
-              <div className="register-form-callout register-form-callout--emerald">
-                <p className="register-form-callout__title">Online payment (Razorpay)</p>
-                <p className="register-form-callout__text">
-                  Pay ₹{TRIAL_FEE_INR.toLocaleString("en-IN")} securely via UPI, cards, or netbanking. Registration is saved only after successful payment.
-                </p>
-              </div>
-            ) : (
-              <div className="register-form-callout register-form-callout--slate">
-                <p className="register-form-callout__title">Manual / offline payment</p>
-                <p className="register-form-callout__text">
-                  Pay via your club coordinator or league desk UPI. Add a transaction reference and upload proof for faster verification.
-                </p>
-                <div className="mt-4 register-form-grid register-form-grid--2">
-                  <RegisterFormField label="Transaction reference" optional error={fieldErrors.transactionRef}>
-                    <input
-                      name="transactionRef"
-                      maxLength={120}
-                      className={registerInputClass(!!fieldErrors.transactionRef)}
-                      placeholder="UPI / bank reference"
-                      onInput={() => clearFieldError("transactionRef")}
+            <div className="register-form-callout register-form-callout--slate">
+              <p className="register-form-callout__title">Scan QR and upload payment screenshot</p>
+              <p className="register-form-callout__text">
+                Pay ₹{TRIAL_FEE_INR.toLocaleString("en-IN")} to the league QR, then upload the screenshot below. Admin will approve or disapprove after verification.
+              </p>
+              {qrImageUrl ? (
+                <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsQrPreviewOpen(true)}
+                    className="mx-auto block w-full max-w-[220px] cursor-zoom-in"
+                    aria-label="Click to enlarge QR code"
+                  >
+                    <Image
+                      src={qrImageUrl}
+                      alt="League payment QR code"
+                      width={220}
+                      height={220}
+                      className="mx-auto h-auto w-full max-w-[220px] object-contain"
                     />
-                  </RegisterFormField>
-                  <RegisterFormField label="Payment proof" optional error={fieldErrors.paymentProof}>
-                    <input
-                      name="paymentProof"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className={fileInputClass(!!fieldErrors.paymentProof)}
-                      onChange={() => clearFieldError("paymentProof")}
-                    />
-                    <ImageUploadSizeHint specKey="registrationPaymentProof" className="register-form-field__hint !mt-2" />
-                  </RegisterFormField>
+                  </button>
+                  <p className="mt-2 text-center text-xs font-semibold text-slate-600">Click QR code to enlarge</p>
                 </div>
+              ) : (
+                <p className="mt-3 text-xs font-semibold text-rose-700">
+                  Payment QR is not configured yet. Please contact admin before making payment.
+                </p>
+              )}
+              <div className="mt-4 register-form-grid register-form-grid--2">
+                <RegisterFormField label="Transaction reference" optional error={fieldErrors.transactionRef}>
+                  <input
+                    name="transactionRef"
+                    maxLength={120}
+                    className={registerInputClass(!!fieldErrors.transactionRef)}
+                    placeholder="UPI / bank reference"
+                    onInput={() => clearFieldError("transactionRef")}
+                  />
+                </RegisterFormField>
+                <RegisterFormField label="Payment screenshot" error={fieldErrors.paymentProof}>
+                  <input
+                    name="paymentProof"
+                    type="file"
+                    required
+                    accept="image/jpeg,image/png,image/webp"
+                    className={fileInputClass(!!fieldErrors.paymentProof)}
+                    onChange={() => clearFieldError("paymentProof")}
+                  />
+                  <ImageUploadSizeHint specKey="registrationPaymentProof" className="register-form-field__hint !mt-2" />
+                </RegisterFormField>
               </div>
-            )}
+            </div>
 
-            {razorpayEnabled ? (
-              <label className="register-form-terms">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="register-form-terms__input"
-                />
-                <span className="register-form-terms__text">
-                  I agree to the{" "}
-                  <Link href="/terms" className="font-bold text-orange-600 underline hover:text-orange-700" target="_blank">
-                    Terms &amp; Conditions
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="font-bold text-orange-600 underline hover:text-orange-700" target="_blank">
-                    Privacy Policy
-                  </Link>
-                  , and authorise payment of the trial registration fee.
-                </span>
-              </label>
-            ) : null}
+            <label className="register-form-terms">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="register-form-terms__input"
+              />
+              <span className="register-form-terms__text">
+                I agree to the{" "}
+                <Link href="/terms" className="font-bold text-orange-600 underline hover:text-orange-700" target="_blank">
+                  Terms &amp; Conditions
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="font-bold text-orange-600 underline hover:text-orange-700" target="_blank">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
           </div>
         </RegisterFormSection>
 
@@ -649,13 +549,43 @@ export function RegisterForm({ trialZones }: Props) {
 
           <button
             type="submit"
-            disabled={status === "loading" || status === "paying" || roles.size === 0 || (razorpayEnabled && !acceptedTerms)}
+            disabled={status === "loading" || roles.size === 0 || !acceptedTerms}
             className="register-form-submit"
           >
             {submitLabel}
           </button>
         </div>
       </div>
+      {isQrPreviewOpen && qrImageUrl ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Enlarged payment QR code"
+          onClick={() => setIsQrPreviewOpen(false)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-md bg-white px-3 py-1 text-sm font-semibold text-slate-900 shadow"
+            onClick={() => setIsQrPreviewOpen(false)}
+            aria-label="Close enlarged QR code"
+          >
+            Close
+          </button>
+          <div
+            className="w-full max-w-[420px] rounded-xl bg-white p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Image
+              src={qrImageUrl}
+              alt="League payment QR code enlarged"
+              width={420}
+              height={420}
+              className="mx-auto h-auto w-full max-w-[420px] object-contain"
+            />
+          </div>
+        </div>
+      ) : null}
     </form>
   );
 }

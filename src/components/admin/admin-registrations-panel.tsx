@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/components/admin/admin-session-provider";
@@ -78,12 +79,16 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [printId, setPrintId] = useState<string | null>(null);
   const [printAutoStart, setPrintAutoStart] = useState(false);
+  const [paymentProofPreview, setPaymentProofPreview] = useState<{ playerName: string; path: string } | null>(null);
   const [editing, setEditing] = useState<Row | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<AdminRegistrationFormState>(emptyAdminRegistrationForm);
   const [playerPhotoFile, setPlayerPhotoFile] = useState<File | null>(null);
   const [playerPhotoError, setPlayerPhotoError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrUploading, setQrUploading] = useState(false);
+  const qrFileRef = useRef<HTMLInputElement>(null);
 
   function resetFormState() {
     setForm(emptyAdminRegistrationForm);
@@ -118,12 +123,20 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     setTotal(data.total);
   }, [queryString]);
 
+  const loadQr = useCallback(async () => {
+    const res = await adminFetch("/api/admin/payment-qr");
+    if (!res.ok) return;
+    const data = (await res.json()) as { qrImageUrl?: string | null };
+    setQrImageUrl(data.qrImageUrl ?? null);
+  }, []);
+
   useEffect(() => {
     const id = window.setTimeout(() => {
       void load();
+      void loadQr();
     }, 0);
     return () => window.clearTimeout(id);
-  }, [load]);
+  }, [load, loadQr]);
 
   function applyFilters(e: React.FormEvent) {
     e.preventDefault();
@@ -225,6 +238,45 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     else setError("We could not delete this registration. Try again in a moment.");
   }
 
+  async function uploadPaymentQr(file: File | null) {
+    if (!file) return;
+    setQrUploading(true);
+    const fd = new FormData();
+    fd.set("qrImage", file);
+    const res = await adminFetch("/api/admin/payment-qr", { method: "POST", body: fd });
+    setQrUploading(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(humanErrorFromResponse(data, "Could not upload payment QR."));
+      return;
+    }
+    await loadQr();
+    if (qrFileRef.current) qrFileRef.current.value = "";
+  }
+
+  async function clearPaymentQr() {
+    const res = await adminFetch("/api/admin/payment-qr", { method: "DELETE" });
+    if (!res.ok) {
+      setError("Could not remove payment QR.");
+      return;
+    }
+    setQrImageUrl(null);
+  }
+
+  async function updatePaymentDecision(id: string, decision: "approve" | "disapprove") {
+    const status = decision === "approve" ? "paid" : "refunded";
+    const res = await adminFetch(`/api/admin/registrations/${id}`, {
+      method: "PATCH",
+      body: adminRegistrationFormToFormData({ paymentStatus: status }, {}),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(humanErrorFromResponse(data, "Could not update payment decision."));
+      return;
+    }
+    void load();
+  }
+
   function exportCsv() {
     if (!rows?.length) return;
     const headers = [
@@ -278,6 +330,36 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     resetFormState();
   }
 
+  function isImageProof(path: string) {
+    return /\.(png|jpe?g|webp|gif|bmp|svg)(\?.*)?$/i.test(path);
+  }
+
+  function normalizeAssetPath(path: string) {
+    if (!path) return path;
+    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+
+  const statusSummary = useMemo(() => {
+    const summary = { approved: 0, pending: 0, disapproved: 0, manual: 0 };
+    for (const row of rows ?? []) {
+      if (row.paymentStatus === "paid") summary.approved += 1;
+      else if (row.paymentStatus === "refunded") summary.disapproved += 1;
+      else if (row.paymentStatus === "pending" || row.paymentStatus === "pending_payment") summary.pending += 1;
+      else summary.manual += 1;
+    }
+    return summary;
+  }, [rows]);
+
+  function paymentBadge(status: string | null) {
+    if (status === "paid") return { label: "approved", className: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    if (status === "refunded") return { label: "disapproved", className: "bg-slate-100 text-slate-700 border-slate-200" };
+    if (status === "pending" || status === "pending_payment") {
+      return { label: "pending", className: "bg-amber-50 text-amber-700 border-amber-200" };
+    }
+    return { label: status ?? "manual", className: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+  }
+
   return (
     <div className="admin-panel mx-auto max-w-6xl space-y-6">
       <AdminPageHeader
@@ -304,7 +386,69 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         }
       />
 
-      <form onSubmit={applyFilters} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end">
+      <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <summary className="cursor-pointer list-none">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">Registration Payment QR</p>
+              <p className="mt-1 text-sm font-medium text-slate-600">Manage the QR visible on public registration form.</p>
+            </div>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${qrImageUrl ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+              {qrImageUrl ? "Live" : "Not set"}
+            </span>
+          </div>
+        </summary>
+        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-slate-700">Upload the QR players scan before attaching payment proof screenshot.</p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <input
+                ref={qrFileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => void uploadPaymentQr(e.target.files?.[0] ?? null)}
+                className="hidden"
+                disabled={qrUploading}
+              />
+              <button
+                type="button"
+                onClick={() => qrFileRef.current?.click()}
+                disabled={qrUploading}
+                className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white hover:bg-orange-700 disabled:opacity-60"
+              >
+                {qrUploading ? "Uploading..." : qrImageUrl ? "Replace QR" : "Upload QR"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void clearPaymentQr()}
+                disabled={!qrImageUrl || qrUploading}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50"
+              >
+                Remove QR
+              </button>
+              <span className="text-xs font-medium text-slate-500">JPG/PNG/WebP, max 4MB</span>
+            </div>
+          </div>
+
+          {qrImageUrl ? (
+            <Image
+              src={qrImageUrl}
+              alt="Current payment QR"
+              width={112}
+              height={112}
+              unoptimized
+              className="h-auto w-28 rounded border border-slate-200 bg-white object-contain"
+            />
+          ) : (
+            <div className="flex h-28 w-28 items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 text-center text-[11px] font-semibold text-slate-500">
+              QR preview
+            </div>
+          )}
+        </div>
+      </details>
+
+      <form onSubmit={applyFilters} className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <label className="block min-w-[200px] flex-1">
           <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Search</span>
           <input
@@ -322,10 +466,10 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900"
           >
             <option value="">All</option>
-            <option value="paid">Paid (Razorpay)</option>
+            <option value="pending_payment">Pending verification</option>
+            <option value="paid">Approved</option>
+            <option value="refunded">Disapproved</option>
             <option value="manual">Manual</option>
-            <option value="pending">Pending</option>
-            <option value="refunded">Refunded</option>
           </select>
         </label>
         <label className="block w-full sm:w-40">
@@ -336,13 +480,28 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
           <span className="mb-1 block text-xs font-bold uppercase text-slate-700">To</span>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900" />
         </label>
-        <div className="flex gap-2">
+        <div className="flex items-end gap-2">
           <button type="submit" className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700">
             Apply
           </button>
           <button type="button" onClick={clearFilters} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
             Clear
           </button>
+        </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+            Approved: {statusSummary.approved}
+          </span>
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+            Pending: {statusSummary.pending}
+          </span>
+          <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
+            Disapproved: {statusSummary.disapproved}
+          </span>
+          <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700">
+            Manual: {statusSummary.manual}
+          </span>
         </div>
       </form>
 
@@ -352,73 +511,85 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         <p className="text-sm font-semibold text-slate-600">Loading…</p>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full table-fixed border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-700">
-                <th className="w-[12%] px-2 py-3">When</th>
-                <th className="w-[14%] px-2 py-3">Player</th>
-                <th className="w-[14%] px-2 py-3">Academy</th>
-                <th className="w-[18%] px-2 py-3">Email</th>
-                <th className="w-[11%] px-2 py-3">Phone</th>
-                <th className="w-[11%] px-2 py-3">Payment</th>
-                <th className="w-[20%] px-2 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="font-medium text-slate-800">
-              {rows.map((r) => (
-                <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="whitespace-nowrap px-3 py-3 text-xs text-slate-600">{new Date(r.createdAt).toLocaleString()}</td>
-                  <td className="truncate px-3 py-3 font-bold text-slate-900">{r.playerName}</td>
-                  <td className="truncate px-3 py-3 text-xs">{r.academyName}</td>
-                  <td className="truncate px-3 py-3 text-xs">{r.email}</td>
-                  <td className="truncate px-3 py-3 text-xs">{r.phone}</td>
-                  <td className="px-3 py-3 text-xs">
+          <div className="grid gap-3 p-3 sm:p-4">
+            {rows.map((r) => (
+              <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-base font-bold text-slate-900">{r.playerName}</p>
+                    <p className="text-xs font-medium text-slate-600">{r.academyName}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span
-                      className={
-                        r.paymentStatus === "paid"
-                          ? "font-bold text-emerald-700"
-                          : r.paymentStatus === "refunded"
-                            ? "font-bold text-slate-500"
-                            : "font-bold text-amber-700"
-                      }
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${paymentBadge(r.paymentStatus).className}`}
                     >
-                      {r.paymentStatus ?? "manual"}
+                      {paymentBadge(r.paymentStatus).label}
                     </span>
-                    {r.razorpayPaymentId && (
-                      <div className="mt-0.5 font-mono text-[10px] text-slate-500">{r.razorpayPaymentId.slice(0, 14)}…</div>
-                    )}
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    <div className="flex flex-wrap justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setSubmissionId(r.id)}
-                        className="rounded border border-[#1B365D]/30 bg-[#1B365D]/5 px-2 py-1 text-[10px] font-bold uppercase text-[#1B365D] hover:bg-[#1B365D]/10"
-                      >
-                        View form
-                      </button>
-                      <button type="button" onClick={() => startEdit(r)} className="rounded border border-slate-300 px-2 py-1 text-[10px] font-bold uppercase hover:bg-slate-50">
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPrintAutoStart(false);
-                          setPrintId(r.id);
-                        }}
-                        className="rounded border border-orange-300 px-2 py-1 text-[10px] font-bold uppercase text-orange-700 hover:bg-orange-50"
-                      >
-                        Print
-                      </button>
-                      <button type="button" onClick={() => void removeRow(r)} className="rounded border border-rose-300 px-2 py-1 text-[10px] font-bold uppercase text-rose-700 hover:bg-rose-50">
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <span className="text-xs font-medium text-slate-500">{new Date(r.createdAt).toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="mt-3 grid gap-2 text-xs text-slate-700 sm:grid-cols-2">
+                  <p><span className="font-semibold text-slate-900">Email:</span> {r.email}</p>
+                  <p><span className="font-semibold text-slate-900">Phone:</span> {r.phone}</p>
+                  {r.trialZone?.zone ? <p><span className="font-semibold text-slate-900">Zone:</span> {r.trialZone.zone}</p> : null}
+                  {r.transactionRef ? <p><span className="font-semibold text-slate-900">Transaction:</span> {r.transactionRef}</p> : null}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSubmissionId(r.id)}
+                    className="rounded-md border border-[#1B365D]/30 bg-[#1B365D]/5 px-3 py-1.5 text-xs font-bold text-[#1B365D] hover:bg-[#1B365D]/10"
+                  >
+                    View form
+                  </button>
+                  <button type="button" onClick={() => startEdit(r)} className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      r.paymentProofPath &&
+                      setPaymentProofPreview({
+                        playerName: r.playerName,
+                        path: normalizeAssetPath(r.paymentProofPath),
+                      })
+                    }
+                    disabled={!r.paymentProofPath}
+                    className="rounded-md border border-indigo-300 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Payment proof
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void updatePaymentDecision(r.id, "approve")}
+                    className="rounded-md border border-emerald-300 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void updatePaymentDecision(r.id, "disapprove")}
+                    className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    Disapprove
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrintAutoStart(false);
+                      setPrintId(r.id);
+                    }}
+                    className="rounded-md border border-orange-300 px-3 py-1.5 text-xs font-semibold text-orange-700 hover:bg-orange-50"
+                  >
+                    Print
+                  </button>
+                  <button type="button" onClick={() => void removeRow(r)} className="rounded-md border border-rose-300 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
           {rows.length === 0 && <p className="px-4 py-8 text-center text-sm font-semibold text-slate-600">No rows match these filters.</p>}
           <AdminPagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
         </div>
@@ -496,11 +667,6 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
             }}
             playerPhotoError={playerPhotoError}
           />
-          {editing?.razorpayPaymentId && (
-            <p className="mt-4 text-xs font-medium text-slate-600">
-              Razorpay payment ID (read-only): <span className="font-mono">{editing.razorpayPaymentId}</span>
-            </p>
-          )}
         </form>
       </AdminModal>
 
@@ -512,6 +678,39 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
           setPrintAutoStart(false);
         }}
       />
+
+      <AdminModal
+        open={Boolean(paymentProofPreview)}
+        title={paymentProofPreview ? `Payment proof · ${paymentProofPreview.playerName}` : "Payment proof"}
+        onClose={() => setPaymentProofPreview(null)}
+        size="wide"
+      >
+        {paymentProofPreview ? (
+          <div className="space-y-3">
+            {isImageProof(paymentProofPreview.path) ? (
+              <Image
+                src={paymentProofPreview.path}
+                alt={`Payment proof uploaded by ${paymentProofPreview.playerName}`}
+                width={900}
+                height={1200}
+                className="mx-auto h-auto max-h-[70vh] w-auto max-w-full rounded border border-slate-200 bg-white object-contain"
+              />
+            ) : (
+              <p className="text-sm font-medium text-slate-700">
+                Preview is not available for this file type. Open it using the link below.
+              </p>
+            )}
+            <a
+              href={paymentProofPreview.path}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            >
+              Open original proof
+            </a>
+          </div>
+        ) : null}
+      </AdminModal>
     </div>
   );
 }

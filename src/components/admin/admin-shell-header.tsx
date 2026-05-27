@@ -4,9 +4,9 @@ import { usePathname } from "next/navigation";
 import { useAdminSession } from "@/components/admin/admin-session-provider";
 
 const titles: Record<string, { title: string; subtitle: string }> = {
-  "/admin": { title: "Command center", subtitle: "Trial registrations, payments, and league content" },
+  "/admin": { title: "Command center", subtitle: "Trial registrations, approvals, and league content" },
   "/admin/registrations": { title: "Registrations", subtitle: "Player sign-ups, proofs, and receipts" },
-  "/admin/payments": { title: "Payments", subtitle: "Razorpay orders, revenue, and audit trail" },
+  "/admin/payments": { title: "Payments", subtitle: "Legacy payment records (paused)" },
   "/admin/activity": { title: "Activity log", subtitle: "Admin actions on league data" },
   "/admin/teams": { title: "Teams", subtitle: "Franchise listings on the public site" },
   "/admin/banners": { title: "Hero banners", subtitle: "Homepage carousel and CTAs" },

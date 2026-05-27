@@ -7,7 +7,7 @@ export async function POST() {
   return NextResponse.json(
     {
       error:
-        "This payment endpoint is outdated. Submit the full registration form — your details are saved before Razorpay opens.",
+        "This payment endpoint is paused. Please use registration QR payment and upload screenshot proof.",
     },
     { status: 410 },
   );

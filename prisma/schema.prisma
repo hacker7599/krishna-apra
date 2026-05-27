@@ -215,3 +215,10 @@ model BlogPost {
   @@index([published, publishedAt])
   @@index([slug])
 }
+
+model AppConfig {
+  id           String   @id @default("default")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  paymentQrPath String?
+}

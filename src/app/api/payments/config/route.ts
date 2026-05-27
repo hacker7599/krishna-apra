@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { getRazorpayPublicKeyId, isRazorpayConfigured, TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { TRIAL_FEE_INR } from "@/lib/league";
+import { getPaymentQrPath } from "@/lib/payment-qr-config";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  if (!isRazorpayConfigured()) {
-    return NextResponse.json({ enabled: false });
-  }
+  const paymentQrPath = await getPaymentQrPath();
   return NextResponse.json({
-    enabled: true,
-    keyId: getRazorpayPublicKeyId(),
-    amountPaise: TRIAL_FEE_PAISE,
+    enabled: false,
     amountInr: TRIAL_FEE_INR,
     currency: "INR",
+    paymentMode: "qr_upload",
+    qrImageUrl: paymentQrPath ? "/api/payments/qr-image" : null,
   });
 }
