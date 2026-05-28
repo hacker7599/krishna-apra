@@ -74,12 +74,9 @@ function AdminRegistrationPrintModalLoaded({ registrationId, onClose, autoPrint 
     autoPrintedRef.current = true;
     const timer = window.setTimeout(() => {
       setPrinting(true);
-      try {
-        printRegistrationReceipt();
-      } finally {
-        window.setTimeout(() => setPrinting(false), 500);
-      }
-    }, 200);
+      printRegistrationReceipt();
+      window.setTimeout(() => setPrinting(false), 800);
+    }, 350);
     return () => window.clearTimeout(timer);
   }, [autoPrint, data, loading]);
 

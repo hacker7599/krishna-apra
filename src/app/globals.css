@@ -335,26 +335,21 @@ body {
     background: #fff !important;
   }
 
-  /* Isolate receipt when printing (success page or admin modal) */
-  body.is-printing-receipt * {
-    visibility: hidden;
+  /* Print clone is appended to body by printRegistrationReceipt() — only that subtree prints. */
+  body.is-printing-receipt > *:not(#registration-receipt-print-root) {
+    display: none !important;
   }
 
-  body.is-printing-receipt #registration-receipt,
-  body.is-printing-receipt #registration-receipt * {
-    visibility: visible;
-  }
-
-  body.is-printing-receipt #registration-receipt {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100%;
-    max-width: none;
+  body.is-printing-receipt #registration-receipt-print-root {
+    display: block !important;
     margin: 0;
     padding: 0;
-    z-index: 99999;
     background: #fff;
+  }
+
+  body.is-printing-receipt #registration-receipt-print-root .receipt-a4-sheet {
+    margin: 0 auto !important;
+    box-shadow: none !important;
   }
 
   /* Offline blank form — full page without body class */
@@ -544,6 +539,7 @@ body {
 
   .receipt-a4-sheet,
   #registration-receipt,
+  #registration-receipt-print-root .receipt-a4-sheet,
   .receipt-single-page {
     width: 210mm !important;
     max-width: 210mm !important;
@@ -560,7 +556,7 @@ body {
   }
 
   @supports not (zoom: 1) {
-    body.is-printing-receipt #registration-receipt {
+    body.is-printing-receipt #registration-receipt-print-root .receipt-a4-sheet {
       transform: scale(0.88);
       transform-origin: top center;
     }
@@ -571,31 +567,31 @@ body {
   }
 
   /* Slight print-only tightening — keeps on-screen design intact */
-  body.is-printing-receipt .receipt-header {
+  body.is-printing-receipt #registration-receipt-print-root .receipt-header {
     padding-bottom: 3mm !important;
   }
 
-  body.is-printing-receipt .receipt-section-title {
+  body.is-printing-receipt #registration-receipt-print-root .receipt-section-title {
     margin-top: 2.5mm !important;
   }
 
-  body.is-printing-receipt .receipt-detail-row {
+  body.is-printing-receipt #registration-receipt-print-root .receipt-detail-row {
     padding-top: 1.2mm !important;
     padding-bottom: 1.2mm !important;
   }
 
-  body.is-printing-receipt .receipt-footer {
+  body.is-printing-receipt #registration-receipt-print-root .receipt-footer {
     margin-top: 2.5mm !important;
     padding-top: 2mm !important;
   }
 
-  body.is-printing-receipt .receipt-footer p {
+  body.is-printing-receipt #registration-receipt-print-root .receipt-footer p {
     margin-top: 1.5mm !important;
     line-height: 1.35 !important;
     font-size: 8pt !important;
   }
 
-  body.is-printing-receipt .receipt-achievements {
+  body.is-printing-receipt #registration-receipt-print-root .receipt-achievements {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -614,31 +610,6 @@ body {
     -webkit-print-color-adjust: exact;
   }
 
-  /* Admin modal: expand for print */
-  body.is-printing-receipt [role="dialog"] {
-    position: static !important;
-    display: block !important;
-    overflow: visible !important;
-    padding: 0 !important;
-    background: transparent !important;
-  }
-
-  body.is-printing-receipt [role="dialog"] > button {
-    display: none !important;
-  }
-
-  body.is-printing-receipt [role="dialog"] > div {
-    max-height: none !important;
-    overflow: visible !important;
-    border: none !important;
-    box-shadow: none !important;
-    width: 100% !important;
-    max-width: none !important;
-  }
-
-  body.is-printing-receipt [role="dialog"] .admin-modal-chrome {
-    display: none !important;
-  }
 }
 
 /* Screen: optional section break control for offline blank form */
