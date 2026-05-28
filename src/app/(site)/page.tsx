@@ -2,7 +2,6 @@ import Link from "next/link";
 import { HeroBannersCarousel, type HeroBannerDTO } from "@/components/hero-banners-carousel";
 import { HomeIntroBand } from "@/components/home-intro-band";
 import { HomeStatsStrip } from "@/components/home-stats-strip";
-import { HomeBroadcastLeadership } from "@/components/home-broadcast-leadership";
 import { HomeEstimatedReach } from "@/components/home-estimated-reach";
 import { LeagueProtectionSection } from "@/components/league-protection-section";
 import { TournamentFormatSplit } from "@/components/tournament-format-split";
@@ -46,7 +45,6 @@ export default async function Home() {
       <HomeStatsStrip teamsStat={teamsStat} />
 
       <TournamentFormatSplit showAboutLink imagePriority />
-      <HomeBroadcastLeadership />
       <HomeEstimatedReach />
 
       <SiteSection tone="muted" width="content">
