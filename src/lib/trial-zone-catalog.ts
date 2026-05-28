@@ -78,9 +78,9 @@ export const OFFICIAL_TRIAL_VENUES: OfficialTrialVenue[] = [
   },
   {
     trialPlace: "Gaur City Stadium",
-    zone: "Ghaziabad",
-    address: "Gaur City Stadium, Ghaziabad",
-    navigationUrl: mapsSearch("Gaur City Stadium Ghaziabad"),
+    zone: "Greater Noida",
+    address: "Gaur City Stadium, Greater Noida",
+    navigationUrl: mapsSearch("Gaur City Stadium Greater Noida"),
     contactDetails: "Report to on-site league desk on trial day.",
   },
 ];
