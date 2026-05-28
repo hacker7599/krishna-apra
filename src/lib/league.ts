@@ -10,8 +10,15 @@ export const TAGLINE = "Where Future Stars Begin Their Journey.";
 export const LEAGUE_INITIATIVE_BY = "Outer Delhi Warriors";
 export const TRIAL_FEE_INR = 1299;
 
-/** League desk support line shown on registration form. */
-export const REGISTRATION_SUPPORT_PHONE = "+917678255437";
+/** League desk support lines shown on contact, footer, and registration help. */
+export const REGISTRATION_SUPPORT_PHONES = [
+  "+917678255437",
+  "+919818251516",
+  "+919719799909",
+] as const;
+
+/** Primary support line (first in list). */
+export const REGISTRATION_SUPPORT_PHONE = REGISTRATION_SUPPORT_PHONES[0];
 
 /** League desk support email shown across the public site. */
 export const REGISTRATION_SUPPORT_EMAIL = LEGAL_ENTITY.contactEmail;

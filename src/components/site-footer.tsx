@@ -4,7 +4,7 @@ import { COPYRIGHT_HOLDER, LEGAL_ENTITY } from "@/lib/site-legal";
 import { TitleSponsorMark } from "@/components/title-sponsor-mark";
 import { LEAGUE_LOGO_SRC } from "@/lib/branding";
 import { SocialMediaLinks } from "@/components/social-media-links";
-import { LEAGUE_NAME, REGISTRATION_SUPPORT_PHONE, REGION, TAGLINE, VENUE } from "@/lib/league";
+import { LEAGUE_NAME, REGISTRATION_SUPPORT_PHONES, REGION, TAGLINE, VENUE } from "@/lib/league";
 
 const legalLinks = [
   { href: "/privacy", label: "Privacy policy" },
@@ -73,11 +73,13 @@ export function SiteFooter() {
                   {LEGAL_ENTITY.contactEmail}
                 </a>
               </li>
-              <li>
-                <a href={`tel:${REGISTRATION_SUPPORT_PHONE}`} className="text-slate-700 hover:text-orange-700">
-                  {REGISTRATION_SUPPORT_PHONE}
-                </a>
-              </li>
+              {REGISTRATION_SUPPORT_PHONES.map((phone) => (
+                <li key={phone}>
+                  <a href={`tel:${phone}`} className="text-slate-700 hover:text-orange-700">
+                    {phone}
+                  </a>
+                </li>
+              ))}
               <li className="pt-2 text-xs leading-relaxed text-slate-500">{VENUE}</li>
             </ul>
           </div>

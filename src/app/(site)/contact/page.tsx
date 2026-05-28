@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPageShell } from "@/components/legal-page-shell";
 import { LEGAL_ENTITY } from "@/lib/site-legal";
-import { LEAGUE_NAME, REGISTRATION_SUPPORT_PHONE, VENUE } from "@/lib/league";
+import { LEAGUE_NAME, REGISTRATION_SUPPORT_PHONES, VENUE } from "@/lib/league";
 
 export const metadata: Metadata = {
   title: `Contact us · ${LEAGUE_NAME}`,
@@ -18,10 +18,12 @@ export default function ContactPage() {
         <dl className="space-y-4 text-sm">
           <div>
             <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">Registration desk (phone)</dt>
-            <dd className="mt-1 font-semibold text-slate-900">
-              <a href={`tel:${REGISTRATION_SUPPORT_PHONE}`} className="text-orange-700 hover:underline">
-                {REGISTRATION_SUPPORT_PHONE}
-              </a>
+            <dd className="mt-1 space-y-1 font-semibold text-slate-900">
+              {REGISTRATION_SUPPORT_PHONES.map((phone) => (
+                <a key={phone} href={`tel:${phone}`} className="block text-orange-700 hover:underline">
+                  {phone}
+                </a>
+              ))}
             </dd>
           </div>
           <div>
