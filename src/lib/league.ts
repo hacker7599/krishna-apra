@@ -1,9 +1,20 @@
+import { LEGAL_ENTITY } from "@/lib/site-legal";
+
 export const TITLE_SPONSOR = "Krishna Apra";
 export const LEAGUE_NAME = "Future Star";
 export const LEAGUE_SUBTITLE = "Under-15 Cricket League";
 export const REGION = "Delhi NCR";
 export const TAGLINE = "Where Future Stars Begin Their Journey.";
+
+/** Credited on the homepage as the organising initiative behind the league. */
+export const LEAGUE_INITIATIVE_BY = "Outer Delhi Warriors";
 export const TRIAL_FEE_INR = 1299;
+
+/** League desk support line shown on registration form. */
+export const REGISTRATION_SUPPORT_PHONE = "+917678255437";
+
+/** League desk support email shown across the public site. */
+export const REGISTRATION_SUPPORT_EMAIL = LEGAL_ENTITY.contactEmail;
 
 /**
  * Age cut-off from the official trial form: “AGE CUT OFF 1 AUG 2010”.
@@ -24,7 +35,7 @@ export function playerDateOfBirthMaxIso(): string {
 }
 export const VENUE =
   "Nawab Mansur Ali Khan Pataudi Sports Complex (Jamia Millia Islamia Cricket Ground), New Delhi";
-export const SEASON_START = "29 May 2026";
+export const SEASON_START = "6 June 2026";
 
 /** Official YouTube channel (streams / highlights). Empty string hides the button until you have the URL. */
 export const STREAMING_YOUTUBE_URL = "";

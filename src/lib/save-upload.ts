@@ -108,6 +108,28 @@ export async function saveBlogImage(file: File): Promise<string> {
   return `blog/${name}`;
 }
 
+export async function saveTeamLogo(file: File): Promise<string> {
+  if (!file || file.size === 0) {
+    throw new Error("FILE_EMPTY");
+  }
+  if (file.size > BANNER_MAX_BYTES) {
+    throw new Error("FILE_TOO_LARGE");
+  }
+  if (!BANNER_TYPES.has(file.type)) {
+    throw new Error("FILE_TYPE");
+  }
+  const buf = Buffer.from(await file.arrayBuffer());
+  const ext = detectExtFromBuffer(buf, BANNER_TYPES);
+  if (!ext || BANNER_TYPES.get(file.type) !== ext) {
+    throw new Error("FILE_TYPE");
+  }
+  const name = `${randomUUID()}.${ext}`;
+  const dir = path.join(process.cwd(), "uploads", "teams");
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, name), buf);
+  return `teams/${name}`;
+}
+
 export async function saveBannerImage(file: File): Promise<string> {
   if (!file || file.size === 0) {
     throw new Error("FILE_EMPTY");

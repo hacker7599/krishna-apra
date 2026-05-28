@@ -12,6 +12,7 @@ const sections = [
     items: [
       { href: "/admin", label: "Dashboard" },
       { href: "/admin/registrations", label: "Registrations" },
+      { href: "/admin/payments", label: "Payment logs" },
       { href: "/admin/activity", label: "Activity log" },
       { href: "/admin/emails", label: "Email log" },
     ],
@@ -21,6 +22,7 @@ const sections = [
     items: [
       { href: "/admin/teams", label: "Teams" },
       { href: "/admin/banners", label: "Hero banners" },
+      { href: "/admin/schedule", label: "Trial schedule" },
       { href: "/admin/trials", label: "Trial zones" },
       { href: "/admin/blog", label: "Blog" },
     ],

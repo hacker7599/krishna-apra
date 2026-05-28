@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { sampleBlogPost, SAMPLE_BLOG_SLUG } from "../src/lib/blog-sample-post";
-import { OFFICIAL_TRIAL_VENUES } from "../src/lib/trial-zone-catalog";
-import { renumberTrialZoneSortOrders } from "../src/lib/trial-zone-sort";
+import { syncOfficialTrialZones } from "../src/lib/sync-official-trial-zones";
 import { cricketMatchWide, cricketTeamGame } from "../src/lib/remote-images";
 
 const prisma = new PrismaClient();
@@ -17,56 +16,28 @@ const defaultTeams = [
   { slug: "capital-colts", name: "Capital Colts", city: "Central Delhi", accentColor: "#f97316", description: "Franchise colours and match-day identity—finalised post trials." },
 ];
 
-async function syncOfficialTrialZones() {
-  const ids: string[] = [];
-  for (let i = 0; i < OFFICIAL_TRIAL_VENUES.length; i++) {
-    const v = OFFICIAL_TRIAL_VENUES[i];
-    const existing = await prisma.trialZone.findFirst({
-      where: { trialPlace: v.trialPlace, zone: v.zone },
+async function syncDefaultTrialSchedule() {
+  const title = "U-15 Open Trials";
+  const scheduledAt = new Date("2026-06-06T09:00:00+05:30");
+  const existing = await prisma.trialSchedule.findFirst({ where: { title } });
+  if (existing) {
+    await prisma.trialSchedule.update({
+      where: { id: existing.id },
+      data: { scheduledAt, published: true, sortOrder: 0 },
     });
-    const row = existing
-      ? await prisma.trialZone.update({
-          where: { id: existing.id },
-          data: {
-            address: v.address,
-            navigationUrl: v.navigationUrl,
-            contactDetails: v.contactDetails,
-            sortOrder: i,
-            published: true,
-          },
-        })
-      : await prisma.trialZone.create({
-          data: {
-            trialPlace: v.trialPlace,
-            zone: v.zone,
-            address: v.address,
-            navigationUrl: v.navigationUrl,
-            contactDetails: v.contactDetails,
-            sortOrder: i,
-            published: true,
-          },
-        });
-    ids.push(row.id);
+    console.log("Updated default trial schedule:", title);
+    return;
   }
-  const officialCount = OFFICIAL_TRIAL_VENUES.length;
-  if (ids.length > 0) {
-    await prisma.trialZone.updateMany({
-      where: { id: { notIn: ids } },
-      data: { published: false },
-    });
-    const legacy = await prisma.trialZone.findMany({
-      where: { id: { notIn: ids } },
-      orderBy: [{ trialPlace: "asc" }, { zone: "asc" }],
-    });
-    for (let i = 0; i < legacy.length; i++) {
-      await prisma.trialZone.update({
-        where: { id: legacy[i].id },
-        data: { sortOrder: officialCount + i },
-      });
-    }
-  }
-  const renumbered = await renumberTrialZoneSortOrders(prisma);
-  console.log("Synced official trial zones:", officialCount, "· renumbered:", renumbered);
+  await prisma.trialSchedule.create({
+    data: {
+      title,
+      scheduledAt,
+      notes: "Report 30 minutes early with ID proof and registration confirmation.",
+      sortOrder: 0,
+      published: true,
+    },
+  });
+  console.log("Seeded default trial schedule:", title);
 }
 
 async function main() {
@@ -116,7 +87,16 @@ async function main() {
     console.log("Seeded hero banners: 3");
   }
 
-  await syncOfficialTrialZones();
+  const trialZoneSync = await syncOfficialTrialZones(prisma);
+  console.log(
+    "Synced official trial zones:",
+    trialZoneSync.officialCount,
+    "· renumbered published/hidden:",
+    trialZoneSync.renumbered.published,
+    "/",
+    trialZoneSync.renumbered.hidden,
+  );
+  await syncDefaultTrialSchedule();
 
   const blogExists = await prisma.blogPost.findUnique({ where: { slug: SAMPLE_BLOG_SLUG } });
   const blogData = {

@@ -45,7 +45,7 @@ export const emptyAdminRegistrationForm: AdminRegistrationFormState = {
   transactionRef: "",
   feeReceivedDate: "",
   coachName: "",
-  paymentStatus: "pending",
+  paymentStatus: "pending_payment",
   trialZoneId: "",
 };
 
@@ -277,7 +277,7 @@ export function AdminRegistrationFormFields({
           onChange={(e) => setForm((p) => ({ ...p, paymentStatus: e.target.value }))}
           className={inputClass}
         >
-          <option value="pending">Pending verification</option>
+          <option value="pending_payment">Pending verification</option>
           <option value="paid">Approved</option>
           <option value="refunded">Disapproved</option>
           <option value="manual">Manual</option>
@@ -356,7 +356,10 @@ export function rowToAdminForm(row: {
     transactionRef: row.transactionRef ?? "",
     feeReceivedDate: row.feeReceivedDate ?? "",
     coachName: row.coachName ?? "",
-    paymentStatus: row.paymentStatus ?? "pending",
+    paymentStatus:
+      row.paymentStatus === "pending" || row.paymentStatus === "pending_payment"
+        ? "pending_payment"
+        : (row.paymentStatus ?? "pending_payment"),
     trialZoneId: row.trialZoneId ?? "",
   };
 }

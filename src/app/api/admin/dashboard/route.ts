@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 import { paidOrphanPaymentOrderFilter } from "@/lib/payment-order-registration-lookup";
-import { ENROLLED_PAYMENT_STATUSES } from "@/lib/registration-payment-status";
+import {
+  AWAITING_VERIFICATION_PAYMENT_STATUSES,
+  ENROLLED_PAYMENT_STATUSES,
+  REGISTRATION_PAYMENT_MANUAL,
+} from "@/lib/registration-payment-status";
 import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
+import { countTrialSchedules } from "@/lib/trial-schedule-db";
 
 export const runtime = "nodejs";
 
@@ -16,9 +21,11 @@ export async function GET() {
     teams,
     banners,
     trialZones,
+    trialSchedules,
     publishedTeams,
     publishedBanners,
     publishedTrialZones,
+    publishedTrialSchedules,
     paidOnline,
     pendingOrManualRegistrations,
     orphanPayments,
@@ -29,11 +36,19 @@ export async function GET() {
     prisma.team.count(),
     prisma.heroBanner.count(),
     prisma.trialZone.count(),
+    countTrialSchedules(),
     prisma.team.count({ where: { published: true } }),
     prisma.heroBanner.count({ where: { published: true } }),
     prisma.trialZone.count({ where: { published: true } }),
+    countTrialSchedules({ published: true }),
     prisma.registration.count({ where: { paymentStatus: "paid" } }),
-    prisma.registration.count({ where: { paymentStatus: { in: ["manual", "pending"] } } }),
+    prisma.registration.count({
+      where: {
+        paymentStatus: {
+          in: [REGISTRATION_PAYMENT_MANUAL, ...AWAITING_VERIFICATION_PAYMENT_STATUSES],
+        },
+      },
+    }),
     prisma.paymentOrder.count({ where: await paidOrphanPaymentOrderFilter() }),
     prisma.paymentOrder.count(),
     prisma.registration.findMany({
@@ -57,9 +72,11 @@ export async function GET() {
     teams,
     banners,
     trialZones,
+    trialSchedules,
     publishedTeams,
     publishedBanners,
     publishedTrialZones,
+    publishedTrialSchedules,
     payments: {
       paidOnline,
       manualRegistrations: pendingOrManualRegistrations,

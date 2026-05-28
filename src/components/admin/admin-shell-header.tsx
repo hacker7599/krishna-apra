@@ -10,6 +10,7 @@ const titles: Record<string, { title: string; subtitle: string }> = {
   "/admin/activity": { title: "Activity log", subtitle: "Admin actions on league data" },
   "/admin/teams": { title: "Teams", subtitle: "Franchise listings on the public site" },
   "/admin/banners": { title: "Hero banners", subtitle: "Homepage carousel and CTAs" },
+  "/admin/schedule": { title: "Trial schedule", subtitle: "Dates and times shown on /schedule" },
   "/admin/trials": { title: "Trial zones", subtitle: "Venues and contact details for /trials" },
   "/admin/blog": { title: "Blog", subtitle: "Articles, SEO meta tags, and /blog publishing" },
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/components/admin/admin-session-provider";
@@ -17,6 +18,7 @@ import { AdminRegistrationPrintModal } from "@/components/admin/admin-registrati
 import { AdminRegistrationSubmissionModal } from "@/components/admin/admin-registration-submission-modal";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
 import { adminRegistrationFormToFormData, adminRegistrationFormToPayload } from "@/lib/admin-registration-payload";
+import { adminRegistrationProofUrl } from "@/lib/admin-registration-detail";
 import { humanErrorFromResponse } from "@/lib/human-errors";
 
 type Row = {
@@ -79,7 +81,9 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [printId, setPrintId] = useState<string | null>(null);
   const [printAutoStart, setPrintAutoStart] = useState(false);
-  const [paymentProofPreview, setPaymentProofPreview] = useState<{ playerName: string; path: string } | null>(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState<{ registrationId: string; playerName: string } | null>(
+    null,
+  );
   const [editing, setEditing] = useState<Row | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<AdminRegistrationFormState>(emptyAdminRegistrationForm);
@@ -88,6 +92,11 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   const [saving, setSaving] = useState(false);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [qrUploading, setQrUploading] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<"razorpay" | "qr_upload">("razorpay");
+  const [razorpayConfigured, setRazorpayConfigured] = useState(false);
+  const [modeSaving, setModeSaving] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const qrFileRef = useRef<HTMLInputElement>(null);
 
   function resetFormState() {
@@ -123,20 +132,45 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     setTotal(data.total);
   }, [queryString]);
 
-  const loadQr = useCallback(async () => {
-    const res = await adminFetch("/api/admin/payment-qr");
+  const loadPaymentSettings = useCallback(async () => {
+    const res = await adminFetch("/api/admin/payment-settings");
     if (!res.ok) return;
-    const data = (await res.json()) as { qrImageUrl?: string | null };
+    const data = (await res.json()) as {
+      paymentMode?: "razorpay" | "qr_upload";
+      qrImageUrl?: string | null;
+      razorpayConfigured?: boolean;
+    };
+    setPaymentMode(data.paymentMode === "qr_upload" ? "qr_upload" : "razorpay");
     setQrImageUrl(data.qrImageUrl ?? null);
+    setRazorpayConfigured(data.razorpayConfigured === true);
   }, []);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
       void load();
-      void loadQr();
+      void loadPaymentSettings();
     }, 0);
     return () => window.clearTimeout(id);
-  }, [load, loadQr]);
+  }, [load, loadPaymentSettings]);
+
+  async function switchPaymentMode(mode: "razorpay" | "qr_upload") {
+    setModeSaving(true);
+    setError("");
+    const res = await adminFetch("/api/admin/payment-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentMode: mode }),
+    });
+    setModeSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(humanErrorFromResponse(data, "Could not change payment mode."));
+      return;
+    }
+    const data = (await res.json()) as { paymentMode?: "razorpay" | "qr_upload"; qrImageUrl?: string | null };
+    setPaymentMode(data.paymentMode === "qr_upload" ? "qr_upload" : "razorpay");
+    setQrImageUrl(data.qrImageUrl ?? null);
+  }
 
   function applyFilters(e: React.FormEvent) {
     e.preventDefault();
@@ -250,7 +284,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       setError(humanErrorFromResponse(data, "Could not upload payment QR."));
       return;
     }
-    await loadQr();
+    await loadPaymentSettings();
     if (qrFileRef.current) qrFileRef.current.value = "";
   }
 
@@ -260,19 +294,52 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       setError("Could not remove payment QR.");
       return;
     }
-    setQrImageUrl(null);
+    await loadPaymentSettings();
+  }
+
+  async function resendConfirmationEmail(r: Row) {
+    setResendingId(r.id);
+    setError("");
+    const res = await adminFetch(`/api/admin/registrations/${r.id}/resend-confirmation`, { method: "POST" });
+    setResendingId(null);
+    if (res.status === 401) {
+      routerRef.current.replace("/admin/login");
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(humanErrorFromResponse(data, "Could not resend confirmation email."));
+      return;
+    }
+    setError("");
+    window.alert(`Confirmation email sent to ${r.email}.`);
   }
 
   async function updatePaymentDecision(id: string, decision: "approve" | "disapprove") {
-    const status = decision === "approve" ? "paid" : "refunded";
-    const res = await adminFetch(`/api/admin/registrations/${id}`, {
-      method: "PATCH",
-      body: adminRegistrationFormToFormData({ paymentStatus: status }, {}),
+    setApprovingId(id);
+    setError("");
+    const res = await adminFetch(`/api/admin/registrations/${id}/payment-decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
     });
+    setApprovingId(null);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(humanErrorFromResponse(data, "Could not update payment decision."));
+    if (res.status === 401) {
+      routerRef.current.replace("/admin/login");
       return;
+    }
+    if (!res.ok) {
+      setError(humanErrorFromResponse(data, "Could not update payment status."));
+      return;
+    }
+    if (decision === "approve") {
+      const emailNote =
+        data.emailSent === false
+          ? ` Payment marked received. Email was not sent${data.emailError ? `: ${data.emailError}` : ""} — use Resend email.`
+          : " Payment marked received. Confirmation email sent.";
+      setError("");
+      window.alert(emailNote.trim());
     }
     void load();
   }
@@ -330,29 +397,19 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     resetFormState();
   }
 
-  function isImageProof(path: string) {
-    return /\.(png|jpe?g|webp|gif|bmp|svg)(\?.*)?$/i.test(path);
-  }
-
-  function normalizeAssetPath(path: string) {
-    if (!path) return path;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    return path.startsWith("/") ? path : `/${path}`;
-  }
-
   const statusSummary = useMemo(() => {
-    const summary = { approved: 0, pending: 0, disapproved: 0, manual: 0 };
+    const summary = { paid: 0, pending: 0, disapproved: 0, manual: 0 };
     for (const row of rows ?? []) {
-      if (row.paymentStatus === "paid") summary.approved += 1;
+      if (row.paymentStatus === "paid") summary.paid += 1;
       else if (row.paymentStatus === "refunded") summary.disapproved += 1;
-      else if (row.paymentStatus === "pending" || row.paymentStatus === "pending_payment") summary.pending += 1;
+      else if (row.paymentStatus === "pending_payment" || row.paymentStatus === "pending") summary.pending += 1;
       else summary.manual += 1;
     }
     return summary;
   }, [rows]);
 
   function paymentBadge(status: string | null) {
-    if (status === "paid") return { label: "approved", className: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    if (status === "paid") return { label: "Paid", className: "bg-emerald-50 text-emerald-700 border-emerald-200" };
     if (status === "refunded") return { label: "disapproved", className: "bg-slate-100 text-slate-700 border-slate-200" };
     if (status === "pending" || status === "pending_payment") {
       return { label: "pending", className: "bg-amber-50 text-amber-700 border-amber-200" };
@@ -386,63 +443,117 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         }
       />
 
-      <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" open>
         <summary className="cursor-pointer list-none">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">Registration Payment QR</p>
-              <p className="mt-1 text-sm font-medium text-slate-600">Manage the QR visible on public registration form.</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">Public payment settings</p>
+              <p className="mt-1 text-sm font-medium text-slate-600">
+                Switch Razorpay checkout or QR upload on{" "}
+                <Link href="/register" target="_blank" className="font-bold text-orange-700 underline">
+                  /register
+                </Link>
+                . View full history in{" "}
+                <Link href="/admin/payments" className="font-bold text-[#1B365D] underline">
+                  Payment logs
+                </Link>
+                .
+              </p>
             </div>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${qrImageUrl ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-              {qrImageUrl ? "Live" : "Not set"}
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                paymentMode === "razorpay" ? "bg-emerald-50 text-emerald-700" : "bg-sky-50 text-sky-800"
+              }`}
+            >
+              {paymentMode === "razorpay" ? "Razorpay live" : "QR upload live"}
             </span>
           </div>
         </summary>
-        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-slate-700">Upload the QR players scan before attaching payment proof screenshot.</p>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <input
-                ref={qrFileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => void uploadPaymentQr(e.target.files?.[0] ?? null)}
-                className="hidden"
-                disabled={qrUploading}
-              />
-              <button
-                type="button"
-                onClick={() => qrFileRef.current?.click()}
-                disabled={qrUploading}
-                className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white hover:bg-orange-700 disabled:opacity-60"
-              >
-                {qrUploading ? "Uploading..." : qrImageUrl ? "Replace QR" : "Upload QR"}
-              </button>
-              <button
-                type="button"
-                onClick={() => void clearPaymentQr()}
-                disabled={!qrImageUrl || qrUploading}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50"
-              >
-                Remove QR
-              </button>
-              <span className="text-xs font-medium text-slate-500">JPG/PNG/WebP, max 4MB</span>
-            </div>
+
+        <div className="mt-4 space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={modeSaving || paymentMode === "razorpay"}
+              onClick={() => void switchPaymentMode("razorpay")}
+              className={`rounded-lg px-4 py-2 text-sm font-bold ${
+                paymentMode === "razorpay"
+                  ? "bg-[#1B365D] text-white"
+                  : "border border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+              } disabled:opacity-60`}
+            >
+              Razorpay online
+            </button>
+            <button
+              type="button"
+              disabled={modeSaving || paymentMode === "qr_upload"}
+              onClick={() => void switchPaymentMode("qr_upload")}
+              className={`rounded-lg px-4 py-2 text-sm font-bold ${
+                paymentMode === "qr_upload"
+                  ? "bg-[#1B365D] text-white"
+                  : "border border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+              } disabled:opacity-60`}
+            >
+              QR + screenshot
+            </button>
+            {modeSaving ? <span className="self-center text-xs font-medium text-slate-500">Saving…</span> : null}
           </div>
 
-          {qrImageUrl ? (
-            <Image
-              src={qrImageUrl}
-              alt="Current payment QR"
-              width={112}
-              height={112}
-              unoptimized
-              className="h-auto w-28 rounded border border-slate-200 bg-white object-contain"
-            />
-          ) : (
-            <div className="flex h-28 w-28 items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 text-center text-[11px] font-semibold text-slate-500">
-              QR preview
+          {!razorpayConfigured && paymentMode === "razorpay" ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+              Razorpay API keys are missing in server .env. Add keys or switch to QR mode.
+            </p>
+          ) : null}
+
+          {paymentMode === "qr_upload" ? (
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-700">
+                  Upload the QR players scan, then they submit payment screenshot for your approval.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <input
+                    ref={qrFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => void uploadPaymentQr(e.target.files?.[0] ?? null)}
+                    className="hidden"
+                    disabled={qrUploading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => qrFileRef.current?.click()}
+                    disabled={qrUploading}
+                    className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white hover:bg-orange-700 disabled:opacity-60"
+                  >
+                    {qrUploading ? "Uploading..." : qrImageUrl ? "Replace QR" : "Upload QR"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void clearPaymentQr()}
+                    disabled={!qrImageUrl || qrUploading}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Remove QR
+                  </button>
+                </div>
+              </div>
+              {qrImageUrl ? (
+                <Image
+                  src={qrImageUrl}
+                  alt="Current payment QR"
+                  width={112}
+                  height={112}
+                  unoptimized
+                  className="h-auto w-28 rounded border border-slate-200 bg-white object-contain"
+                />
+              ) : null}
             </div>
+          ) : (
+            <p className="text-sm font-medium text-slate-600">
+              Players pay via Razorpay on submit. Successful payments are marked <strong>Paid</strong> automatically and
+              logged under Payment logs.
+            </p>
           )}
         </div>
       </details>
@@ -491,7 +602,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         </div>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-            Approved: {statusSummary.approved}
+            Paid: {statusSummary.paid}
           </span>
           <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
             Pending: {statusSummary.pending}
@@ -550,8 +661,8 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
                     onClick={() =>
                       r.paymentProofPath &&
                       setPaymentProofPreview({
+                        registrationId: r.id,
                         playerName: r.playerName,
-                        path: normalizeAssetPath(r.paymentProofPath),
                       })
                     }
                     disabled={!r.paymentProofPath}
@@ -562,9 +673,10 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
                   <button
                     type="button"
                     onClick={() => void updatePaymentDecision(r.id, "approve")}
-                    className="rounded-md border border-emerald-300 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                    disabled={approvingId === r.id || r.paymentStatus === "paid"}
+                    className="rounded-md border border-emerald-300 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
                   >
-                    Approve
+                    {approvingId === r.id ? "Saving…" : r.paymentStatus === "paid" ? "Paid" : "Mark paid"}
                   </button>
                   <button
                     type="button"
@@ -572,6 +684,14 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
                     className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                   >
                     Disapprove
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void resendConfirmationEmail(r)}
+                    disabled={resendingId === r.id}
+                    className="rounded-md border border-sky-300 px-3 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50 disabled:opacity-50"
+                  >
+                    {resendingId === r.id ? "Sending…" : "Resend email"}
                   </button>
                   <button
                     type="button"
@@ -687,26 +807,19 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       >
         {paymentProofPreview ? (
           <div className="space-y-3">
-            {isImageProof(paymentProofPreview.path) ? (
-              <Image
-                src={paymentProofPreview.path}
-                alt={`Payment proof uploaded by ${paymentProofPreview.playerName}`}
-                width={900}
-                height={1200}
-                className="mx-auto h-auto max-h-[70vh] w-auto max-w-full rounded border border-slate-200 bg-white object-contain"
-              />
-            ) : (
-              <p className="text-sm font-medium text-slate-700">
-                Preview is not available for this file type. Open it using the link below.
-              </p>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={adminRegistrationProofUrl(paymentProofPreview.registrationId, "payment")}
+              alt={`Payment proof uploaded by ${paymentProofPreview.playerName}`}
+              className="mx-auto max-h-[70vh] w-auto max-w-full rounded border border-slate-200 bg-white object-contain"
+            />
             <a
-              href={paymentProofPreview.path}
+              href={adminRegistrationProofUrl(paymentProofPreview.registrationId, "payment")}
               target="_blank"
               rel="noreferrer"
               className="inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
             >
-              Open original proof
+              Open full size in new tab
             </a>
           </div>
         ) : null}

@@ -4,7 +4,7 @@ import { TricolorBar } from "@/components/graphics/tricolor-bar";
 import { TitleSponsorMark } from "@/components/title-sponsor-mark";
 import { BTN_PRIMARY, BTN_SECONDARY, SITE_CONTAINER, SECTION_WHITE } from "@/lib/site-ui";
 import { LEAGUE_LOGO_SRC } from "@/lib/branding";
-import { LEAGUE_NAME, TAGLINE } from "@/lib/league";
+import { LEAGUE_INITIATIVE_BY, LEAGUE_NAME, TAGLINE } from "@/lib/league";
 import { cricketMatchWide, cricketTeamGame } from "@/lib/remote-images";
 
 type Props = {
@@ -20,6 +20,10 @@ export function HomeIntroBand({ teamsStat }: Props) {
       <div className={`${SITE_CONTAINER} grid gap-10 lg:grid-cols-[1fr_340px] lg:items-center lg:gap-14`}>
         <div className="min-w-0 space-y-5">
           <TricolorBar className="max-w-32 rounded-sm" />
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+            An initiative by{" "}
+            <span className="text-slate-800">{LEAGUE_INITIATIVE_BY}</span>
+          </p>
           <TitleSponsorMark size="xl" align="start" priority />
           <div>
             <p className="eyebrow">Delhi NCR · Season 1</p>

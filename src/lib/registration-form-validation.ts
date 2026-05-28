@@ -59,6 +59,7 @@ export function digitsOnlyPhoneInput(value: string): string {
 export type ValidateRegistrationOptions = {
   requirePlayerPhoto?: boolean;
   requireIdProof?: boolean;
+  requirePaymentProof?: boolean;
 };
 
 export function validateRegistrationForm(
@@ -67,6 +68,7 @@ export function validateRegistrationForm(
 ): Record<string, string> {
   const requirePlayerPhoto = options?.requirePlayerPhoto ?? true;
   const requireIdProof = options?.requireIdProof ?? true;
+  const requirePaymentProof = options?.requirePaymentProof ?? true;
   const errors: Record<string, string> = {};
 
   const academy = values.academyName.trim();
@@ -131,7 +133,7 @@ export function validateRegistrationForm(
   const idErr = validateFile(values.idProof, requireIdProof, "ID proof", ID_ACCEPT);
   if (idErr) errors.idProof = idErr;
 
-  const payErr = validateFile(values.paymentProof, true, "Payment screenshot", PAYMENT_PROOF_ACCEPT);
+  const payErr = validateFile(values.paymentProof, requirePaymentProof, "Payment screenshot", PAYMENT_PROOF_ACCEPT);
   if (payErr) errors.paymentProof = payErr;
 
   const ref = values.transactionRef.trim();

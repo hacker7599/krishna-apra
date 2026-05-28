@@ -14,9 +14,11 @@ type Stats = {
   teams: number;
   banners: number;
   trialZones: number;
+  trialSchedules: number;
   publishedTeams: number;
   publishedBanners: number;
   publishedTrialZones: number;
+  publishedTrialSchedules: number;
   payments: {
     paidOnline: number;
     manualRegistrations: number;
@@ -92,7 +94,7 @@ export function AdminDashboardHome() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <AdminStatCard label="Total registrations" value={s.registrations} href="/admin/registrations" accent="navy" />
           <AdminStatCard label="Approved payments" value={p.paidOnline} accent="green" />
-          <AdminStatCard label="Pending / manual" value={p.manualRegistrations} accent="orange" />
+          <AdminStatCard label="Pending verification / manual" value={p.manualRegistrations} accent="orange" />
           <AdminStatCard
             label="Revenue collected"
             value={formatInr(p.revenuePaise)}
@@ -111,9 +113,10 @@ export function AdminDashboardHome() {
 
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Site content</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <AdminStatCard label="Teams" value={s.teams} hint={`${s.publishedTeams} published`} href="/admin/teams" />
           <AdminStatCard label="Hero banners" value={s.banners} hint={`${s.publishedBanners} live`} href="/admin/banners" />
+          <AdminStatCard label="Trial schedule" value={s.trialSchedules} hint={`${s.publishedTrialSchedules} live`} href="/admin/schedule" />
           <AdminStatCard label="Trial zones" value={s.trialZones} hint={`${s.publishedTrialZones} live`} href="/admin/trials" />
         </div>
       </section>

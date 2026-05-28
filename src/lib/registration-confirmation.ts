@@ -1,5 +1,6 @@
 import type { Registration } from "@prisma/client";
 import { TRIAL_FEE_INR } from "@/lib/league";
+import { isPendingPaymentStatus, REGISTRATION_PAYMENT_PAID } from "@/lib/registration-payment-status";
 import { formatRoleLabels } from "@/lib/registration-roles";
 import { trialVenueDisplayLabel } from "@/lib/trial-zone-catalog";
 import { ID_DOCUMENT_LABELS, type IdDocumentType } from "@/lib/registration-schema";
@@ -41,7 +42,8 @@ export function toRegistrationConfirmation(row: RegistrationWithZone): Registrat
       ? ID_DOCUMENT_LABELS[row.idDocumentType as IdDocumentType]
       : row.idDocumentType;
 
-  const paidOnline = row.paymentStatus === "paid";
+  const paidOnline = row.paymentStatus === REGISTRATION_PAYMENT_PAID;
+  const pendingVerification = isPendingPaymentStatus(row.paymentStatus);
 
   return {
     registrationId: row.id,
@@ -67,7 +69,11 @@ export function toRegistrationConfirmation(row: RegistrationWithZone): Registrat
     trialZone: row.trialZone ? trialVenueDisplayLabel(row.trialZone) : null,
     payment: {
       status: row.paymentStatus ?? "manual",
-      method: paidOnline ? "Approved by admin" : "Pending manual verification",
+      method: paidOnline
+        ? "Approved by admin"
+        : pendingVerification
+          ? "QR payment — pending verification"
+          : "Recorded by league desk",
       amountInr: TRIAL_FEE_INR,
       currency: "INR",
       razorpayOrderId: row.razorpayOrderId,

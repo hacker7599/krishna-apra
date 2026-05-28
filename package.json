@@ -13,6 +13,8 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:seed:trial-zones": "tsx prisma/seed-trial-zones.ts",
+    "db:seed:trial-schedule": "tsx prisma/seed-trial-schedule.ts",
+    "db:normalize-registrations": "tsx scripts/normalize-pending-registrations.ts",
     "db:generate": "prisma generate",
     "admin:hash": "node -e \"const b=require('bcryptjs');const p=process.argv[1]||'changeme';console.log(Buffer.from(b.hashSync(p,12)).toString('base64'))\""
   },

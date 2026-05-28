@@ -12,7 +12,8 @@ const links = [
   { href: "/about", label: "About" },
   { href: "/sponsorship", label: "Partners" },
   { href: "/teams", label: "Teams" },
-  { href: "/trials", label: "Trials" },
+  { href: "/schedule", label: "Schedule" },
+  { href: "/trials", label: "Trial zones" },
   { href: "/blog", label: "Blog" },
   { href: "/register", label: "Join" },
 ] as const;

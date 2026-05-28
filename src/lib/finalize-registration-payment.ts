@@ -42,18 +42,20 @@ async function markRegistrationPaid(
   return updated;
 }
 
-async function sendConfirmationIfNeeded(registration: Registration): Promise<boolean> {
+async function sendConfirmationIfNeeded(
+  registration: Registration,
+): Promise<{ sent: boolean; error?: string }> {
   try {
     const token = await signRegistrationConfirmationToken(registration.id);
-    const emailResult = await sendRegistrationConfirmationEmail({
+    return sendRegistrationConfirmationEmail({
       registrationId: registration.id,
       email: registration.email,
       playerName: registration.playerName,
       confirmationToken: token,
     });
-    return emailResult.sent;
-  } catch {
-    return false;
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Could not send confirmation email";
+    return { sent: false, error: message };
   }
 }
 
@@ -62,7 +64,10 @@ export async function finalizeRegistrationAfterPayment(
   proof: RazorpayPaymentProof,
   registrant: { email: string; phone: string; playerName: string },
   clientIp?: string,
-): Promise<{ ok: true; registration: Registration; emailSent: boolean } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; registration: Registration; emailSent: boolean; emailError?: string }
+  | { ok: false; error: string }
+> {
   const registration = await prisma.registration.findUnique({ where: { id: registrationId } });
   if (!registration) {
     return { ok: false, error: "Registration not found. Please start again from the registration form." };
@@ -73,7 +78,7 @@ export async function finalizeRegistrationAfterPayment(
       registration.razorpayOrderId === proof.razorpayOrderId &&
       registration.razorpayPaymentId === proof.razorpayPaymentId
     ) {
-      return { ok: true, registration, emailSent: false };
+      return { ok: true, registration, emailSent: false, emailError: undefined };
     }
     return { ok: false, error: "This registration is already completed with a different payment." };
   }
@@ -93,9 +98,9 @@ export async function finalizeRegistrationAfterPayment(
   }
 
   const updated = await markRegistrationPaid(registrationId, proof.razorpayOrderId, proof.razorpayPaymentId);
-  const emailSent = await sendConfirmationIfNeeded(updated);
+  const email = await sendConfirmationIfNeeded(updated);
 
-  return { ok: true, registration: updated, emailSent };
+  return { ok: true, registration: updated, emailSent: email.sent, emailError: email.error };
 }
 
 /** Webhook / server-side: payment verified on Razorpay without checkout signature. */

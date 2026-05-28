@@ -183,9 +183,20 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
 
   return (
     <div className="admin-panel mx-auto max-w-7xl space-y-8">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+        <p className="font-semibold text-slate-900">Payment activity</p>
+        <p className="mt-1 text-xs leading-relaxed">
+          Every Razorpay checkout, QR submission, webhook, and admin approval is logged here. Mark QR payments as paid under{" "}
+          <Link href="/admin/registrations" className="font-bold text-[#1B365D] underline">
+            Registrations
+          </Link>
+          ; switch Razorpay vs QR on that page too.
+        </p>
+      </div>
+
       <AdminPageHeader
         title="Payments & revenue"
-        description="Razorpay orders and event log. Complete orphan payments to add players to Registrations."
+        description="Razorpay orders, payment event log, and orphan order completion."
         actions={
           <button
             type="button"

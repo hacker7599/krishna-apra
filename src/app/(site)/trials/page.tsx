@@ -21,8 +21,16 @@ export default async function TrialsPage() {
       <SitePageHero
         title="Trial zones"
         lead="Where trials run across the league footprint: venue name, zone, full address, open in Google Maps, and who to contact on the ground."
-        breadcrumb={[{ label: "Trials" }]}
+        breadcrumb={[{ label: "Trial zones" }]}
       />
+
+      <p className="mt-6 text-sm font-medium text-slate-600">
+        Looking for dates and times? See the{" "}
+        <Link href="/schedule" className="font-bold text-orange-700 underline hover:text-orange-800">
+          trial schedule
+        </Link>
+        .
+      </p>
 
       {zones.length === 0 ? (
         <p className={`mt-10 ${EMPTY_STATE}`}>

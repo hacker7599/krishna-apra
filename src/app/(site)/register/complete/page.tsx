@@ -3,6 +3,7 @@ import { RegistrationCompletionForm } from "@/components/registration-completion
 import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
 import { getPublishedTrialZoneOptions } from "@/lib/public-queries";
+import { SupportContactLinks } from "@/components/support-contact-links";
 import { LEAGUE_NAME } from "@/lib/league";
 import { CARD } from "@/lib/site-ui";
 
@@ -25,8 +26,16 @@ export default async function RegisterCompletePage({ searchParams }: Props) {
     return (
       <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-14">
         <SitePageHero title="Complete registration" lead="This link is missing or invalid." breadcrumb={[{ label: "Register", href: "/register" }, { label: "Complete" }]} />
-        <div className={`${CARD} mt-8 p-6 text-sm font-semibold text-rose-800`}>
-          Ask the league desk to send you a new completion link by email.
+        <div className={`${CARD} mt-8 space-y-3 p-6 text-sm font-semibold text-rose-800`}>
+          <p>This link is missing or invalid. For new registrations, use the main form with QR payment.</p>
+          <p>
+            <a href="/register" className="font-bold text-orange-700 underline">
+              Go to trial registration →
+            </a>
+          </p>
+          <p className="font-medium text-slate-700">
+            Need help? Contact <SupportContactLinks linkClassName="font-bold text-orange-700 underline" />.
+          </p>
         </div>
       </SiteSection>
     );
@@ -36,7 +45,7 @@ export default async function RegisterCompletePage({ searchParams }: Props) {
     <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-14">
       <SitePageHero
         title="Complete your registration"
-        lead="Your trial fee payment was received. Fill in the remaining details below — this secure link works once."
+        lead="Legacy payment-completion link. If you already registered with QR payment on the main form, you do not need this page. Otherwise fill in the details below — this secure link works once."
         breadcrumb={[{ label: "Register", href: "/register" }, { label: "Complete" }]}
       />
       <div className={`${CARD} mt-8 min-w-0 p-4 sm:p-6`}>

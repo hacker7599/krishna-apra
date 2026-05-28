@@ -160,7 +160,8 @@ model Team {
   slug        String   @unique
   name        String
   city        String
-  accentColor String
+  accentColor String   @default("#1B365D")
+  logoPath    String?
   description String   @default("")
   sortOrder   Int      @default(0)
   published   Boolean  @default(true)
@@ -180,17 +181,35 @@ model HeroBanner {
 }
 
 model TrialZone {
-  id             String         @id @default(cuid())
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id             String          @id @default(cuid())
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   trialPlace     String
   zone           String
   address        String
   navigationUrl  String?
   contactDetails String?
-  sortOrder      Int            @default(0)
-  published      Boolean        @default(true)
+  sortOrder      Int             @default(0)
+  published      Boolean         @default(true)
   registrations  Registration[]
+  trialSchedules TrialSchedule[]
+}
+
+model TrialSchedule {
+  id          String     @id @default(cuid())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  title       String
+  scheduledAt DateTime
+  endAt       DateTime?
+  notes       String?
+  sortOrder   Int        @default(0)
+  published   Boolean    @default(true)
+  trialZoneId String?
+  trialZone   TrialZone? @relation(fields: [trialZoneId], references: [id], onDelete: SetNull)
+
+  @@index([published, scheduledAt])
+  @@index([sortOrder])
 }
 
 model BlogPost {
@@ -217,8 +236,10 @@ model BlogPost {
 }
 
 model AppConfig {
-  id           String   @id @default("default")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default("default")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  /// "razorpay" | "qr_upload" — controls public /register checkout
+  paymentMode   String   @default("razorpay")
   paymentQrPath String?
 }

@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { isEmptyEditorHtml } from "@/lib/blog-content-utils";
+import { normalizeHexColor } from "@/lib/hex-color";
+import { normalizeRegistrationPaymentStatus } from "@/lib/registration-payment-status";
 import { normalizeRoleIds, ROLE_IDS } from "@/lib/registration-roles";
 import { isSafeBannerCtaHref, isSafeGoogleMapsUrl } from "@/lib/safe-public-href";
 
@@ -20,7 +22,10 @@ const blogOgImageUrl = z
     "OG image must be an uploaded path, /branding/, or Unsplash CDN.",
   );
 
-const hexColor = z.string().regex(/^#([0-9a-fA-F]{6})$/, "Use #RRGGBB hex colour");
+const hexColor = z
+  .string()
+  .transform((s) => normalizeHexColor(s))
+  .pipe(z.string().regex(/^#[0-9a-f]{6}$/i, "Use #RRGGBB hex colour"));
 
 const ctaHrefMessage =
   "CTA link must be a same-site path (starting with /, not //) or https://… (http only for localhost).";
@@ -38,10 +43,23 @@ const ctaHrefPatch = z
     message: ctaHrefMessage,
   });
 
+const teamLogoPath = z
+  .union([z.string().trim().max(200), z.null()])
+  .optional()
+  .refine(
+    (p) =>
+      p === undefined ||
+      p === null ||
+      p === "" ||
+      /^teams\/[a-zA-Z0-9._-]+\.(jpg|jpeg|png|webp)$/i.test(p),
+    "Logo path must be an uploaded team logo.",
+  )
+  .transform((p) => (p === "" ? null : p));
+
 export const teamCreateSchema = z.object({
   name: z.string().trim().min(2).max(120),
   city: z.string().trim().min(2).max(80),
-  accentColor: hexColor,
+  logoPath: teamLogoPath,
   description: z.string().trim().max(500).optional().default(""),
   slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/).optional(),
   sortOrder: z.number().int().optional(),
@@ -51,7 +69,7 @@ export const teamCreateSchema = z.object({
 export const teamPatchSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
   city: z.string().trim().min(2).max(80).optional(),
-  accentColor: hexColor.optional(),
+  logoPath: teamLogoPath,
   description: z.string().trim().max(500).optional(),
   sortOrder: z.number().int().optional(),
   published: z.boolean().optional(),
@@ -127,6 +145,39 @@ export const trialZonePatchSchema = z.object({
   published: z.boolean().optional(),
 });
 
+const optionalTrialZoneId = z
+  .union([z.string(), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v == null || v === undefined) return null;
+    const t = String(v).trim();
+    return t === "" ? null : t;
+  });
+
+const isoDateTime = z.string().datetime({ offset: true });
+
+export const trialScheduleCreateSchema = z.object({
+  title: z.string().trim().min(2).max(160),
+  scheduledAt: isoDateTime,
+  endAt: isoDateTime.optional().nullable(),
+  notes: z.string().trim().max(2000).optional().nullable(),
+  trialZoneId: optionalTrialZoneId,
+  sortOrder: z.number().int().optional(),
+  published: z.boolean().optional().default(true),
+});
+
+export const trialSchedulePatchSchema = z
+  .object({
+    title: z.string().trim().min(2).max(160).optional(),
+    scheduledAt: isoDateTime.optional(),
+    endAt: isoDateTime.optional().nullable(),
+    notes: z.string().trim().max(2000).optional().nullable(),
+    trialZoneId: optionalTrialZoneId.optional(),
+    sortOrder: z.number().int().optional(),
+    published: z.boolean().optional(),
+  })
+  .refine((data) => Object.values(data).some((v) => v !== undefined), { message: "No fields to update" });
+
 const roleEnum = z.enum(ROLE_IDS);
 const rolesSchema = z.preprocess((value) => {
   if (!Array.isArray(value)) return value;
@@ -134,7 +185,9 @@ const rolesSchema = z.preprocess((value) => {
 }, z.array(roleEnum).min(1).max(5));
 const idDocumentTypeEnum = z.enum(["AADHAAR", "PASSPORT", "BIRTH_CERTIFICATE"]);
 const jerseySizeEnum = z.enum(["XS", "S", "M", "L", "XL", "XXL", "XXXL"]);
-const paymentStatusEnum = z.enum(["paid", "manual", "pending", "refunded"]);
+const paymentStatusEnum = z
+  .enum(["paid", "manual", "pending_payment", "pending", "refunded"])
+  .transform(normalizeRegistrationPaymentStatus);
 
 const registrationCore = {
   academyName: z.string().trim().min(2).max(200),

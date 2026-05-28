@@ -7,6 +7,7 @@ import { getClientIp } from "@/lib/get-client-ip";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireAdminMutation } from "@/lib/require-admin";
 import { teamCreateSchema } from "@/lib/admin-entity-schemas";
+import { revalidatePublicTeamPages } from "@/lib/revalidate-public-teams";
 import { slugify } from "@/lib/slug";
 
 export const runtime = "nodejs";
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       slug,
       name: data.name,
       city: data.city,
-      accentColor: data.accentColor,
+      logoPath: data.logoPath ?? null,
       description: data.description ?? "",
       sortOrder,
       published: data.published ?? true,
@@ -93,5 +94,6 @@ export async function POST(req: NextRequest) {
     clientIp: getClientIp(req),
   });
 
+  revalidatePublicTeamPages();
   return NextResponse.json(team, { status: 201 });
 }

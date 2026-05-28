@@ -1,7 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { applySqlitePragmas, bindSqlitePragmaReady, isSqliteDatabaseUrl } from "@/lib/sqlite-resilience";
 
-const globalForPrisma = globalThis as typeof globalThis & { prisma?: PrismaClient };
+const globalForPrisma = globalThis as typeof globalThis & {
+  prisma?: PrismaClient;
+  prismaRecreating?: boolean;
+};
+
+/** True when the generated client includes the TrialSchedule model delegate. */
+export function trialScheduleDelegateReady(client: PrismaClient): boolean {
+  const delegate = (client as unknown as { trialSchedule?: { findMany?: unknown } }).trialSchedule;
+  return typeof delegate?.findMany === "function";
+}
 
 function createPrismaClient(): PrismaClient {
   const client = new PrismaClient();
@@ -19,7 +28,22 @@ function createPrismaClient(): PrismaClient {
   return client;
 }
 
+function recreatePrismaClient(): void {
+  const existing = globalForPrisma.prisma;
+  if (!existing || globalForPrisma.prismaRecreating) return;
+  globalForPrisma.prismaRecreating = true;
+  void existing.$disconnect().catch(() => {});
+  globalForPrisma.prisma = undefined;
+  globalForPrisma.prismaRecreating = false;
+}
+
 export function getPrisma(): PrismaClient {
+  const existing = globalForPrisma.prisma;
+  // Dev/HMR can keep a PrismaClient from before `prisma generate` added TrialSchedule.
+  if (existing && !trialScheduleDelegateReady(existing)) {
+    recreatePrismaClient();
+  }
+
   if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = createPrismaClient();
   }

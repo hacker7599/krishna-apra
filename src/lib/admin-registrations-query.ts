@@ -1,6 +1,9 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
+import {
+  AWAITING_VERIFICATION_PAYMENT_STATUSES,
+  REGISTRATION_PAYMENT_PENDING,
+} from "@/lib/registration-payment-status";
 
 export type RegistrationListRow = Awaited<ReturnType<typeof prisma.registration.findMany>>[number];
 
@@ -50,9 +53,11 @@ export async function listRegistrationsForAdmin(opts: {
   const where: Prisma.RegistrationWhereInput = buildDateFilter(opts.from, opts.to);
   const normalizedPaymentStatus =
     opts.paymentStatus === "pending" ? REGISTRATION_PAYMENT_PENDING : opts.paymentStatus;
-  if (
+  if (normalizedPaymentStatus === REGISTRATION_PAYMENT_PENDING) {
+    where.paymentStatus = { in: [...AWAITING_VERIFICATION_PAYMENT_STATUSES] };
+  } else if (
     normalizedPaymentStatus &&
-    ["paid", "manual", "refunded", REGISTRATION_PAYMENT_PENDING].includes(normalizedPaymentStatus)
+    ["paid", "manual", "refunded"].includes(normalizedPaymentStatus)
   ) {
     where.paymentStatus = normalizedPaymentStatus;
   }

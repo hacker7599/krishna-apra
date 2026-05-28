@@ -1,17 +1,6 @@
 "use client";
 
-function normalizeHex(input: string): string {
-  let v = input.trim();
-  if (!v.startsWith("#")) v = `#${v}`;
-  if (/^#[0-9A-Fa-f]{6}$/.test(v)) return v.toLowerCase();
-  if (/^#[0-9A-Fa-f]{3}$/.test(v)) {
-    const r = v[1];
-    const g = v[2];
-    const b = v[3];
-    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
-  }
-  return "#ea580c";
-}
+import { normalizeHexColor } from "@/lib/hex-color";
 
 export function AdminColorPicker({
   label,
@@ -22,7 +11,7 @@ export function AdminColorPicker({
   value: string;
   onChange: (hex: string) => void;
 }) {
-  const hex = normalizeHex(value || "#ea580c");
+  const hex = normalizeHexColor(value || "#ea580c");
 
   return (
     <label className="block">
@@ -39,7 +28,7 @@ export function AdminColorPicker({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onBlur={(e) => onChange(normalizeHex(e.target.value))}
+          onBlur={(e) => onChange(normalizeHexColor(e.target.value))}
           placeholder="#ea580c"
           className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-[#1B365D] focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
           spellCheck={false}

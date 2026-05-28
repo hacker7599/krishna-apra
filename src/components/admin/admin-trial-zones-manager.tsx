@@ -82,6 +82,7 @@ export function AdminTrialZonesManager() {
   const [editing, setEditing] = useState<TrialZone | null>(null);
   const [form, setForm] = useState<TrialZoneForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const qs = useCallback(() => {
     const p = new URLSearchParams();
@@ -121,6 +122,30 @@ export function AdminTrialZonesManager() {
     setForm(emptyForm);
     setFormErr("");
     setSaving(false);
+  }
+
+  async function resyncOfficialCatalog() {
+    if (
+      !window.confirm(
+        "Resync official trial venues from the league catalog? This updates addresses/maps for known venues and hides zones not in the catalog.",
+      )
+    ) {
+      return;
+    }
+    setSyncing(true);
+    setErr("");
+    const res = await adminFetch("/api/admin/trial-zones/sync", { method: "POST" });
+    setSyncing(false);
+    if (res.status === 401) {
+      routerRef.current.replace("/admin/login");
+      return;
+    }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setErr(typeof d.error === "string" ? d.error : "Could not resync trial zones.");
+      return;
+    }
+    void load();
   }
 
   function openCreate() {
@@ -357,9 +382,19 @@ export function AdminTrialZonesManager() {
           </>
         }
         actions={
-          <button type="button" onClick={openCreate} className={btnPrimary}>
-            Add trial zone
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void resyncOfficialCatalog()}
+              disabled={syncing}
+              className={btnSecondary}
+            >
+              {syncing ? "Resyncing…" : "Resync official venues"}
+            </button>
+            <button type="button" onClick={openCreate} className={btnPrimary}>
+              Add trial zone
+            </button>
+          </div>
         }
       />
 

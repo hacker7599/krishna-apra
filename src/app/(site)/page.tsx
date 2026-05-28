@@ -8,6 +8,7 @@ import { TournamentFormatSplit } from "@/components/tournament-format-split";
 import { SectionHeader } from "@/components/section-header";
 import { SiteSection } from "@/components/site-section";
 import { BTN_PRIMARY } from "@/lib/site-ui";
+import { SupportContactLinks } from "@/components/support-contact-links";
 import { FORMAT, SEASON_START, VENUE } from "@/lib/league";
 import { getPublishedBanners, getPublishedTeamCount } from "@/lib/public-queries";
 
@@ -78,6 +79,9 @@ export default async function Home() {
               Season window · <span className="text-orange-700">{SEASON_START}</span>
             </p>
             <p className="text-sm font-medium text-slate-600">{VENUE}</p>
+            <p className="text-sm font-medium text-slate-600">
+              Support: <SupportContactLinks linkClassName="font-semibold text-orange-700 hover:text-orange-800" />
+            </p>
           </div>
           <Link href="/register" className={`${BTN_PRIMARY} shrink-0 px-8`}>
             Start registration

@@ -42,3 +42,21 @@ export async function getPublishedTrialZoneOptions() {
   });
   return rows;
 }
+
+export async function getPublishedTrialSchedules() {
+  return prisma.trialSchedule.findMany({
+    where: { published: true },
+    orderBy: [{ scheduledAt: "asc" }, { sortOrder: "asc" }],
+    include: {
+      trialZone: {
+        select: {
+          id: true,
+          trialPlace: true,
+          zone: true,
+          address: true,
+          navigationUrl: true,
+        },
+      },
+    },
+  });
+}

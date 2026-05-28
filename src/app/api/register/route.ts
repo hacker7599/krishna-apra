@@ -9,6 +9,9 @@ import { duplicateRegistrationMessage, findExistingRegistration } from "@/lib/re
 import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cookie";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
+import { logPaymentEvent } from "@/lib/payment-log";
+import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
+import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 import { withDbRetry } from "@/lib/sqlite-resilience";
 
@@ -82,7 +85,7 @@ export async function POST(req: NextRequest) {
           transactionRef: data.transactionRef || null,
           achievementsAndAwards: data.achievementsAndAwards?.trim() || null,
           trialZoneId: trialZone.id,
-          paymentStatus: "pending",
+          paymentStatus: REGISTRATION_PAYMENT_PENDING,
         },
       });
       return { row } as const;
@@ -97,6 +100,22 @@ export async function POST(req: NextRequest) {
     }
 
     const saved = registration.row;
+
+    await logPaymentEvent({
+      source: "register",
+      eventType: "qr_registration_submitted",
+      amountPaise: TRIAL_FEE_PAISE,
+      currency: "INR",
+      status: REGISTRATION_PAYMENT_PENDING,
+      email: emailNorm,
+      phone: phoneNorm,
+      playerName: data.playerName,
+      registrationId: saved.id,
+      clientIp: ip,
+      success: true,
+      message: "QR registration submitted — awaiting admin verification",
+      metadata: { transactionRef: data.transactionRef || null },
+    });
 
     let confirmationToken: string;
     try {

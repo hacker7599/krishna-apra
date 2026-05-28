@@ -44,7 +44,10 @@ type Row = Registration & {
   trialZone?: Pick<TrialZone, "trialPlace" | "zone"> | null;
 };
 
-function proofUrl(registrationId: string, kind: "photo" | "id" | "payment"): string {
+export function adminRegistrationProofUrl(
+  registrationId: string,
+  kind: "photo" | "id" | "payment",
+): string {
   return `/api/admin/proof?id=${encodeURIComponent(registrationId)}&kind=${kind}`;
 }
 
@@ -88,9 +91,9 @@ export function toAdminRegistrationDetail(row: Row): AdminRegistrationDetail {
     feeReceivedDate: row.feeReceivedDate,
     coachName: row.coachName,
     proofs: {
-      photo: row.playerPhotoPath ? proofUrl(row.id, "photo") : null,
-      id: row.idProofPath ? proofUrl(row.id, "id") : null,
-      payment: row.paymentProofPath ? proofUrl(row.id, "payment") : null,
+      photo: row.playerPhotoPath ? adminRegistrationProofUrl(row.id, "photo") : null,
+      id: row.idProofPath ? adminRegistrationProofUrl(row.id, "id") : null,
+      payment: row.paymentProofPath ? adminRegistrationProofUrl(row.id, "payment") : null,
     },
     proofMeta: {
       hasPhoto: Boolean(row.playerPhotoPath),
