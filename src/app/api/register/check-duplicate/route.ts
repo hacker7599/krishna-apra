@@ -4,7 +4,11 @@ import { z } from "zod";
 import { getClientIp } from "@/lib/get-client-ip";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
 import { normalizePhone } from "@/lib/normalize-phone";
-import { duplicateRegistrationMessage, findExistingRegistration } from "@/lib/registration-duplicate";
+import {
+  enrolledDuplicateMessage,
+  resolveContactForRegistration,
+  resumeRegistrationMessage,
+} from "@/lib/registration-contact-resolve";
 
 export const runtime = "nodejs";
 
@@ -39,16 +43,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Enter a valid email and phone number." }, { status: 400 });
   }
 
-  const existing = await findExistingRegistration(parsed.data.email, parsed.data.phone);
-  if (existing) {
+  const resolved = await resolveContactForRegistration(parsed.data.email, parsed.data.phone);
+
+  if (resolved.kind === "enrolled") {
     return NextResponse.json(
       {
         duplicate: true,
-        matched: existing.matched,
-        error: duplicateRegistrationMessage(existing),
+        matched: resolved.hit.matched,
+        error: enrolledDuplicateMessage(resolved.hit),
       },
       { status: 409 },
     );
+  }
+
+  if (resolved.kind === "conflict") {
+    return NextResponse.json({ duplicate: true, error: resolved.message }, { status: 409 });
+  }
+
+  if (resolved.kind === "pending") {
+    return NextResponse.json({
+      duplicate: false,
+      resume: true,
+      registrationId: resolved.id,
+      message: resumeRegistrationMessage,
+    });
   }
 
   return NextResponse.json({ duplicate: false });

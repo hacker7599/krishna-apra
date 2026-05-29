@@ -116,10 +116,18 @@ export function RegistrationSuccessDocument({ data }: { data: RegistrationConfir
 
           <p className="mt-4 text-center text-[10px] italic text-slate-600">&ldquo;{TAGLINE}&rdquo;</p>
 
-          <div className="mt-4 flex flex-col items-center gap-3 rounded-lg border-2 border-[#1B365D]/20 bg-slate-50 px-4 py-3 sm:flex-row sm:justify-between print:mt-2 print:py-2">
+          <div className="mt-4 flex flex-col items-center gap-3 rounded-lg border-2 border-[#1B365D]/20 bg-slate-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:justify-between print:mt-2 print:py-2">
             <div className="text-center sm:text-left">
-              <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Registration reference no.</p>
-              <p className="mt-0.5 font-mono text-sm font-bold text-[#1B365D]">{data.registrationId}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Registration code</p>
+              <p className="mt-0.5 font-mono text-sm font-bold text-[#1B365D]">
+                {data.registrationCode ?? data.registrationId.slice(0, 8).toUpperCase()}
+              </p>
+              {data.paymentCode ? (
+                <p className="mt-2 text-[9px] font-bold uppercase tracking-wide text-slate-500">
+                  Payment code{" "}
+                  <span className="font-mono text-xs text-emerald-800">{data.paymentCode}</span>
+                </p>
+              ) : null}
             </div>
             <PaymentStatusBadge paid={paidOnline} />
           </div>

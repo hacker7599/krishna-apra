@@ -11,6 +11,7 @@ import { REGISTRATION_PAYMENT_PAID, REGISTRATION_PAYMENT_PENDING } from "@/lib/r
 import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cookie";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
+import { assignPaymentCodeOnPaid, ensureRegistrationCode } from "@/lib/registration-codes";
 import { ensurePaymentCapturedOnRazorpay } from "@/lib/razorpay";
 import { withDbRetry } from "@/lib/db-resilience";
 
@@ -39,6 +40,7 @@ async function markRegistrationPaid(
   );
 
   await linkPaymentOrderToRegistration(razorpayOrderId, razorpayPaymentId, updated.id);
+  await assignPaymentCodeOnPaid(updated.id);
   return updated;
 }
 
@@ -47,11 +49,15 @@ async function sendConfirmationIfNeeded(
 ): Promise<{ sent: boolean; error?: string }> {
   try {
     const token = await signRegistrationConfirmationToken(registration.id);
+    const registrationCode = await ensureRegistrationCode(registration.id);
+    const paymentCode = await assignPaymentCodeOnPaid(registration.id);
     return sendRegistrationConfirmationEmail({
       registrationId: registration.id,
       email: registration.email,
       playerName: registration.playerName,
       confirmationToken: token,
+      registrationCode,
+      paymentCode,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Could not send confirmation email";

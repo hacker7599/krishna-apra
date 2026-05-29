@@ -25,7 +25,9 @@ export function registrationMatchesQuery(row: RegistrationListRow, q: string): b
     (row.coachName?.toLowerCase().includes(n) ?? false) ||
     (ext.achievementsAndAwards?.toLowerCase().includes(n) ?? false) ||
     (ext.razorpayPaymentId?.includes(q) ?? false) ||
-    (ext.razorpayOrderId?.includes(q) ?? false)
+    (ext.razorpayOrderId?.includes(q) ?? false) ||
+    ((row as { registrationCode?: string | null }).registrationCode?.toLowerCase().includes(n) ?? false) ||
+    ((row as { paymentCode?: string | null }).paymentCode?.toLowerCase().includes(n) ?? false)
   );
 }
 
@@ -73,6 +75,35 @@ export async function listRegistrationsForAdmin(opts: {
   }
 
   const total = rows.length;
-  const items = rows.slice(opts.offset, opts.offset + opts.limit);
+  const page = rows.slice(opts.offset, opts.offset + opts.limit);
+  const items = await attachPaymentOrderStatus(page);
+
   return { items, total, limit: opts.limit, offset: opts.offset };
+}
+
+export type RegistrationAdminListItem = RegistrationListRow & {
+  paymentOrderStatus: string | null;
+};
+
+async function attachPaymentOrderStatus(rows: RegistrationListRow[]): Promise<RegistrationAdminListItem[]> {
+  if (rows.length === 0) return [];
+
+  const regIds = rows.map((r) => r.id);
+  const orders = await prisma.paymentOrder.findMany({
+    where: { registrationId: { in: regIds } },
+    select: { registrationId: true, status: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const statusByRegId = new Map<string, string>();
+  for (const o of orders) {
+    if (o.registrationId && !statusByRegId.has(o.registrationId)) {
+      statusByRegId.set(o.registrationId, o.status);
+    }
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    paymentOrderStatus: statusByRegId.get(row.id) ?? null,
+  }));
 }

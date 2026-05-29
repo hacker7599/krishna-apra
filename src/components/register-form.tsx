@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SupportContactLinks } from "@/components/support-contact-links";
 import { PlayerRolePicker } from "@/components/player-role-picker";
+import { RegisterFormOutline } from "@/components/register-form-outline";
 import { RegisterFormField, RegisterFormSection, registerInputClass } from "@/components/register-form-ui";
 import { TrialVenuePicker } from "@/components/trial-venue-picker";
 import {
@@ -55,6 +56,7 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isQrPreviewOpen, setIsQrPreviewOpen] = useState(false);
+  const [resumeNotice, setResumeNotice] = useState<string | null>(null);
 
   const rolesJson = useMemo(() => JSON.stringify([...roles]), [roles]);
   const razorpayEnabled = paymentConfig.razorpayEnabled;
@@ -108,7 +110,10 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
     clearFieldError("roles");
   }
 
-  async function checkDuplicateRegistration(email: string, phone: string): Promise<string | null> {
+  async function checkDuplicateRegistration(
+    email: string,
+    phone: string,
+  ): Promise<{ error: string | null; resumeNotice: string | null }> {
     const res = await fetch("/api/register/check-duplicate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -116,15 +121,48 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
     });
     const data = await res.json().catch(() => ({}));
     if (res.status === 409) {
-      return humanErrorFromResponse(
-        data,
-        "This email or mobile number is already registered. Use a different contact or check your registration status.",
-      );
+      return {
+        error: humanErrorFromResponse(
+          data,
+          "This email or mobile number is already registered. Use a different contact or check your registration status.",
+        ),
+        resumeNotice: null,
+      };
     }
     if (!res.ok) {
-      return humanErrorFromResponse(data, "We could not verify your details right now. Please try again in a moment.");
+      return {
+        error: humanErrorFromResponse(data, "We could not verify your details right now. Please try again in a moment."),
+        resumeNotice: null,
+      };
     }
-    return null;
+    if (data.resume === true) {
+      return {
+        error: null,
+        resumeNotice:
+          typeof data.message === "string"
+            ? data.message
+            : "We found your previous application. Submitting will update your details and continue payment.",
+      };
+    }
+    return { error: null, resumeNotice: null };
+  }
+
+  async function reportCheckoutEvent(
+    registrationId: string,
+    razorpayOrderId: string,
+    event: "dismissed" | "payment_failed",
+    message?: string,
+  ) {
+    try {
+      await fetch("/api/register/checkout-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ registrationId, razorpayOrderId, event, message }),
+      });
+    } catch {
+      /* non-blocking — user can retry payment */
+    }
   }
 
   async function confirmPayment(registrationId: string, proof: {
@@ -245,12 +283,16 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
     setStatus("loading");
     setMessage("");
 
-    const dupError = await checkDuplicateRegistration(values.email.trim().toLowerCase(), digitsOnlyPhoneInput(values.phone));
-    if (dupError) {
+    const dup = await checkDuplicateRegistration(
+      values.email.trim().toLowerCase(),
+      digitsOnlyPhoneInput(values.phone),
+    );
+    if (dup.error) {
       setStatus("err");
-      setMessage(dupError);
+      setMessage(dup.error);
       return;
     }
+    setResumeNotice(dup.resumeNotice);
 
     if (!razorpayEnabled) {
       if (qrUploadMode && !qrImageUrl) {
@@ -282,6 +324,7 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
       }
 
       const registrationId = String(prepareData.registrationId ?? "");
+      const razorpayOrderId = String(prepareData.orderId ?? "");
       if (!registrationId) {
         setStatus("err");
         setMessage("We could not save your registration. Please try again.");
@@ -319,15 +362,22 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           await confirmPayment(registrationId, response);
         },
         onDismiss: () => {
+          if (razorpayOrderId) {
+            void reportCheckoutEvent(registrationId, razorpayOrderId, "dismissed");
+          }
           setStatus("err");
           setMessage(
             "Payment was cancelled. Your details are saved on our server — you can submit the form again to retry payment.",
           );
         },
-        onPaymentFailed: () => {
+        onPaymentFailed: (failureMessage) => {
+          if (razorpayOrderId) {
+            void reportCheckoutEvent(registrationId, razorpayOrderId, "payment_failed", failureMessage);
+          }
           setStatus("err");
           setMessage(
-            "Payment failed. Your details are saved — fix your payment method and submit the form again to retry.",
+            failureMessage ||
+              "Payment failed. Your details are saved — fix your payment method and submit the form again to retry.",
           );
         },
       });
@@ -359,25 +409,39 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
 
   return (
     <form ref={formRef} onSubmit={onSubmit} className="register-form-shell w-full">
-      <div className="register-form-shell__bar">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Official trial registration</p>
-          <p className="mt-0.5 text-sm font-semibold text-slate-800">
-            {FORMAT.category} · {FORMAT.overs}-over T20 · {FORMAT.teams} franchises
+      <header className="register-form-shell__header">
+        <div className="register-form-shell__header-main">
+          <p className="register-form-shell__eyebrow">Application form</p>
+          <h2 className="register-form-shell__title">Player registration</h2>
+          <p className="register-form-shell__lead">
+            {FORMAT.category} · {FORMAT.overs}-over T20 · {FORMAT.teams} franchises · All fields required unless marked
+            optional
           </p>
-          <p className="mt-1 text-xs font-medium text-slate-600">
-            Registration support: <SupportContactLinks />
+          <p className="register-form-shell__support">
+            Need help? <SupportContactLinks linkClassName="font-bold text-orange-300 underline underline-offset-2 hover:text-white" />
           </p>
         </div>
-        <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2.5 text-right">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-orange-800">Trial fee</p>
-          <p className="font-[family-name:var(--font-bebas)] text-3xl leading-none text-slate-900">₹{TRIAL_FEE_INR.toLocaleString("en-IN")}</p>
-          <p className="text-[10px] font-semibold text-slate-600">Includes jersey</p>
+        <div className="register-form-shell__header-fee" aria-label={`Trial fee ₹${TRIAL_FEE_INR.toLocaleString("en-IN")}`}>
+          <p className="register-form-shell__header-fee-label">Trial fee</p>
+          <p className="register-form-shell__header-fee-amount">₹{TRIAL_FEE_INR.toLocaleString("en-IN")}</p>
+          <p className="register-form-shell__header-fee-note">Jersey included</p>
         </div>
-      </div>
+      </header>
 
-      <div className="register-form-shell__body space-y-0">
-        <RegisterFormSection number="1" title="Academy & player" description="Details as they appear on your academy records and government ID.">
+      <RegisterFormOutline variant="bar" className="register-form-shell__progress lg:hidden" />
+
+      <div className="register-form-shell__body">
+        {resumeNotice ? (
+          <div className="register-form-notice register-form-notice--amber" role="status">
+            {resumeNotice}
+          </div>
+        ) : null}
+        <RegisterFormSection
+          sectionId="register-section-academy"
+          number="1"
+          title="Academy & player"
+          description="Details as they appear on your academy records and government ID."
+        >
           <div className="register-form-grid register-form-grid--2">
             <RegisterFormField label="Academy / club name" error={fieldErrors.academyName} className="register-form-field--wide">
               <input
@@ -441,7 +505,12 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           </div>
         </RegisterFormSection>
 
-        <RegisterFormSection number="2" title="Contact & eligibility" description="We use these details for trial confirmation and duplicate checks.">
+        <RegisterFormSection
+          sectionId="register-section-contact"
+          number="2"
+          title="Contact & eligibility"
+          description="We use these details for trial confirmation and duplicate checks."
+        >
           <div className="register-form-grid register-form-grid--2">
             <RegisterFormField
               label="Date of birth"
@@ -503,7 +572,7 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           </div>
         </RegisterFormSection>
 
-        <RegisterFormSection number="3" title="Kit sizing">
+        <RegisterFormSection sectionId="register-section-kit" number="3" title="Kit sizing">
           <div className="register-form-grid register-form-grid--2">
             <RegisterFormField label="Jersey (t-shirt) size" error={fieldErrors.jerseySize}>
               <select
@@ -536,7 +605,12 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           </div>
         </RegisterFormSection>
 
-        <RegisterFormSection number="4" title="Player details" description="Match the official paper form — batter, bowler, all-rounder, wicketkeeper.">
+        <RegisterFormSection
+          sectionId="register-section-roles"
+          number="4"
+          title="Player details"
+          description="Match the official paper form — batter, bowler, all-rounder, wicketkeeper."
+        >
           <PlayerRolePicker roles={roles} onChange={setRolesSelection} hasError={!!fieldErrors.roles} />
           {fieldErrors.roles ? (
             <p className="register-form-field__error !mt-0" role="alert">
@@ -547,7 +621,12 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           ) : null}
         </RegisterFormSection>
 
-        <RegisterFormSection number="5" title="Trial venue" description="Choose where you plan to attend trials.">
+        <RegisterFormSection
+          sectionId="register-section-venue"
+          number="5"
+          title="Trial venue"
+          description="Choose where you plan to attend trials."
+        >
           <TrialVenuePicker
             trialZones={trialZones}
             value={trialZoneId}
@@ -564,7 +643,12 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           ) : null}
         </RegisterFormSection>
 
-        <RegisterFormSection number="6" title="Achievements" description="Optional — helps scouts review your profile.">
+        <RegisterFormSection
+          sectionId="register-section-achievements"
+          number="6"
+          title="Achievements"
+          description="Optional — helps scouts review your profile."
+        >
           <RegisterFormField label="Achievements & awards" optional error={fieldErrors.achievementsAndAwards}>
             <textarea
               name="achievementsAndAwards"
@@ -577,7 +661,12 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           </RegisterFormField>
         </RegisterFormSection>
 
-        <RegisterFormSection number="7" title="Age proof (required)" description="Upload a clear scan or photo of one government ID.">
+        <RegisterFormSection
+          sectionId="register-section-id"
+          number="7"
+          title="Age proof (required)"
+          description="Upload a clear scan or photo of one government ID."
+        >
           <div className="register-form-callout register-form-callout--amber">
             <p className="register-form-callout__title">Accepted documents</p>
             <p className="register-form-callout__text">Aadhaar card, passport (minimum 3-year validity), or birth certificate.</p>
@@ -615,7 +704,7 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           </div>
         </RegisterFormSection>
 
-        <RegisterFormSection number="8" title="Payment">
+        <RegisterFormSection sectionId="register-section-payment" number="8" title="Payment">
           <div className="register-form-payment-block">
             {razorpayEnabled ? (
               <div className="register-form-callout register-form-callout--emerald">
@@ -733,9 +822,10 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
 
         <div className="register-form-actions">
           {status !== "idle" ? (
-            <div className={`register-form-status ${status === "ok" ? "register-form-status--ok" : "register-form-status--err"}`}>{message}</div>
+            <div className={`register-form-status ${status === "ok" ? "register-form-status--ok" : "register-form-status--err"}`} role="alert">
+              {message}
+            </div>
           ) : null}
-
           <button
             type="submit"
             disabled={status === "loading" || status === "paying" || roles.size === 0 || !acceptedTerms}
@@ -743,6 +833,10 @@ export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
           >
             {submitLabel}
           </button>
+          <p className="register-form-actions__hint">
+            By submitting you confirm details are accurate. Confirmation email sent after successful payment or admin
+            verification.
+          </p>
         </div>
       </div>
       {isQrPreviewOpen && qrImageUrl ? (

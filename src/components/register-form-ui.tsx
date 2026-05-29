@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 
 export function RegisterFormSection({
+  sectionId,
   number,
   title,
   description,
   children,
   className = "",
 }: {
+  sectionId?: string;
   number?: string;
   title: string;
   description?: string;
@@ -14,7 +16,10 @@ export function RegisterFormSection({
   className?: string;
 }) {
   return (
-    <section className={`register-form-section ${className}`.trim()}>
+    <section
+      id={sectionId}
+      className={`register-form-section scroll-mt-28 sm:scroll-mt-32 ${className}`.trim()}
+    >
       <div className="register-form-section__head">
         {number ? (
           <span className="register-form-section__num" aria-hidden>

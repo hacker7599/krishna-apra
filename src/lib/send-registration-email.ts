@@ -10,8 +10,10 @@ export async function sendRegistrationConfirmationEmail(params: {
   email: string;
   playerName: string;
   confirmationToken: string;
+  registrationCode?: string;
+  paymentCode?: string | null;
 }): Promise<{ sent: boolean; error?: string }> {
-  const { registrationId, email, playerName, confirmationToken } = params;
+  const { registrationId, email, playerName, confirmationToken, registrationCode, paymentCode } = params;
   const printLink = registrationReceiptUrl(confirmationToken);
   const statusLink = registrationStatusUrl();
 
@@ -39,6 +41,10 @@ export async function sendRegistrationConfirmationEmail(params: {
       status_link: statusLink,
       PRINT_LINK: printLink,
       STATUS_LINK: statusLink,
+      registration_code: registrationCode ?? "",
+      REGISTRATION_CODE: registrationCode ?? "",
+      payment_code: paymentCode ?? "",
+      PAYMENT_CODE: paymentCode ?? "",
     },
   });
 

@@ -1,7 +1,12 @@
 import type { Registration, TrialZone } from "@prisma/client";
+import { tryEnsureRegistrationCodes } from "@/lib/registration-codes";
+import { adminRegistrationProofUrl } from "@/lib/admin-registration-proof-url";
+import { isRazorpayAbandonedRegistration, razorpayAbandonedLabel } from "@/lib/razorpay-checkout-admin";
+import { isEnrolledPaymentStatus } from "@/lib/registration-payment-status";
 import { formatRoleLabels } from "@/lib/registration-roles";
 import { trialVenueDisplayLabel } from "@/lib/trial-zone-catalog";
 import { ID_DOCUMENT_LABELS, type IdDocumentType } from "@/lib/registration-schema";
+import { prisma } from "@/lib/prisma";
 
 export type AdminRegistrationDetail = {
   id: string;
@@ -22,6 +27,8 @@ export type AdminRegistrationDetail = {
   achievementsAndAwards: string | null;
   trialZone: string | null;
   paymentStatus: string | null;
+  registrationCode: string | null;
+  paymentCode: string | null;
   razorpayOrderId: string | null;
   razorpayPaymentId: string | null;
   transactionRef: string | null;
@@ -38,20 +45,70 @@ export type AdminRegistrationDetail = {
     hasPayment: boolean;
     idIsPdf: boolean;
   };
+  paymentOrderStatus: string | null;
+  razorpayCheckoutNote: string | null;
 };
 
 type Row = Registration & {
   trialZone?: Pick<TrialZone, "trialPlace" | "zone"> | null;
 };
 
-export function adminRegistrationProofUrl(
-  registrationId: string,
-  kind: "photo" | "id" | "payment",
-): string {
-  return `/api/admin/proof?id=${encodeURIComponent(registrationId)}&kind=${kind}`;
+export { adminRegistrationProofUrl } from "@/lib/admin-registration-proof-url";
+
+export async function loadAdminRegistrationDetail(row: Row): Promise<AdminRegistrationDetail> {
+  const codes = await tryEnsureRegistrationCodes(row.id, {
+    assignPaymentIfPaid: isEnrolledPaymentStatus(row.paymentStatus),
+    paymentStatus: row.paymentStatus,
+  });
+
+  const current = await prisma.registration.findUnique({
+    where: { id: row.id },
+    include: { trialZone: { select: { trialPlace: true, zone: true } } },
+  });
+  if (!current) {
+    throw new Error("Registration not found");
+  }
+
+  let paymentOrderStatus: string | null = null;
+  let lastCheckoutMessage: string | null = null;
+
+  if (current.razorpayOrderId) {
+    const order = await prisma.paymentOrder.findUnique({
+      where: { razorpayOrderId: current.razorpayOrderId },
+      select: { status: true },
+    });
+    paymentOrderStatus = order?.status ?? null;
+
+    const lastCheckoutLog = await prisma.paymentLog.findFirst({
+      where: {
+        registrationId: current.id,
+        eventType: { in: ["checkout.dismissed", "checkout.payment_failed"] },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { message: true },
+    });
+    lastCheckoutMessage = lastCheckoutLog?.message ?? null;
+  }
+
+  const base = toAdminRegistrationDetail(current, paymentOrderStatus, codes);
+  const razorpayCheckoutNote = isRazorpayAbandonedRegistration({
+    paymentStatus: current.paymentStatus,
+    paymentProofPath: current.paymentProofPath,
+    razorpayOrderId: current.razorpayOrderId,
+    razorpayPaymentId: current.razorpayPaymentId,
+    paymentOrderStatus,
+  })
+    ? lastCheckoutMessage ?? razorpayAbandonedLabel({ paymentOrderStatus })
+    : null;
+
+  return { ...base, paymentOrderStatus, razorpayCheckoutNote };
 }
 
-export function toAdminRegistrationDetail(row: Row): AdminRegistrationDetail {
+export function toAdminRegistrationDetail(
+  row: Row,
+  paymentOrderStatus: string | null = null,
+  codes?: { registrationCode: string | null; paymentCode: string | null },
+): AdminRegistrationDetail {
   let roles: string[] = [];
   try {
     roles = JSON.parse(row.roles) as string[];
@@ -85,6 +142,8 @@ export function toAdminRegistrationDetail(row: Row): AdminRegistrationDetail {
     achievementsAndAwards: row.achievementsAndAwards,
     trialZone: row.trialZone ? trialVenueDisplayLabel(row.trialZone) : null,
     paymentStatus: row.paymentStatus,
+    registrationCode: codes?.registrationCode ?? row.registrationCode ?? null,
+    paymentCode: codes?.paymentCode ?? row.paymentCode ?? null,
     razorpayOrderId: row.razorpayOrderId,
     razorpayPaymentId: row.razorpayPaymentId,
     transactionRef: row.transactionRef,
@@ -101,5 +160,7 @@ export function toAdminRegistrationDetail(row: Row): AdminRegistrationDetail {
       hasPayment: Boolean(row.paymentProofPath),
       idIsPdf: idPath?.toLowerCase().endsWith(".pdf") ?? false,
     },
+    paymentOrderStatus,
+    razorpayCheckoutNote: null,
   };
 }

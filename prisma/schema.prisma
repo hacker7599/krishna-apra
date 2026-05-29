@@ -126,6 +126,10 @@ model RegistrationAccessOtp {
 
 model Registration {
   id                    String     @id @default(cuid())
+  /// Human-readable ID for status lookup and receipts (e.g. FSU15-R-A1B2C3).
+  registrationCode      String?    @unique
+  /// Issued when payment is confirmed (e.g. FSU15-P-X9Y8Z7).
+  paymentCode           String?    @unique
   createdAt             DateTime   @default(now())
   academyName           String
   playerName            String

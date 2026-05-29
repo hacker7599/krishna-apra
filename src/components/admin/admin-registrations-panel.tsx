@@ -18,8 +18,9 @@ import { AdminRegistrationPrintModal } from "@/components/admin/admin-registrati
 import { AdminRegistrationSubmissionModal } from "@/components/admin/admin-registration-submission-modal";
 import type { TrialZoneOption } from "@/lib/trial-zone-options";
 import { adminRegistrationFormToFormData, adminRegistrationFormToPayload } from "@/lib/admin-registration-payload";
-import { adminRegistrationProofUrl } from "@/lib/admin-registration-detail";
+import { adminRegistrationProofUrl } from "@/lib/admin-registration-proof-url";
 import { humanErrorFromResponse } from "@/lib/human-errors";
+import { isRazorpayAbandonedRegistration } from "@/lib/razorpay-checkout-admin";
 
 type Row = {
   id: string;
@@ -42,11 +43,14 @@ type Row = {
   paymentStatus: string | null;
   razorpayPaymentId: string | null;
   razorpayOrderId: string | null;
+  registrationCode: string | null;
+  paymentCode: string | null;
   feeReceivedDate: string | null;
   coachName: string | null;
   achievementsAndAwards: string | null;
   trialZoneId: string | null;
   trialZone?: { trialPlace: string; zone: string } | null;
+  paymentOrderStatus?: string | null;
 };
 
 type ListResponse = {
@@ -417,6 +421,30 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     return { label: status ?? "manual", className: "bg-indigo-50 text-indigo-700 border-indigo-200" };
   }
 
+  function razorpayCheckoutBadge(row: Row) {
+    if (
+      !isRazorpayAbandonedRegistration({
+        paymentStatus: row.paymentStatus,
+        paymentProofPath: row.paymentProofPath,
+        razorpayOrderId: row.razorpayOrderId,
+        razorpayPaymentId: row.razorpayPaymentId,
+        paymentOrderStatus: row.paymentOrderStatus,
+      })
+    ) {
+      return null;
+    }
+    if (row.paymentOrderStatus === "failed") {
+      return {
+        label: "Razorpay cancelled",
+        className: "bg-rose-50 text-rose-800 border-rose-200",
+      };
+    }
+    return {
+      label: "Razorpay incomplete",
+      className: "bg-orange-50 text-orange-800 border-orange-200",
+    };
+  }
+
   return (
     <div className="admin-panel mx-auto max-w-6xl space-y-6">
       <AdminPageHeader
@@ -623,19 +651,28 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="grid gap-3 p-3 sm:p-4">
-            {rows.map((r) => (
+            {rows.map((r) => {
+              const checkoutBadge = razorpayCheckoutBadge(r);
+              return (
               <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-base font-bold text-slate-900">{r.playerName}</p>
                     <p className="text-xs font-medium text-slate-600">{r.academyName}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     <span
                       className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${paymentBadge(r.paymentStatus).className}`}
                     >
                       {paymentBadge(r.paymentStatus).label}
                     </span>
+                    {checkoutBadge ? (
+                      <span
+                        className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${checkoutBadge.className}`}
+                      >
+                        {checkoutBadge.label}
+                      </span>
+                    ) : null}
                     <span className="text-xs font-medium text-slate-500">{new Date(r.createdAt).toLocaleString()}</span>
                   </div>
                 </div>
@@ -644,6 +681,18 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
                   <p><span className="font-semibold text-slate-900">Phone:</span> {r.phone}</p>
                   {r.trialZone?.zone ? <p><span className="font-semibold text-slate-900">Zone:</span> {r.trialZone.zone}</p> : null}
                   {r.transactionRef ? <p><span className="font-semibold text-slate-900">Transaction:</span> {r.transactionRef}</p> : null}
+                  {r.registrationCode ? (
+                    <p>
+                      <span className="font-semibold text-slate-900">Reg. code:</span>{" "}
+                      <span className="font-mono">{r.registrationCode}</span>
+                    </p>
+                  ) : null}
+                  {r.paymentCode ? (
+                    <p>
+                      <span className="font-semibold text-slate-900">Payment code:</span>{" "}
+                      <span className="font-mono text-emerald-800">{r.paymentCode}</span>
+                    </p>
+                  ) : null}
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
@@ -680,13 +729,6 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void updatePaymentDecision(r.id, "disapprove")}
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                  >
-                    Disapprove
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => void resendConfirmationEmail(r)}
                     disabled={resendingId === r.id}
                     className="rounded-md border border-sky-300 px-3 py-1.5 text-xs font-semibold text-sky-800 hover:bg-sky-50 disabled:opacity-50"
@@ -708,7 +750,8 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
           {rows.length === 0 && <p className="px-4 py-8 text-center text-sm font-semibold text-slate-600">No rows match these filters.</p>}
           <AdminPagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />

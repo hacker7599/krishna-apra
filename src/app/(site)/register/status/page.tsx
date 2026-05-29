@@ -5,7 +5,7 @@ import { SiteSection } from "@/components/site-section";
 
 export const metadata: Metadata = {
   title: "Check registration & payment",
-  description: "Verify your email to view trial registration and payment status on Future Star U-15.",
+  description: "Look up your Future Star U-15 trial registration with email and your unique registration code.",
   robots: { index: false, follow: false },
 };
 
@@ -15,8 +15,8 @@ export default function RegisterStatusPage() {
       <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-12">
         <SitePageHero
           title="Check registration & payment"
-          lead="Enter the email you used at registration. We will send a one-time code to view your printable form and payment status."
-          breadcrumb={[{ label: "Register", href: "/register" }, { label: "Verify email" }]}
+          lead="Enter the email and registration code from your confirmation email or receipt (FSU15-R-XXXXXX)."
+          breadcrumb={[{ label: "Register", href: "/register" }, { label: "Check status" }]}
         />
       </SiteSection>
       <SiteSection width="content" tone="muted" innerClassName="!py-10 sm:!py-14">

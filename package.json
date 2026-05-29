@@ -18,6 +18,8 @@
     "db:seed:trial-schedule": "tsx scripts/run-ts-with-env.ts prisma/seed-trial-schedule.ts",
     "db:normalize-registrations": "tsx scripts/run-ts-with-env.ts scripts/normalize-pending-registrations.ts",
     "db:verify-registrations": "tsx scripts/verify-registration-fields.ts",
+    "db:add-code-columns": "tsx scripts/add-registration-code-columns.ts",
+    "db:backfill-codes": "tsx scripts/backfill-registration-codes.ts",
     "db:generate": "prisma generate",
     "admin:hash": "node -e \"const b=require('bcryptjs');const p=process.argv[1]||'changeme';console.log(Buffer.from(b.hashSync(p,12)).toString('base64'))\""
   },

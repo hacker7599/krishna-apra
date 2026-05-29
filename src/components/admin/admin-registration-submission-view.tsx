@@ -86,11 +86,31 @@ export function AdminRegistrationSubmissionView({ detail }: { detail: AdminRegis
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Registration reference</p>
-          <p className="font-mono text-sm font-bold text-slate-900">{detail.id}</p>
-          <p className="mt-1 text-xs font-medium text-slate-600">Submitted {formatSubmittedAt(detail.createdAt)}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border-2 border-[#1B365D]/20 bg-gradient-to-br from-slate-50 to-orange-50/40 px-4 py-4">
+        <div className="min-w-0 space-y-2">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#1B365D]">Registration code</p>
+            <p className="font-mono text-xl font-bold tracking-wide text-[#1B365D]">
+              {detail.registrationCode ?? "—"}
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-slate-600">
+              Share with player for{" "}
+              <a href="/register/status" className="font-bold text-orange-700 underline" target="_blank" rel="noreferrer">
+                status check
+              </a>
+            </p>
+          </div>
+          {detail.paymentCode ? (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-800">Payment code</p>
+              <p className="font-mono text-base font-bold text-emerald-900">{detail.paymentCode}</p>
+            </div>
+          ) : null}
+          <p className="text-[10px] font-medium text-slate-500">
+            Submitted {formatSubmittedAt(detail.createdAt)}
+            <span className="mx-1">·</span>
+            <span className="font-mono text-slate-400">ID {detail.id}</span>
+          </p>
         </div>
         <span
           className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${
@@ -167,9 +187,14 @@ export function AdminRegistrationSubmissionView({ detail }: { detail: AdminRegis
           ) : null}
 
           <Section title="7. Age proof & payment">
+            <Field label="Registration code" value={detail.registrationCode} />
+            <Field label="Payment code" value={detail.paymentCode ?? (paid ? "—" : "Not issued yet")} />
             <Field label="Government ID type" value={detail.idDocumentLabel} />
             <Field label="Trial fee (₹)" value={`₹${TRIAL_FEE_INR.toLocaleString("en-IN")}`} />
             <Field label="Payment status" value={detail.paymentStatus} />
+            {detail.razorpayCheckoutNote ? (
+              <Field label="Razorpay checkout" value={detail.razorpayCheckoutNote} />
+            ) : null}
             <Field
               label="Payment method"
               value={

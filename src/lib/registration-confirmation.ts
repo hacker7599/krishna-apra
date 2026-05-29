@@ -7,6 +7,8 @@ import { ID_DOCUMENT_LABELS, type IdDocumentType } from "@/lib/registration-sche
 
 export type RegistrationConfirmation = {
   registrationId: string;
+  registrationCode: string | null;
+  paymentCode: string | null;
   submittedAt: string;
   academyName: string;
   playerName: string;
@@ -58,6 +60,8 @@ export function toRegistrationConfirmation(row: RegistrationWithZone): Registrat
 
   return {
     registrationId: row.id,
+    registrationCode: row.registrationCode ?? null,
+    paymentCode: row.paymentCode ?? null,
     submittedAt: row.createdAt.toISOString(),
     academyName: row.academyName,
     playerName: row.playerName,

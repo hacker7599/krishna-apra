@@ -186,7 +186,8 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
       <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
         <p className="font-semibold text-slate-900">Payment activity</p>
         <p className="mt-1 text-xs leading-relaxed">
-          Every Razorpay checkout, QR submission, webhook, and admin approval is logged here. Mark QR payments as paid under{" "}
+          Every Razorpay checkout, cancel/dismiss, QR submission, webhook, and admin approval is logged here. Filter{" "}
+          <strong>Cancelled / failed</strong> for users who closed Razorpay or payment failed. Mark QR payments as paid under{" "}
           <Link href="/admin/registrations" className="font-bold text-[#1B365D] underline">
             Registrations
           </Link>
@@ -275,7 +276,8 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
           className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
         >
           <option value="">All statuses</option>
-          <option value="created">Created</option>
+          <option value="created">Created (not paid)</option>
+          <option value="failed">Cancelled / failed</option>
           <option value="paid">Paid</option>
         </select>
         <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">

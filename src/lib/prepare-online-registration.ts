@@ -1,16 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { logPaymentEvent } from "@/lib/payment-log";
 import type { ParsedRegistrationForm, SavedUploadPaths } from "@/lib/parse-registration-form-data";
-import {
-  duplicateRegistrationMessage,
-  findExistingRegistration,
-  findRegistrationByContact,
-} from "@/lib/registration-duplicate";
 import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { getRazorpayPublicKeyId, TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { getRazorpay } from "@/lib/razorpay";
 import { LEAGUE_NAME } from "@/lib/league";
 import { withDbRetry } from "@/lib/db-resilience";
+import { allocateRegistrationCode } from "@/lib/registration-codes";
+import { resolveContactForRegistration, enrolledDuplicateMessage } from "@/lib/registration-contact-resolve";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 
 export async function prepareOnlineRegistration(
@@ -31,14 +28,17 @@ export async function prepareOnlineRegistration(
 > {
   const { data, emailNorm, phoneNorm, rolesJson } = parsed;
 
-  const enrolled = await findExistingRegistration(emailNorm, phoneNorm);
-  if (enrolled) {
+  const contact = await resolveContactForRegistration(emailNorm, phoneNorm);
+  if (contact.kind === "enrolled") {
     return {
       ok: false,
-      error: duplicateRegistrationMessage(enrolled),
+      error: enrolledDuplicateMessage(contact.hit),
       status: 409,
       duplicate: true,
     };
+  }
+  if (contact.kind === "conflict") {
+    return { ok: false, error: contact.message, status: 409, duplicate: true };
   }
 
   const trialZone = await findPublishedTrialZone(data.trialZoneId);
@@ -47,7 +47,7 @@ export async function prepareOnlineRegistration(
   }
 
   const dob = new Date(`${data.dateOfBirth}T00:00:00.000Z`);
-  const existingContact = await findRegistrationByContact(emailNorm, phoneNorm);
+  const pendingId = contact.kind === "pending" ? contact.id : null;
   const receipt = `fsu15_${Date.now().toString(36)}`;
 
   const registrationData = {
@@ -75,40 +75,31 @@ export async function prepareOnlineRegistration(
 
   const draft = await withDbRetry(() =>
     prisma.$transaction(async (tx) => {
-      let row;
-      if (existingContact?.paymentStatus === REGISTRATION_PAYMENT_PENDING) {
-        row = await tx.registration.update({
-          where: { id: existingContact.id },
+      if (pendingId) {
+        const row = await tx.registration.update({
+          where: { id: pendingId },
           data: registrationData,
         });
+        if (!row.registrationCode) {
+          await tx.registration.update({
+            where: { id: pendingId },
+            data: { registrationCode: await allocateRegistrationCode(tx) },
+          });
+        }
         await tx.paymentOrder.deleteMany({
-          where: {
-            registrationId: existingContact.id,
-            status: { not: "paid" },
-          },
+          where: { registrationId: pendingId, status: { not: "paid" } },
         });
-      } else if (existingContact) {
-        throw new Error("CONTACT_CONFLICT");
-      } else {
-        row = await tx.registration.create({ data: registrationData });
+        return tx.registration.findUniqueOrThrow({ where: { id: pendingId } });
       }
-      return row;
-    }),
-  ).catch((e) => {
-    if (e instanceof Error && e.message === "CONTACT_CONFLICT") {
-      return null;
-    }
-    throw e;
-  });
 
-  if (!draft) {
-    return {
-      ok: false,
-      error: "This email or mobile is already in use. Contact the league desk if you need help.",
-      status: 409,
-      duplicate: true,
-    };
-  }
+      return tx.registration.create({
+        data: {
+          ...registrationData,
+          registrationCode: await allocateRegistrationCode(tx),
+        },
+      });
+    }),
+  );
 
   const rzp = getRazorpay();
   let razorpayOrder;

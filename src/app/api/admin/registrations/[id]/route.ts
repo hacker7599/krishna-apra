@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { toAdminRegistrationDetail } from "@/lib/admin-registration-detail";
+import { loadAdminRegistrationDetail } from "@/lib/admin-registration-detail";
 import { parseAdminRegistrationPatchMultipart } from "@/lib/admin-registration-form-data";
 import {
   assertEligibleDateOfBirth,
@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json(toAdminRegistrationDetail(row));
+  return NextResponse.json(await loadAdminRegistrationDetail(row));
 }
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {

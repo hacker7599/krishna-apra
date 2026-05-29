@@ -5,7 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { getClientIp } from "@/lib/get-client-ip";
 import { parseRegistrationFormFields, saveRegistrationUploads } from "@/lib/parse-registration-form-data";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
-import { duplicateRegistrationMessage, findExistingRegistration } from "@/lib/registration-duplicate";
+import { allocateRegistrationCode, ensureRegistrationCode } from "@/lib/registration-codes";
+import {
+  enrolledDuplicateMessage,
+  resolveContactForRegistration,
+} from "@/lib/registration-contact-resolve";
 import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cookie";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
@@ -38,10 +42,17 @@ export async function POST(req: NextRequest) {
 
     const { data, emailNorm, phoneNorm, rolesJson } = parsedResult.parsed;
 
-    const existing = await findExistingRegistration(emailNorm, phoneNorm);
-    if (existing) {
-      return NextResponse.json({ error: duplicateRegistrationMessage(existing), duplicate: true }, { status: 409 });
+    const contact = await resolveContactForRegistration(emailNorm, phoneNorm);
+    if (contact.kind === "enrolled") {
+      return NextResponse.json(
+        { error: enrolledDuplicateMessage(contact.hit), duplicate: true },
+        { status: 409 },
+      );
     }
+    if (contact.kind === "conflict") {
+      return NextResponse.json({ error: contact.message, duplicate: true }, { status: 409 });
+    }
+    const pendingId = contact.kind === "pending" ? contact.id : null;
 
     const trialZone = await findPublishedTrialZone(data.trialZoneId);
     if (!trialZone) {
@@ -60,46 +71,50 @@ export async function POST(req: NextRequest) {
 
     const dob = new Date(`${data.dateOfBirth}T00:00:00.000Z`);
 
-    const registration = await withDbRetry(() =>
+    const registrationPayload = {
+      academyName: data.academyName,
+      playerName: data.playerName,
+      dateOfBirth: dob,
+      roles: rolesJson,
+      email: emailNorm,
+      phone: phoneNorm,
+      fatherName: data.fatherName,
+      address: data.address,
+      jerseySize: data.jerseySize,
+      shoeSize: data.shoeSize,
+      idDocumentType: data.idDocumentType,
+      idProofPath: uploads.paths.idProofPath,
+      playerPhotoPath: uploads.paths.playerPhotoPath,
+      paymentProofPath: uploads.paths.paymentProofPath,
+      transactionRef: data.transactionRef || null,
+      achievementsAndAwards: data.achievementsAndAwards?.trim() || null,
+      trialZoneId: trialZone.id,
+      paymentStatus: REGISTRATION_PAYMENT_PENDING,
+    };
+
+    const saved = await withDbRetry(() =>
       prisma.$transaction(async (tx) => {
-      const dup = await findExistingRegistration(emailNorm, phoneNorm, tx);
-      if (dup) {
-        return { duplicate: dup } as const;
-      }
-      const row = await tx.registration.create({
-        data: {
-          academyName: data.academyName,
-          playerName: data.playerName,
-          dateOfBirth: dob,
-          roles: rolesJson,
-          email: emailNorm,
-          phone: phoneNorm,
-          fatherName: data.fatherName,
-          address: data.address,
-          jerseySize: data.jerseySize,
-          shoeSize: data.shoeSize,
-          idDocumentType: data.idDocumentType,
-          idProofPath: uploads.paths.idProofPath,
-          playerPhotoPath: uploads.paths.playerPhotoPath,
-          paymentProofPath: uploads.paths.paymentProofPath,
-          transactionRef: data.transactionRef || null,
-          achievementsAndAwards: data.achievementsAndAwards?.trim() || null,
-          trialZoneId: trialZone.id,
-          paymentStatus: REGISTRATION_PAYMENT_PENDING,
-        },
-      });
-      return { row } as const;
-    }),
+        if (pendingId) {
+          const row = await tx.registration.update({
+            where: { id: pendingId },
+            data: registrationPayload,
+          });
+          if (!row.registrationCode) {
+            await tx.registration.update({
+              where: { id: pendingId },
+              data: { registrationCode: await allocateRegistrationCode(tx) },
+            });
+          }
+          return tx.registration.findUniqueOrThrow({ where: { id: pendingId } });
+        }
+        return tx.registration.create({
+          data: {
+            ...registrationPayload,
+            registrationCode: await allocateRegistrationCode(tx),
+          },
+        });
+      }),
     );
-
-    if ("duplicate" in registration && registration.duplicate) {
-      return NextResponse.json(
-        { error: duplicateRegistrationMessage(registration.duplicate), duplicate: true },
-        { status: 409 },
-      );
-    }
-
-    const saved = registration.row;
 
     await logPaymentEvent({
       source: "register",
@@ -127,11 +142,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const registrationCode = await ensureRegistrationCode(saved.id);
     const emailResult = await sendRegistrationConfirmationEmail({
       registrationId: saved.id,
       email: emailNorm,
       playerName: data.playerName,
       confirmationToken,
+      registrationCode,
+      paymentCode: null,
     });
 
     const res = NextResponse.json({

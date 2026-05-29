@@ -9,7 +9,9 @@ import { parseAdminRegistrationCreateMultipart } from "@/lib/admin-registration-
 import { listRegistrationsForAdmin } from "@/lib/admin-registrations-query";
 import { logAdminAudit } from "@/lib/admin-audit";
 import { getClientIp } from "@/lib/get-client-ip";
+import { allocateRegistrationCode, assignPaymentCodeOnPaid } from "@/lib/registration-codes";
 import { prisma } from "@/lib/prisma";
+import { REGISTRATION_PAYMENT_PAID } from "@/lib/registration-payment-status";
 import { requireAdmin, requireAdminMutation } from "@/lib/require-admin";
 
 export const runtime = "nodejs";
@@ -75,11 +77,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const registration = await prisma.registration.create({
-      data: buildRegistrationCreateData(data, {
-        playerPhotoPath: paths.playerPhotoPath,
-        idProofPath: paths.idProofPath,
-      }),
+      data: {
+        ...buildRegistrationCreateData(data, {
+          playerPhotoPath: paths.playerPhotoPath,
+          idProofPath: paths.idProofPath,
+        }),
+        registrationCode: await allocateRegistrationCode(),
+      },
     });
+    if (registration.paymentStatus === REGISTRATION_PAYMENT_PAID) {
+      await assignPaymentCodeOnPaid(registration.id);
+    }
     await logAdminAudit({
       action: "create",
       entityType: "registration",

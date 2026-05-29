@@ -2,6 +2,7 @@ import type { Registration } from "@prisma/client";
 import { logPaymentEvent } from "@/lib/payment-log";
 import { prisma } from "@/lib/prisma";
 import { REGISTRATION_PAYMENT_PAID, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
+import { assignPaymentCodeOnPaid } from "@/lib/registration-codes";
 import { resendRegistrationConfirmationEmail } from "@/lib/resend-registration-confirmation";
 import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 
@@ -50,6 +51,10 @@ export async function applyRegistrationPaymentDecision(
       transactionRef: registration.transactionRef,
     },
   });
+
+  if (decision === "approve") {
+    await assignPaymentCodeOnPaid(updated.id);
+  }
 
   let emailSent = false;
   let emailError: string | undefined;
