@@ -89,15 +89,14 @@ function parseSqliteDate(value: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function normalizeRow<T extends Record<string, unknown>>(table: TableName, row: T): T {
-  const r = { ...row };
+function normalizeRow(table: TableName, row: Record<string, unknown>): Record<string, unknown> {
+  const r: Record<string, unknown> = { ...row };
   for (const key of BOOL_FIELDS[table] ?? []) {
     if (key in r) r[key] = r[key] === 1 || r[key] === true;
   }
   for (const key of DATE_FIELDS[table] ?? []) {
     if (!(key in r)) continue;
-    const parsed = parseSqliteDate(r[key]);
-    r[key] = parsed;
+    r[key] = parseSqliteDate(r[key]);
   }
   return r;
 }

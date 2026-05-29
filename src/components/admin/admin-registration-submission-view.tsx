@@ -176,10 +176,10 @@ export function AdminRegistrationSubmissionView({ detail }: { detail: AdminRegis
                 paid
                   ? detail.razorpayPaymentId
                     ? "Razorpay (online)"
-                    : detail.paymentProofPath
+                    : detail.proofMeta.hasPayment
                       ? "QR / UPI"
                       : "League desk"
-                  : detail.paymentProofPath
+                  : detail.proofMeta.hasPayment
                     ? "QR / UPI — pending"
                     : "Pending"
               }
