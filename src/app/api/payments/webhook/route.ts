@@ -6,7 +6,7 @@ import { finalizeRegistrationFromCapturedPayment } from "@/lib/finalize-registra
 import { recordPaymentCapturedInDb } from "@/lib/payment-order-sync";
 import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { ensurePaymentCapturedOnRazorpay, verifyWebhookSignature } from "@/lib/razorpay";
-import { isTransientDbError } from "@/lib/sqlite-resilience";
+import { isTransientDbError } from "@/lib/db-resilience";
 
 export const runtime = "nodejs";
 

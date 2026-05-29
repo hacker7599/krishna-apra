@@ -10,7 +10,7 @@ import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status"
 import { getRazorpayPublicKeyId, TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { getRazorpay } from "@/lib/razorpay";
 import { LEAGUE_NAME } from "@/lib/league";
-import { withDbRetry } from "@/lib/sqlite-resilience";
+import { withDbRetry } from "@/lib/db-resilience";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 
 export async function prepareOnlineRegistration(

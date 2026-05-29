@@ -6,14 +6,14 @@ import { BTN_PRIMARY, CARD_PAD, EMPTY_STATE } from "@/lib/site-ui";
 import { SupportContactLinks } from "@/components/support-contact-links";
 import { LEAGUE_NAME, SEASON_START } from "@/lib/league";
 import { getPublishedTrialSchedules } from "@/lib/public-queries";
-import { formatTrialScheduleDate, formatTrialScheduleRange } from "@/lib/trial-schedule-datetime";
+import { formatTrialScheduleDateRange, formatTrialScheduleRange } from "@/lib/trial-schedule-datetime";
 import { trialVenueDisplayLabel } from "@/lib/trial-zone-catalog";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `Trial schedule · ${LEAGUE_NAME}`,
-  description: `Official trial dates and venues for ${LEAGUE_NAME}. Season starts ${SEASON_START}.`,
+  description: `Official trial dates and venues for ${LEAGUE_NAME}. Trials ${SEASON_START}.`,
 };
 
 export default async function SchedulePage() {
@@ -23,7 +23,7 @@ export default async function SchedulePage() {
     <SiteSection width="content" tone="white">
       <SitePageHero
         title="Trial schedule"
-        lead={`Season trials begin ${SEASON_START}. Check dates, reporting times, and venues below. Register online once you have chosen your slot.`}
+        lead={`Season trials run ${SEASON_START}. Check dates, reporting times, and venues below. Register online once you have chosen your slot.`}
         breadcrumb={[{ label: "Schedule" }]}
       />
 
@@ -51,7 +51,7 @@ export default async function SchedulePage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold uppercase tracking-wide text-orange-700">
-                    {formatTrialScheduleDate(entry.scheduledAt)}
+                    {formatTrialScheduleDateRange(entry.scheduledAt, entry.endAt)}
                   </p>
                   <h2 className="mt-1 text-xl font-bold text-slate-900">{entry.title}</h2>
                   <p className="mt-1 text-sm font-semibold text-slate-700">

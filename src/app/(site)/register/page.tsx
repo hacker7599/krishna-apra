@@ -7,6 +7,7 @@ import { SectionHeader } from "@/components/section-header";
 import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
 import { REGISTRATION_FAQ } from "@/lib/faq";
+import { getPublicPaymentConfig } from "@/lib/public-payment-config";
 import { getPublishedTrialZoneOptions } from "@/lib/public-queries";
 import { cricketTeamGame } from "@/lib/remote-images";
 import { CARD } from "@/lib/site-ui";
@@ -22,7 +23,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RegisterPage() {
-  const trialZones = await getPublishedTrialZoneOptions();
+  const [trialZones, paymentConfig] = await Promise.all([
+    getPublishedTrialZoneOptions(),
+    getPublicPaymentConfig(),
+  ]);
 
   return (
     <>
@@ -62,7 +66,7 @@ export default async function RegisterPage() {
             </div>
           </aside>
           <div className="min-w-0 lg:col-span-8">
-            <RegisterForm trialZones={trialZones} />
+            <RegisterForm trialZones={trialZones} initialPaymentConfig={paymentConfig} />
           </div>
         </div>
       </SiteSection>

@@ -170,7 +170,20 @@ export function AdminRegistrationSubmissionView({ detail }: { detail: AdminRegis
             <Field label="Government ID type" value={detail.idDocumentLabel} />
             <Field label="Trial fee (₹)" value={`₹${TRIAL_FEE_INR.toLocaleString("en-IN")}`} />
             <Field label="Payment status" value={detail.paymentStatus} />
-            <Field label="Payment method" value={paid ? "Approved by admin" : "Manual verification"} />
+            <Field
+              label="Payment method"
+              value={
+                paid
+                  ? detail.razorpayPaymentId
+                    ? "Razorpay (online)"
+                    : detail.paymentProofPath
+                      ? "QR / UPI"
+                      : "League desk"
+                  : detail.paymentProofPath
+                    ? "QR / UPI — pending"
+                    : "Pending"
+              }
+            />
             {detail.transactionRef ? <Field label="Transaction reference" value={detail.transactionRef} /> : null}
             {detail.feeReceivedDate ? <Field label="Fee received date (desk)" value={detail.feeReceivedDate} /> : null}
             {detail.coachName ? <Field label="Coach name (desk)" value={detail.coachName} /> : null}

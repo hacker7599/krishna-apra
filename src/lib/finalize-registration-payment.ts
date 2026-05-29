@@ -12,7 +12,7 @@ import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cook
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
 import { ensurePaymentCapturedOnRazorpay } from "@/lib/razorpay";
-import { withDbRetry } from "@/lib/sqlite-resilience";
+import { withDbRetry } from "@/lib/db-resilience";
 
 async function markRegistrationPaid(
   registrationId: string,

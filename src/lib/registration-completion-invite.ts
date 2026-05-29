@@ -4,7 +4,7 @@ import { getAppBaseUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { isEnrolledPaymentStatus, REGISTRATION_PAYMENT_PAID, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { getRegistrationSigningSecret } from "@/lib/secrets";
-import { withDbRetry } from "@/lib/sqlite-resilience";
+import { withDbRetry } from "@/lib/db-resilience";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 

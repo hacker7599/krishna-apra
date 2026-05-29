@@ -13,7 +13,7 @@ import { logPaymentEvent } from "@/lib/payment-log";
 import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
-import { withDbRetry } from "@/lib/sqlite-resilience";
+import { withDbRetry } from "@/lib/db-resilience";
 
 export const runtime = "nodejs";
 

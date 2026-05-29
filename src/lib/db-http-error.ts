@@ -4,7 +4,7 @@ import {
   DB_BUSY_USER_MESSAGE,
   DB_UNAVAILABLE_USER_MESSAGE,
   isTransientDbError,
-} from "@/lib/sqlite-resilience";
+} from "@/lib/db-resilience";
 
 export type MappedDbError = {
   status: number;

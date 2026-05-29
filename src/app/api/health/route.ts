@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ensureDbReady } from "@/lib/sqlite-resilience";
+import { ensureDbReady } from "@/lib/db-resilience";
 
 export const runtime = "nodejs";
 

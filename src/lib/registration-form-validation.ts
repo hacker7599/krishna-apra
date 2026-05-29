@@ -168,7 +168,7 @@ export function readRegistrationFormValues(form: HTMLFormElement, roles: Set<Rol
     paymentProof: payFile instanceof File && payFile.size > 0 ? payFile : null,
     transactionRef: String(fd.get("transactionRef") ?? ""),
     achievementsAndAwards: String(fd.get("achievementsAndAwards") ?? ""),
-    trialZoneId: String(fd.get("trialZoneId") ?? ""),
+    trialZoneId: String(fd.get("trialZoneId") ?? "").trim(),
     roles,
   };
 }

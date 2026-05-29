@@ -45,8 +45,33 @@ export function formatTrialScheduleTime(iso: string | Date): string {
   });
 }
 
+function calendarDayIst(iso: string | Date): string {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+/** Date line for schedule cards — spans multiple days when endAt is on a later date. */
+export function formatTrialScheduleDateRange(startIso: string | Date, endIso: string | Date | null): string {
+  if (!endIso) return formatTrialScheduleDate(startIso);
+  const start = typeof startIso === "string" ? new Date(startIso) : startIso;
+  const end = typeof endIso === "string" ? new Date(endIso) : endIso;
+  if (calendarDayIst(start) === calendarDayIst(end)) {
+    return formatTrialScheduleDate(start);
+  }
+  const dayMonth: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Kolkata",
+  };
+  const startPart = start.toLocaleDateString("en-IN", dayMonth);
+  const endPart = end.toLocaleDateString("en-IN", { ...dayMonth, year: "numeric" });
+  return `${startPart} to ${endPart}`;
+}
+
 export function formatTrialScheduleRange(startIso: string | Date, endIso: string | Date | null): string {
-  const start = formatTrialScheduleTime(startIso);
-  if (!endIso) return start;
-  return `${start} – ${formatTrialScheduleTime(endIso)}`;
+  if (!endIso) return formatTrialScheduleTime(startIso);
+  if (calendarDayIst(startIso) !== calendarDayIst(endIso)) {
+    return `From ${formatTrialScheduleTime(startIso)} (IST)`;
+  }
+  return `${formatTrialScheduleTime(startIso)} – ${formatTrialScheduleTime(endIso)}`;
 }

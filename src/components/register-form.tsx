@@ -27,6 +27,7 @@ import {
 import { ImageUploadSizeHint } from "@/components/image-upload-size-hint";
 import { openRazorpayCheckout } from "@/lib/open-razorpay-checkout";
 import { humanErrorFromResponse } from "@/lib/human-errors";
+import type { PublicPaymentConfig } from "@/lib/public-payment-config";
 
 function cutoffNote() {
   const [y, m, d] = PLAYER_AGE_CUTOFF_DATE.split("-").map(Number);
@@ -34,56 +35,55 @@ function cutoffNote() {
   return dt.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-type PaymentConfig = {
-  enabled?: boolean;
-  paymentMode?: "razorpay" | "qr_upload";
-  keyId?: string;
-  amountPaise?: number;
-  amountInr?: number;
-  currency?: string;
-  qrImageUrl?: string | null;
-};
-
 function successPath(emailSent: boolean) {
   return emailSent ? "/register/success" : "/register/success?emailSent=0";
 }
 
 type Props = {
   trialZones: TrialZoneOption[];
+  initialPaymentConfig: PublicPaymentConfig;
 };
 
-export function RegisterForm({ trialZones }: Props) {
+export function RegisterForm({ trialZones, initialPaymentConfig }: Props) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [roles, setRoles] = useState<Set<RoleId>>(() => new Set());
   const [trialZoneId, setTrialZoneId] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "paying" | "ok" | "err">("idle");
   const [message, setMessage] = useState("");
-  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
+  const [paymentConfig, setPaymentConfig] = useState<PublicPaymentConfig>(initialPaymentConfig);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isQrPreviewOpen, setIsQrPreviewOpen] = useState(false);
 
   const rolesJson = useMemo(() => JSON.stringify([...roles]), [roles]);
-  const razorpayEnabled =
-    paymentConfig?.paymentMode === "razorpay" || paymentConfig?.enabled === true;
-  const qrUploadMode = paymentConfig?.paymentMode === "qr_upload";
-  const qrImageUrl = paymentConfig?.qrImageUrl ?? null;
+  const razorpayEnabled = paymentConfig.razorpayEnabled;
+  const qrUploadMode = paymentConfig.paymentMode === "qr_upload";
+  const qrImageUrl = paymentConfig.qrImageUrl ?? null;
 
   useEffect(() => {
     let cancelled = false;
     void fetch("/api/payments/config")
       .then((r) => r.json())
-      .then((data: PaymentConfig) => {
-        if (!cancelled) setPaymentConfig(data);
+      .then((data: PublicPaymentConfig & { enabled?: boolean; paymentMode?: string }) => {
+        if (cancelled) return;
+        setPaymentConfig({
+          paymentMode: data.paymentMode === "qr_upload" ? "qr_upload" : "razorpay",
+          razorpayEnabled: data.enabled === true || data.paymentMode === "razorpay",
+          keyId: data.keyId,
+          amountPaise: data.amountPaise,
+          amountInr: data.amountInr ?? initialPaymentConfig.amountInr,
+          currency: data.currency ?? "INR",
+          qrImageUrl: data.qrImageUrl ?? null,
+        });
       })
       .catch(() => {
-        if (!cancelled) setPaymentConfig({ enabled: false });
+        if (!cancelled) setPaymentConfig(initialPaymentConfig);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialPaymentConfig]);
 
   useEffect(() => {
     if (!isQrPreviewOpen) return;
@@ -210,6 +210,9 @@ export function RegisterForm({ trialZones }: Props) {
 
     const form = e.currentTarget;
     const values = readRegistrationFormValues(form, roles);
+    if (!values.trialZoneId.trim() && trialZoneId) {
+      values.trialZoneId = trialZoneId;
+    }
     const errors = validateRegistrationForm(values, {
       requirePaymentProof: qrUploadMode,
     });

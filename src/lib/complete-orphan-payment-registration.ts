@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { isEnrolledPaymentStatus, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
-import { withDbRetry } from "@/lib/sqlite-resilience";
+import { withDbRetry } from "@/lib/db-resilience";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 
 export type OrphanPaymentOrder = PaymentOrder;

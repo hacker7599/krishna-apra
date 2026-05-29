@@ -44,6 +44,17 @@ export function toRegistrationConfirmation(row: RegistrationWithZone): Registrat
 
   const paidOnline = row.paymentStatus === REGISTRATION_PAYMENT_PAID;
   const pendingVerification = isPendingPaymentStatus(row.paymentStatus);
+  const hasQrProof = Boolean(row.paymentProofPath?.trim());
+
+  const paymentMethod = paidOnline
+    ? row.razorpayPaymentId
+      ? "Razorpay (online)"
+      : hasQrProof
+        ? "QR / UPI (verified by league desk)"
+        : "League desk (confirmed)"
+    : pendingVerification
+      ? "QR / UPI — pending verification"
+      : "Pending payment";
 
   return {
     registrationId: row.id,
@@ -68,12 +79,8 @@ export function toRegistrationConfirmation(row: RegistrationWithZone): Registrat
     achievementsAndAwards: row.achievementsAndAwards,
     trialZone: row.trialZone ? trialVenueDisplayLabel(row.trialZone) : null,
     payment: {
-      status: row.paymentStatus ?? "manual",
-      method: paidOnline
-        ? "Approved by admin"
-        : pendingVerification
-          ? "QR payment — pending verification"
-          : "Recorded by league desk",
+      status: row.paymentStatus ?? "pending_payment",
+      method: paymentMethod,
       amountInr: TRIAL_FEE_INR,
       currency: "INR",
       razorpayOrderId: row.razorpayOrderId,

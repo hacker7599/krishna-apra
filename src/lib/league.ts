@@ -42,7 +42,12 @@ export function playerDateOfBirthMaxIso(): string {
 }
 export const VENUE =
   "Nawab Mansur Ali Khan Pataudi Sports Complex (Jamia Millia Islamia Cricket Ground), New Delhi";
-export const SEASON_START = "6 June 2026";
+/** Public trial window copy (homepage, schedule, offline form, announcement bar). */
+export const SEASON_START = "6 June to 12 June 2026";
+
+/** Default trial schedule window (IST) — used by seeds; admin can adjust per entry. */
+export const TRIAL_SCHEDULE_START_ISO = "2026-06-06T09:00:00+05:30";
+export const TRIAL_SCHEDULE_END_ISO = "2026-06-12T18:00:00+05:30";
 
 /** Official YouTube channel (streams / highlights). Empty string hides the button until you have the URL. */
 export const STREAMING_YOUTUBE_URL = "";

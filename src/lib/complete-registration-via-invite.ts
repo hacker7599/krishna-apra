@@ -16,7 +16,7 @@ import { findExistingRegistration } from "@/lib/registration-duplicate";
 import { REGISTRATION_PAYMENT_PAID, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
-import { withDbRetry } from "@/lib/sqlite-resilience";
+import { withDbRetry } from "@/lib/db-resilience";
 import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
 
 function registrationToPrefill(reg: Registration) {

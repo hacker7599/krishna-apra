@@ -7,7 +7,12 @@ import { adminFetch } from "@/components/admin/admin-session-provider";
 import { AdminModal } from "@/components/admin/admin-modal";
 import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
 import { AdminPagination } from "@/components/admin/ui/admin-pagination";
-import { combineDateAndTimeIst, formatTrialScheduleDate, formatTrialScheduleRange, splitDateTimeIst } from "@/lib/trial-schedule-datetime";
+import {
+  combineDateAndTimeIst,
+  formatTrialScheduleDateRange,
+  formatTrialScheduleRange,
+  splitDateTimeIst,
+} from "@/lib/trial-schedule-datetime";
 import { trialVenueDisplayLabel } from "@/lib/trial-zone-catalog";
 
 type TrialZoneOption = { id: string; trialPlace: string; zone: string };
@@ -376,7 +381,9 @@ export function AdminTrialScheduleManager() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-base font-bold text-slate-900">{row.title}</p>
-                  <p className="mt-1 text-sm font-semibold text-orange-700">{formatTrialScheduleDate(row.scheduledAt)}</p>
+                  <p className="mt-1 text-sm font-semibold text-orange-700">
+                    {formatTrialScheduleDateRange(row.scheduledAt, row.endAt)}
+                  </p>
                   <p className="text-sm text-slate-600">{formatTrialScheduleRange(row.scheduledAt, row.endAt)}</p>
                   {row.trialZone ? (
                     <p className="mt-1 text-xs text-slate-600">{trialVenueDisplayLabel(row.trialZone)}</p>

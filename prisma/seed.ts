@@ -19,11 +19,12 @@ const defaultTeams = [
 async function syncDefaultTrialSchedule() {
   const title = "U-15 Open Trials";
   const scheduledAt = new Date("2026-06-06T09:00:00+05:30");
+  const endAt = new Date("2026-06-12T18:00:00+05:30");
   const existing = await prisma.trialSchedule.findFirst({ where: { title } });
   if (existing) {
     await prisma.trialSchedule.update({
       where: { id: existing.id },
-      data: { scheduledAt, published: true, sortOrder: 0 },
+      data: { scheduledAt, endAt, published: true, sortOrder: 0 },
     });
     console.log("Updated default trial schedule:", title);
     return;
@@ -32,6 +33,7 @@ async function syncDefaultTrialSchedule() {
     data: {
       title,
       scheduledAt,
+      endAt,
       notes: "Report 30 minutes early with ID proof and registration confirmation.",
       sortOrder: 0,
       published: true,

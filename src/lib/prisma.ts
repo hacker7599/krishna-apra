@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import { applySqlitePragmas, bindSqlitePragmaReady, isSqliteDatabaseUrl } from "@/lib/sqlite-resilience";
+import { applyDatabaseUrlToEnv, getDatabaseUrl } from "@/lib/database-url";
+import { applySqlitePragmas, bindDbReady, isSqliteDatabaseUrl } from "@/lib/db-resilience";
+
+applyDatabaseUrlToEnv();
 
 const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient;
@@ -13,16 +16,19 @@ export function trialScheduleDelegateReady(client: PrismaClient): boolean {
 }
 
 function createPrismaClient(): PrismaClient {
-  const client = new PrismaClient();
+  const url = getDatabaseUrl();
+  const client = new PrismaClient({
+    datasources: { db: { url } },
+  });
 
-  if (isSqliteDatabaseUrl()) {
-    bindSqlitePragmaReady(
-      applySqlitePragmas(client).catch((error) => {
+  if (isSqliteDatabaseUrl(url)) {
+    bindDbReady(
+      applySqlitePragmas(client, url).catch((error) => {
         console.warn("[sqlite-pragmas] Could not apply WAL/busy_timeout:", error);
       }),
     );
   } else {
-    bindSqlitePragmaReady(Promise.resolve());
+    bindDbReady(Promise.resolve());
   }
 
   return client;

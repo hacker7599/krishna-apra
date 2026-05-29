@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { logPaymentEvent } from "@/lib/payment-log";
-import { withDbRetry } from "@/lib/sqlite-resilience";
+import { withDbRetry } from "@/lib/db-resilience";
 
 /** Mark a local payment order as paid after Razorpay confirms capture. */
 export async function recordPaymentCapturedInDb(params: {

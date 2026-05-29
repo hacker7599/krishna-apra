@@ -1,8 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Future Star U-15
+
+Next.js site + admin for trial registration, Razorpay/QR payments, and league content.
+
+## Database (MySQL)
+
+Production and local dev use **MySQL** via Prisma (not SQLite). For **XAMPP**, see **[docs/MYSQL-XAMPP.md](docs/MYSQL-XAMPP.md)**:
+
+1. Start MySQL in XAMPP and create database `future_star_u15`
+2. Set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` in `.env` (see `.env.example`)
+3. Run `npm run db:push` and `npm run db:seed`
 
 ## Getting Started
 
-First, run the development server:
+```bash
+cp .env.example .env
+# edit .env (MySQL URL, Razorpay, MSG91, secrets)
+npm ci
+npm run db:push
+npm run db:seed
+```
+
+Run the development server:
 
 ```bash
 npm run dev

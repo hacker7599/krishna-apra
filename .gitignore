@@ -34,13 +34,14 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local data (SQLite — never commit DB or WAL sidecars)
+# legacy SQLite files (if any remain locally)
 /prisma/*.db
 /prisma/*.db-journal
 /prisma/*.db-wal
 /prisma/*.db-shm
 /uploads
 /data
+/docs
 
 # vercel
 .vercel
