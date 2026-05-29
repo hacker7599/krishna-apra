@@ -58,12 +58,14 @@ export async function POST(req: NextRequest) {
   });
 
   if (!mail.sent) {
+    const status = mail.throttled ? 429 : 503;
     return NextResponse.json(
       {
         registered: true,
         error: mail.error || "Could not send verification email. Contact the league desk.",
+        retryAfterSec: mail.retryAfterSec,
       },
-      { status: 503 },
+      { status },
     );
   }
 

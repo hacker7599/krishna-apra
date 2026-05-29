@@ -5,6 +5,7 @@ import { getClientIp } from "@/lib/get-client-ip";
 import { prisma } from "@/lib/prisma";
 import { requireAdminMutation } from "@/lib/require-admin";
 import { resendRegistrationConfirmationEmail } from "@/lib/resend-registration-confirmation";
+import type { SendRegistrationEmailResult } from "@/lib/send-registration-email";
 
 export const runtime = "nodejs";
 
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "Registration not found." }, { status: 404 });
   }
 
-  let result: { sent: boolean; error?: string };
+  let result: SendRegistrationEmailResult;
   try {
     result = await resendRegistrationConfirmationEmail(registration);
   } catch (e) {
@@ -38,9 +39,15 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   });
 
   if (!result.sent) {
+    const status = result.throttled ? 429 : 502;
     return NextResponse.json(
-      { ok: false, emailSent: false, error: result.error ?? "Email could not be sent." },
-      { status: 502 },
+      {
+        ok: false,
+        emailSent: false,
+        error: result.error ?? "Email could not be sent.",
+        retryAfterSec: result.retryAfterSec,
+      },
+      { status },
     );
   }
 

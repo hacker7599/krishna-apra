@@ -62,6 +62,10 @@ function softenTechnical(raw: string): string {
   const t = raw.trim();
   if (!t) return "";
 
+  if (/please wait \d+ second/i.test(t)) {
+    return t;
+  }
+
   if (isEmailDeliveryError(t)) {
     if (/not configured/i.test(t)) {
       return "Email is not configured on the server. Add SMTP_HOST, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM in .env, then restart the app.";
