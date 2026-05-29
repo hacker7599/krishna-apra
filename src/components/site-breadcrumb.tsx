@@ -2,12 +2,12 @@ import Link from "next/link";
 
 type Crumb = { label: string; href?: string };
 
-export function SiteBreadcrumb({ items }: { items: Crumb[] }) {
+export function SiteBreadcrumb({ items, className = "" }: { items: Crumb[]; className?: string }) {
   if (items.length === 0) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-6">
-      <ol className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-500">
+    <nav aria-label="Breadcrumb" className={`mb-6 ${className}`.trim()}>
+      <ol className="site-breadcrumb__list flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-500">
         <li>
           <Link href="/" className="transition hover:text-orange-700">
             Home

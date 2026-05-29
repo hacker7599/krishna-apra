@@ -1,5 +1,12 @@
 import Link from "next/link";
 
+const accentClass = {
+  navy: "admin-stat-card__accent bg-[#1B365D]",
+  orange: "admin-stat-card__accent bg-orange-500",
+  green: "admin-stat-card__accent bg-emerald-600",
+  amber: "admin-stat-card__accent bg-amber-500",
+} as const;
+
 export function AdminStatCard({
   label,
   value,
@@ -11,27 +18,20 @@ export function AdminStatCard({
   value: string | number;
   hint?: string;
   href?: string;
-  accent?: "navy" | "orange" | "green" | "amber";
+  accent?: keyof typeof accentClass;
 }) {
-  const accentBar = {
-    navy: "bg-[#1B365D]",
-    orange: "bg-orange-500",
-    green: "bg-emerald-600",
-    amber: "bg-amber-500",
-  }[accent];
-
   const inner = (
-    <div className="admin-stat-card relative overflow-hidden rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-      <div className={`absolute left-0 top-0 h-full w-1 ${accentBar}`} />
-      <p className="pl-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="pl-3 mt-2 font-[family-name:var(--font-bebas)] text-4xl leading-none text-slate-900">{value}</p>
-      {hint ? <p className="pl-3 mt-2 text-xs font-medium text-slate-600">{hint}</p> : null}
+    <div className="admin-stat-card">
+      <div className={accentClass[accent]} aria-hidden />
+      <p className="admin-stat-card__label">{label}</p>
+      <p className="admin-stat-card__value">{value}</p>
+      {hint ? <p className="admin-stat-card__hint">{hint}</p> : null}
     </div>
   );
 
   if (href) {
     return (
-      <Link href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B365D]/30 rounded-xl">
+      <Link href={href} className="block rounded-[var(--admin-radius)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B365D]/40">
         {inner}
       </Link>
     );

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function AdminSetupPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="admin-login-page">
       <div className="w-full max-w-lg">
         <div className="mb-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Future Star U-15</p>

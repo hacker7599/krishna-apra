@@ -59,7 +59,7 @@ export function AdminEmailsPanel() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Email log"
-        description="MSG91 transactional emails — registration confirmation and OTP verification."
+        description="SMTP transactional emails — registration confirmation, OTP verification, and completion invites."
       />
 
       <form

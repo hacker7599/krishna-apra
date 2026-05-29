@@ -4,21 +4,9 @@ import { COPYRIGHT_HOLDER, LEGAL_ENTITY } from "@/lib/site-legal";
 import { TitleSponsorMark } from "@/components/title-sponsor-mark";
 import { LEAGUE_LOGO_SRC } from "@/lib/branding";
 import { SocialMediaLinks } from "@/components/social-media-links";
+import { SITE_FOOTER_EXPLORE, SITE_FOOTER_LEGAL } from "@/lib/site-navigation";
+import { SITE_CONTAINER } from "@/lib/site-ui";
 import { LEAGUE_NAME, REGISTRATION_SUPPORT_PHONES, REGION, TAGLINE, VENUE } from "@/lib/league";
-
-const legalLinks = [
-  { href: "/privacy", label: "Privacy policy" },
-  { href: "/terms", label: "Terms & conditions" },
-  { href: "/contact", label: "Contact us" },
-] as const;
-
-const exploreLinks = [
-  { href: "/about", label: "About the league" },
-  { href: "/blog", label: "News & updates" },
-  { href: "/sponsorship", label: "Sponsorship & partners" },
-  { href: "/trials", label: "Trial zones" },
-  { href: "/register", label: "Trial registration" },
-] as const;
 
 function LinkColumn({ title, links }: { title: string; links: readonly { href: string; label: string }[] }) {
   return (
@@ -62,8 +50,8 @@ export function SiteFooter() {
             </div>
           </div>
 
-          <LinkColumn title="Explore" links={exploreLinks} />
-          <LinkColumn title="Legal" links={legalLinks} />
+          <LinkColumn title="Explore" links={SITE_FOOTER_EXPLORE} />
+          <LinkColumn title="Legal" links={SITE_FOOTER_LEGAL} />
 
           <div>
             <p className="eyebrow">Contact</p>

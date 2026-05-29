@@ -14,7 +14,7 @@ Production and local dev use **MySQL** via Prisma (not SQLite). For **XAMPP**, s
 
 ```bash
 cp .env.example .env
-# edit .env (MySQL URL, Razorpay, MSG91, secrets)
+# edit .env (MySQL, Razorpay, SMTP, secrets)
 npm ci
 npm run db:push
 npm run db:seed

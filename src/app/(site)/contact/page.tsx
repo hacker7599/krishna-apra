@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LegalPageShell } from "@/components/legal-page-shell";
+import { SitePublicPage } from "@/components/site/site-public-page";
+import { BTN_PRIMARY } from "@/lib/site-ui";
 import { LEGAL_ENTITY } from "@/lib/site-legal";
-import { LEAGUE_NAME, REGISTRATION_SUPPORT_PHONES, VENUE } from "@/lib/league";
+import { LEAGUE_NAME, REGISTRATION_SUPPORT_PHONES, REGION, VENUE } from "@/lib/league";
 
 export const metadata: Metadata = {
   title: `Contact us · ${LEAGUE_NAME}`,
@@ -11,53 +12,60 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <LegalPageShell title="Contact us">
-      <p>For trial registrations, partnerships, media, and general enquiries about {LEGAL_ENTITY.tradeName}, reach us by email.</p>
+    <SitePublicPage
+      pageClassName="page-contact"
+      eyebrow={REGION}
+      title="Contact us"
+      lead="Trial registrations, partnerships, media, and general enquiries for the Future Star U-15 Championship."
+      breadcrumb={[{ label: "Contact" }]}
+      width="narrow"
+    >
+      <p className="page-contact__intro">For trial registrations, partnerships, media, and general enquiries about {LEGAL_ENTITY.tradeName}, reach us below.</p>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-        <dl className="space-y-4 text-sm">
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">Registration desk (phone)</dt>
-            <dd className="mt-1 space-y-1 font-semibold text-slate-900">
+      <div className="contact-panel">
+        <dl className="contact-panel__list">
+          <div className="contact-panel__row">
+            <dt className="contact-panel__label">Registration desk (phone)</dt>
+            <dd className="contact-panel__value">
               {REGISTRATION_SUPPORT_PHONES.map((phone) => (
-                <a key={phone} href={`tel:${phone}`} className="block text-orange-700 hover:underline">
+                <a key={phone} href={`tel:${phone}`} className="contact-panel__link">
                   {phone}
                 </a>
               ))}
             </dd>
           </div>
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">General enquiries</dt>
-            <dd className="mt-1 font-semibold text-slate-900">
-              <a href={`mailto:${LEGAL_ENTITY.contactEmail}`} className="text-orange-700 hover:underline">
+          <div className="contact-panel__row">
+            <dt className="contact-panel__label">General enquiries</dt>
+            <dd className="contact-panel__value">
+              <a href={`mailto:${LEGAL_ENTITY.contactEmail}`} className="contact-panel__link">
                 {LEGAL_ENTITY.contactEmail}
               </a>
             </dd>
           </div>
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">Grievance officer</dt>
-            <dd className="mt-1 font-semibold text-slate-900">
-              <a href={`mailto:${LEGAL_ENTITY.grievanceEmail}`} className="text-orange-700 hover:underline">
+          <div className="contact-panel__row">
+            <dt className="contact-panel__label">Grievance officer</dt>
+            <dd className="contact-panel__value">
+              <a href={`mailto:${LEGAL_ENTITY.grievanceEmail}`} className="contact-panel__link">
                 {LEGAL_ENTITY.grievanceEmail}
               </a>
             </dd>
           </div>
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">Registered entity</dt>
-            <dd className="mt-1 font-semibold text-slate-900">{LEGAL_ENTITY.legalName}</dd>
-            <dd className="mt-1 text-slate-700">{LEGAL_ENTITY.registeredAddress}</dd>
+          <div className="contact-panel__row">
+            <dt className="contact-panel__label">Registered entity</dt>
+            <dd className="contact-panel__value">{LEGAL_ENTITY.legalName}</dd>
+            <dd className="contact-panel__sub">{LEGAL_ENTITY.registeredAddress}</dd>
           </div>
         </dl>
       </div>
 
-      <h2 className="text-lg font-bold text-slate-900">Primary venue</h2>
-      <p>{VENUE}</p>
+      <h2 className="page-contact__heading">Primary venue</h2>
+      <p className="page-contact__venue">{VENUE}</p>
 
-      <p>
-        <Link href="/register" className="font-bold text-orange-700 underline hover:text-orange-800">
-          Online trial registration →
+      <div className="page-contact__cta">
+        <Link href="/register" className={BTN_PRIMARY}>
+          Online trial registration
         </Link>
-      </p>
-    </LegalPageShell>
+      </div>
+    </SitePublicPage>
   );
 }

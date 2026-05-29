@@ -9,9 +9,10 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   exact?: boolean;
+  highlight?: boolean;
 };
 
-export function NavLink({ href, children, className, exact }: Props) {
+export function NavLink({ href, children, className, exact, highlight }: Props) {
   const pathname = usePathname();
   const active = exact ? pathname === href : pathname === href || (href !== "/" && pathname.startsWith(href));
 
@@ -19,8 +20,9 @@ export function NavLink({ href, children, className, exact }: Props) {
     <Link
       href={href}
       className={cn(
-        "inline-flex min-h-10 items-center whitespace-nowrap rounded-md px-3 text-sm font-semibold transition",
-        active ? "bg-orange-50 text-orange-800 ring-1 ring-orange-200/80" : "text-slate-700 hover:bg-slate-100 hover:text-slate-950",
+        "site-nav-link",
+        active && "is-active",
+        highlight && "site-nav-link--highlight",
         className,
       )}
       aria-current={active ? "page" : undefined}

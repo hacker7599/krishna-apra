@@ -45,23 +45,23 @@ export function AdminModal({ open, title, onClose, children, footer, size = "def
     >
       <button type="button" className="admin-modal-chrome absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]" aria-label="Close dialog" onClick={onClose} />
       <div
-        className={`relative flex max-h-[min(90vh,90dvh)] w-full ${sizeClass[size]} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
+        className={`admin-modal-panel relative flex max-h-[min(90vh,90dvh)] w-full ${sizeClass[size]} flex-col overflow-hidden`}
       >
-        <div className="admin-modal-chrome flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h2 id="admin-modal-title" className="text-lg font-semibold text-[#1B365D]">
+        <div className="admin-modal-panel__header admin-modal-chrome">
+          <h2 id="admin-modal-title" className="admin-modal-panel__title">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-2.5 py-1 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="admin-btn admin-btn--secondary !min-h-8 !px-2.5"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer ? <div className="admin-modal-chrome flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4">{footer}</div> : null}
+        <div className="admin-modal-panel__body flex-1">{children}</div>
+        {footer ? <div className="admin-modal-panel__footer admin-modal-chrome">{footer}</div> : null}
       </div>
     </div>
   );

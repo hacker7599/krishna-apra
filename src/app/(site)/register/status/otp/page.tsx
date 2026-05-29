@@ -14,6 +14,7 @@ export default function RegisterStatusOtpPage() {
     <>
       <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-12">
         <SitePageHero
+          variant="light"
           title="Email verification code"
           lead="Alternative to registration code — we email you a 6-digit OTP."
           breadcrumb={[

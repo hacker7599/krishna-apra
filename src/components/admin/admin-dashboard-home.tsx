@@ -83,14 +83,11 @@ export function AdminDashboardHome() {
   const p = s.payments;
 
   return (
-    <div className="admin-panel mx-auto max-w-7xl space-y-10">
-      <AdminPageHeader
-        title="Command center"
-        description="Real-time overview for Future Star U-15 trial operations, payments, and public site content."
-      />
+    <div className="admin-panel space-y-8">
+      <AdminPageHeader description="Key metrics refresh when you open this page. Use the sidebar to manage registrations and site content." />
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Registrations & revenue</h2>
+        <h2 className="admin-section-title">Registrations & revenue</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <AdminStatCard label="Total registrations" value={s.registrations} href="/admin/registrations" accent="navy" />
           <AdminStatCard label="Approved payments" value={p.paidOnline} accent="green" />
@@ -106,13 +103,13 @@ export function AdminDashboardHome() {
       </section>
 
       {p.orphanPayments > 0 ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <div className="admin-alert admin-alert--warning">
           <strong>{p.orphanPayments}</strong> legacy payment record{p.orphanPayments === 1 ? "" : "s"} remain from older flow.
         </div>
       ) : null}
 
       <section>
-        <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Site content</h2>
+        <h2 className="admin-section-title">Site content</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <AdminStatCard label="Teams" value={s.teams} hint={`${s.publishedTeams} published`} href="/admin/teams" />
           <AdminStatCard label="Hero banners" value={s.banners} hint={`${s.publishedBanners} live`} href="/admin/banners" />
@@ -121,9 +118,9 @@ export function AdminDashboardHome() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5">
-          <h2 className="text-sm font-bold text-[#1B365D]">Recent registrations</h2>
+      <section className="admin-card overflow-hidden">
+        <div className="admin-card__header flex items-center justify-between">
+          <h2 className="admin-card__title">Recent registrations</h2>
           <Link href="/admin/registrations" className="text-xs font-semibold text-orange-600 hover:text-orange-700">
             View all →
           </Link>

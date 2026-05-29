@@ -166,7 +166,7 @@ function DesktopTimeline() {
 
 export function HomeEstimatedReach() {
   return (
-    <section className="site-section site-section--white border-b border-slate-200" aria-labelledby="home-estimated-reach-heading">
+    <section className="home-reach site-section site-section--white border-b border-slate-200" aria-labelledby="home-estimated-reach-heading">
       <div className={SITE_CONTAINER}>
         <TricolorBar className="mx-auto max-w-24 rounded-sm sm:mx-0" />
 
@@ -183,15 +183,15 @@ export function HomeEstimatedReach() {
         </div>
 
         {/* Summary strip */}
-        <div className="mt-10 flex flex-col items-start justify-between gap-4 rounded-xl bg-[#1B365D] px-6 py-5 sm:flex-row sm:items-center sm:px-8">
+        <div className="home-reach__summary">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">Combined projection</p>
-            <p id="home-estimated-reach-heading" className="mt-1 font-[family-name:var(--font-bebas)] text-5xl tracking-wide text-white sm:text-6xl">
+            <p className="home-reach__summary-label">Combined projection</p>
+            <p id="home-estimated-reach-heading" className="home-reach__summary-value">
               {ESTIMATED_REACH_HEADLINE}
             </p>
-            <p className="mt-1 text-sm font-medium text-slate-300">{ESTIMATED_REACH_HEADLINE_NOTE}</p>
+            <p className="home-reach__summary-note">{ESTIMATED_REACH_HEADLINE_NOTE}</p>
           </div>
-          <p className="max-w-md text-xs font-medium leading-relaxed text-slate-400">
+          <p className="home-reach__summary-disclaimer">
             Figures are indicative reach estimates for Season 1 planning and partner discussions. Final audited numbers will be shared post-campaign.
           </p>
         </div>

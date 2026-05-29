@@ -21,6 +21,7 @@ export default async function RegisterOfflinePage() {
     <SiteSection width="content" tone="muted" innerClassName="!py-10 sm:!py-12 print:!py-0 print:!bg-white">
       <div className="no-print">
         <SitePageHero
+          variant="light"
           title="Offline trial form"
           lead="Print or save as PDF — same layout as the official paper registration. Hand in at your academy or league desk with fee and ID copy."
           breadcrumb={[{ label: "Register", href: "/register" }, { label: "Offline form" }]}

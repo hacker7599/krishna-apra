@@ -16,7 +16,7 @@ export function RegisterSuccessPageContent() {
         <div className="print-only-hide mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           <p className="font-semibold">Registration saved — confirmation email not sent</p>
           <p className="mt-1 text-xs leading-relaxed">
-            Payment was successful but we could not deliver the email (MSG91 may be misconfigured). Save or print this page
+            Payment was successful but we could not deliver the email (SMTP may be misconfigured). Save or print this page
             now. The league desk can resend your confirmation email from admin.
           </p>
         </div>

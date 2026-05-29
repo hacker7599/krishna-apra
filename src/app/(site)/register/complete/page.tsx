@@ -25,7 +25,7 @@ export default async function RegisterCompletePage({ searchParams }: Props) {
   if (!token?.trim()) {
     return (
       <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-14">
-        <SitePageHero title="Complete registration" lead="This link is missing or invalid." breadcrumb={[{ label: "Register", href: "/register" }, { label: "Complete" }]} />
+        <SitePageHero variant="light" title="Complete registration" lead="This link is missing or invalid." breadcrumb={[{ label: "Register", href: "/register" }, { label: "Complete" }]} />
         <div className={`${CARD} mt-8 space-y-3 p-6 text-sm font-semibold text-rose-800`}>
           <p>This link is missing or invalid. For new registrations, use the main form with QR payment.</p>
           <p>
@@ -44,6 +44,7 @@ export default async function RegisterCompletePage({ searchParams }: Props) {
   return (
     <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-14">
       <SitePageHero
+        variant="light"
         title="Complete your registration"
         lead="Legacy payment-completion link. If you already registered with QR payment on the main form, you do not need this page. Otherwise fill in the details below — this secure link works once."
         breadcrumb={[{ label: "Register", href: "/register" }, { label: "Complete" }]}

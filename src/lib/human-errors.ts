@@ -2,7 +2,8 @@
 
 const EXACT: Record<string, string> = {
   Unauthorized: "Your session has expired. Please sign in again.",
-  Forbidden: "You do not have permission to do that.",
+  Forbidden:
+    "Your session may have expired or the security token is out of date. Sign out, sign in again, then retry.",
   "Not found": "We could not find that record. It may have been removed.",
   "Invalid JSON": "Something went wrong with the request. Please refresh the page and try again.",
   "Could not load registrations.": "We could not load the registration list. Refresh the page or sign in again.",
@@ -17,6 +18,7 @@ const EXACT: Record<string, string> = {
   "Registration services are temporarily unavailable. Please try again in a few minutes.":
     "Registration services are temporarily unavailable. Please try again in a few minutes.",
   "Network error. Please try again.": "Your internet connection may be down. Check your network and try again.",
+  "Email service not configured": "Email is not configured. Add SMTP settings in .env and restart the server.",
   "Payment was not completed. Your registration was not submitted.":
     "Payment was cancelled or failed, so your registration was not submitted. You can try again.",
   "Please select a valid trial zone.": "Please choose a trial venue from the list.",
@@ -37,11 +39,43 @@ function firstZodFieldMessage(details: unknown): string | null {
   return formMsg ?? null;
 }
 
+function isEmailDeliveryError(raw: string): boolean {
+  const lower = raw.toLowerCase();
+  return (
+    lower.includes("smtp") ||
+    lower.includes("mailer") ||
+    lower.includes("nodemailer") ||
+    lower.includes("invalid login") ||
+    lower.includes("authentication failed") ||
+    lower.includes("username and password not accepted") ||
+    lower.includes("email service not configured") ||
+    lower.includes("email is not configured") ||
+    lower.includes("could not be sent") ||
+    lower.includes("econnrefused") ||
+    lower.includes("etimedout") ||
+    lower.includes("enotfound") ||
+    /\b5\d{2}\b/.test(lower)
+  );
+}
+
 function softenTechnical(raw: string): string {
   const t = raw.trim();
   if (!t) return "";
 
-  if (/^invalid/i.test(t) && t.length < 80) {
+  if (isEmailDeliveryError(t)) {
+    if (/not configured/i.test(t)) {
+      return "Email is not configured on the server. Add SMTP_HOST, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM in .env, then restart the app.";
+    }
+    if (/invalid login|authentication|535|username and password/i.test(t)) {
+      return "The mail server rejected the SMTP login. Check SMTP_USER and SMTP_PASSWORD in .env.";
+    }
+    if (/certificate|tls|ssl/i.test(t)) {
+      return "Could not connect to the mail server securely. Check SMTP_HOST, SMTP_PORT, and SMTP_SECURE in .env.";
+    }
+    return t.length <= 240 ? t : `${t.slice(0, 237)}…`;
+  }
+
+  if (/^invalid/i.test(t) && t.length < 80 && !/invalid login/i.test(t)) {
     return "Some details on the form are not valid. Please check the highlighted fields.";
   }
   if (/file.*too large|under 4 mb/i.test(t)) {

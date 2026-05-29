@@ -3,14 +3,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BlogPostContent } from "@/components/blog-post-content";
-import { SiteBreadcrumb } from "@/components/site-breadcrumb";
+import { SiteInnerHero } from "@/components/site/site-inner-hero";
 import { SiteSection } from "@/components/site-section";
 import { buildBlogPostMetadata, blogPostJsonLd } from "@/lib/blog-seo";
 import { getPublishedBlogPostBySlug } from "@/lib/blog-queries";
 import { plainTextFromBlogContent } from "@/lib/blog-content-utils";
 import { BTN_SECONDARY } from "@/lib/site-ui";
 
-/** New publishes must work without redeploying after `next build`. */
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -39,24 +38,22 @@ export default async function BlogPostPage({ params }: Props) {
 
   const jsonLd = blogPostJsonLd(post);
   const dateLabel = formatDate(post.publishedAt);
+  const metaParts = [dateLabel, `${readingMinutes(post.content)} min read`].filter(Boolean).join(" · ");
 
   return (
-    <SiteSection width="narrow" tone="white">
+    <div className="page-blog-post">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <SiteBreadcrumb items={[{ label: "Blog", href: "/blog" }, { label: post.title }]} />
-
-      <article className="mt-8">
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-wider text-orange-700">
-          {dateLabel ? <span>{dateLabel}</span> : null}
-          {dateLabel ? <span className="text-slate-300" aria-hidden>|</span> : null}
-          <span>{readingMinutes(post.content)} min read</span>
-        </p>
-        <h1 className="mt-2 font-[family-name:var(--font-bebas)] text-4xl tracking-wide text-slate-900 sm:text-5xl">{post.title}</h1>
-        {post.authorName ? <p className="mt-2 text-sm font-semibold text-slate-600">By {post.authorName}</p> : null}
-        {post.excerpt ? <p className="prose-league mt-4 text-lg font-medium text-slate-700">{post.excerpt}</p> : null}
+      <SiteInnerHero
+        eyebrow={metaParts || "Article"}
+        title={post.title}
+        lead={post.excerpt ?? undefined}
+        breadcrumb={[{ label: "Blog", href: "/blog" }, { label: post.title }]}
+      />
+      <SiteSection width="narrow" tone="white" innerClassName="page-blog-post__body">
+        {post.authorName ? <p className="blog-post__byline">By {post.authorName}</p> : null}
 
         {post.coverImageUrl ? (
-          <div className="relative mt-8 aspect-[16/9] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+          <div className="blog-post__cover">
             <Image
               src={post.coverImageUrl}
               alt=""
@@ -69,11 +66,11 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         ) : null}
 
-        <div className="mt-10">
+        <div className="blog-post__content">
           <BlogPostContent content={post.content} />
         </div>
 
-        <div className="mt-12 flex flex-wrap gap-3 border-t border-slate-200 pt-8">
+        <div className="blog-post__footer">
           <Link href="/blog" className={BTN_SECONDARY}>
             ← All articles
           </Link>
@@ -81,8 +78,7 @@ export default async function BlogPostPage({ params }: Props) {
             Join trial
           </Link>
         </div>
-      </article>
-    </SiteSection>
+      </SiteSection>
+    </div>
   );
 }
-

@@ -128,7 +128,7 @@ function OrphanCompleteModal({
     if (data.mode === "linked") {
       setSuccess(`Linked payment to existing registration for ${name}. They now appear in Registrations.`);
     } else {
-      const emailNote = data.emailSent ? " Confirmation email sent." : " Confirmation email was not sent (check MSG91).";
+      const emailNote = data.emailSent ? " Confirmation email sent." : " Confirmation email was not sent (check SMTP).";
       setSuccess(`Registered ${name} successfully.${emailNote}`);
     }
 

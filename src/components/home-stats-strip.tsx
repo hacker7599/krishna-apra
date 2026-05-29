@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FORMAT } from "@/lib/league";
-import { SITE_CONTAINER, SECTION_WHITE } from "@/lib/site-ui";
+import { SITE_CONTAINER } from "@/lib/site-ui";
 
 type Props = {
   teamsStat: number;
@@ -19,26 +19,28 @@ export function HomeStatsStrip({ teamsStat }: Props) {
   ];
 
   return (
-    <section className={`${SECTION_WHITE} !py-0`}>
-      <div className={`${SITE_CONTAINER} py-10 sm:py-12`}>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <p className="eyebrow">Season 1 · at a glance</p>
-          <Link href="/about" className="text-sm font-bold text-orange-700 underline-offset-2 hover:underline">
-            Full story →
+    <section className="home-stats" aria-labelledby="home-stats-heading">
+      <div className={SITE_CONTAINER}>
+        <div className="home-stats__head">
+          <div>
+            <p className="home-stats__eyebrow">Season 1</p>
+            <h2 id="home-stats-heading" className="home-stats__title">
+              At a glance
+            </h2>
+          </div>
+          <Link href="/about" className="home-stats__link">
+            Full story
+            <span aria-hidden>→</span>
           </Link>
         </div>
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md">
-          <dl className="grid grid-cols-2 divide-x divide-y divide-slate-200 sm:grid-cols-4 sm:divide-y-0 lg:grid-cols-8">
-            {stats.map((s) => (
-              <div key={s.k} className="px-3 py-6 text-center sm:px-4 sm:py-8">
-                <dt className="text-[10px] font-bold uppercase leading-tight tracking-[0.16em] text-orange-700">{s.k}</dt>
-                <dd className="mt-2 font-[family-name:var(--font-bebas)] text-3xl leading-none tracking-wide text-slate-900 sm:text-4xl">
-                  {s.v}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+        <dl className="home-stats__grid">
+          {stats.map((s) => (
+            <div key={s.k} className="home-stats__cell">
+              <dt className="home-stats__label">{s.k}</dt>
+              <dd className="home-stats__value">{s.v}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </section>
   );

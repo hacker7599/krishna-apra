@@ -1,9 +1,16 @@
 import { registrationReceiptUrl, registrationStatusUrl } from "@/lib/app-url";
-import { getMsg91Config, isMsg91EmailConfigured } from "@/lib/msg91-config";
-import { sendMsg91TemplateEmail } from "@/lib/msg91-email";
+import {
+  registrationConfirmationSubject,
+  renderRegistrationConfirmationEmail,
+} from "@/lib/email/templates/registration-confirmation";
+import { registrationOtpSubject, renderRegistrationOtpEmail } from "@/lib/email/templates/registration-otp";
+import { isSmtpConfigured } from "@/lib/email/smtp-config";
+import { sendHtmlEmail } from "@/lib/email/smtp-send";
 import { logEmailEvent } from "@/lib/email-log";
 
 const TEMPLATE_KEY_CONFIRMATION = "registration_confirmation";
+const TEMPLATE_KEY_OTP = "registration_otp";
+const OTP_EXPIRES_MINUTES = 10;
 
 export async function sendRegistrationConfirmationEmail(params: {
   registrationId: string;
@@ -17,35 +24,34 @@ export async function sendRegistrationConfirmationEmail(params: {
   const printLink = registrationReceiptUrl(confirmationToken);
   const statusLink = registrationStatusUrl();
 
-  if (!isMsg91EmailConfigured()) {
+  if (!isSmtpConfigured()) {
     await logEmailEvent({
       templateKey: TEMPLATE_KEY_CONFIRMATION,
       toEmail: email,
       registrationId,
       success: false,
-      error: "MSG91 not configured — email skipped",
+      error: "SMTP not configured — email skipped",
+      provider: "smtp",
     });
     return { sent: false, error: "Email service not configured" };
   }
 
-  const cfg = getMsg91Config();
-  const result = await sendMsg91TemplateEmail({
+  const { html, text } = renderRegistrationConfirmationEmail({
+    playerName,
+    printLink,
+    statusLink,
+    registrationCode,
+    paymentCode,
+  });
+
+  const result = await sendHtmlEmail({
     toEmail: email,
     toName: playerName,
-    templateId: cfg.templateRegistration,
+    subject: registrationConfirmationSubject(playerName),
+    html,
+    text,
     templateKey: TEMPLATE_KEY_CONFIRMATION,
     registrationId,
-    variables: {
-      player_name: playerName,
-      print_link: printLink,
-      status_link: statusLink,
-      PRINT_LINK: printLink,
-      STATUS_LINK: statusLink,
-      registration_code: registrationCode ?? "",
-      REGISTRATION_CODE: registrationCode ?? "",
-      payment_code: paymentCode ?? "",
-      PAYMENT_CODE: paymentCode ?? "",
-    },
   });
 
   if (!result.ok) {
@@ -53,8 +59,6 @@ export async function sendRegistrationConfirmationEmail(params: {
   }
   return { sent: true };
 }
-
-const TEMPLATE_KEY_OTP = "registration_otp";
 
 export async function sendRegistrationOtpEmail(params: {
   registrationId: string;
@@ -64,29 +68,32 @@ export async function sendRegistrationOtpEmail(params: {
 }): Promise<{ sent: boolean; error?: string }> {
   const { registrationId, email, playerName, otp } = params;
 
-  if (!isMsg91EmailConfigured()) {
+  if (!isSmtpConfigured()) {
     await logEmailEvent({
       templateKey: TEMPLATE_KEY_OTP,
       toEmail: email,
       registrationId,
       success: false,
-      error: "MSG91 not configured",
+      error: "SMTP not configured",
+      provider: "smtp",
     });
     return { sent: false, error: "Email service not configured" };
   }
 
-  const cfg = getMsg91Config();
-  const result = await sendMsg91TemplateEmail({
+  const { html, text } = renderRegistrationOtpEmail({
+    playerName,
+    otp,
+    expiresMinutes: OTP_EXPIRES_MINUTES,
+  });
+
+  const result = await sendHtmlEmail({
     toEmail: email,
     toName: playerName,
-    templateId: cfg.templateOtp,
+    subject: registrationOtpSubject(),
+    html,
+    text,
     templateKey: TEMPLATE_KEY_OTP,
     registrationId,
-    variables: {
-      player_name: playerName,
-      otp,
-      OTP: otp,
-    },
   });
 
   if (!result.ok) {

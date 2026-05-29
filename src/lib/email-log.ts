@@ -5,6 +5,7 @@ export type EmailLogInput = {
   toEmail: string;
   registrationId?: string;
   success: boolean;
+  provider?: string;
   providerMsgId?: string;
   error?: string;
   metadata?: Record<string, unknown>;
@@ -18,7 +19,7 @@ export async function logEmailEvent(input: EmailLogInput): Promise<void> {
         toEmail: input.toEmail.toLowerCase(),
         registrationId: input.registrationId,
         success: input.success,
-        provider: "msg91",
+        provider: input.provider ?? "smtp",
         providerMsgId: input.providerMsgId,
         error: input.error,
         metadata: input.metadata ? JSON.stringify(input.metadata) : null,

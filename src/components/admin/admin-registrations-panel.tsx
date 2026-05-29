@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/components/admin/admin-session-provider";
 import { AdminModal } from "@/components/admin/admin-modal";
+import { useAdminAlert } from "@/components/admin/ui/admin-alert-provider";
 import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
 import { AdminPagination } from "@/components/admin/ui/admin-pagination";
 import {
@@ -65,6 +66,7 @@ type PanelProps = {
 };
 
 export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
+  const { showAlert } = useAdminAlert();
   const router = useRouter();
   const routerRef = useRef(router);
   useEffect(() => {
@@ -303,8 +305,11 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
 
   async function resendConfirmationEmail(r: Row) {
     setResendingId(r.id);
-    setError("");
-    const res = await adminFetch(`/api/admin/registrations/${r.id}/resend-confirmation`, { method: "POST" });
+    const res = await adminFetch(`/api/admin/registrations/${r.id}/resend-confirmation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
     setResendingId(null);
     if (res.status === 401) {
       routerRef.current.replace("/admin/login");
@@ -312,11 +317,15 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(humanErrorFromResponse(data, "Could not resend confirmation email."));
+      const msg = humanErrorFromResponse(data, "Could not resend confirmation email.");
+      await showAlert({ variant: "error", title: "Email not sent", message: msg });
       return;
     }
-    setError("");
-    window.alert(`Confirmation email sent to ${r.email}.`);
+    await showAlert({
+      variant: "success",
+      title: "Email sent",
+      message: `Confirmation email sent to ${r.email}.`,
+    });
   }
 
   async function updatePaymentDecision(id: string, decision: "approve" | "disapprove") {
@@ -338,12 +347,20 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       return;
     }
     if (decision === "approve") {
-      const emailNote =
-        data.emailSent === false
-          ? ` Payment marked received. Email was not sent${data.emailError ? `: ${data.emailError}` : ""} — use Resend email.`
-          : " Payment marked received. Confirmation email sent.";
       setError("");
-      window.alert(emailNote.trim());
+      if (data.emailSent === false) {
+        await showAlert({
+          variant: "error",
+          title: "Marked paid",
+          message: `Payment marked received. Email was not sent${data.emailError ? `: ${data.emailError}` : ""}. Use Resend email on this row.`,
+        });
+      } else {
+        await showAlert({
+          variant: "success",
+          title: "Marked paid",
+          message: "Payment marked received. Confirmation email sent.",
+        });
+      }
     }
     void load();
   }
@@ -446,24 +463,19 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   }
 
   return (
-    <div className="admin-panel mx-auto max-w-6xl space-y-6">
+    <div className="admin-panel space-y-6">
       <AdminPageHeader
-        title="Registrations"
         description={`Search, filter, export, and manage trial sign-ups (${total} total).`}
         actions={
           <>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700"
-            >
+            <button type="button" onClick={openCreate} className="admin-btn admin-btn--primary">
               Add registration
             </button>
             <button
               type="button"
               onClick={exportCsv}
               disabled={!rows?.length}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+              className="admin-btn admin-btn--secondary"
             >
               Export CSV
             </button>

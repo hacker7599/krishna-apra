@@ -318,9 +318,9 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
       {loading ? <p className="text-sm text-slate-600">Loading…</p> : null}
 
       {!loading && tab === "orders" ? (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="admin-table w-full min-w-[960px] text-left text-sm">
+        <>
+        <div className="admin-table-wrap">
+            <table className="admin-table min-w-[960px]">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3">Date</th>
@@ -425,9 +425,9 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
                 )}
               </tbody>
             </table>
-          </div>
-          <AdminPagination total={ordersTotal} limit={ORDERS_PAGE} offset={ordersOffset} onChange={setOrdersOffset} />
         </div>
+        <AdminPagination total={ordersTotal} limit={ORDERS_PAGE} offset={ordersOffset} onChange={setOrdersOffset} />
+        </>
       ) : null}
 
       {!loading && tab === "logs" ? (

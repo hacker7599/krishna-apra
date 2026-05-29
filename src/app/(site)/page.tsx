@@ -56,8 +56,8 @@ export default async function Home() {
         />
         <ul className="mt-10 grid gap-5 md:grid-cols-3">
           {highlights.map((h) => (
-            <li key={h.title} className="card-pad">
-              <div className="mb-4 h-1 w-10 rounded-full bg-orange-600" />
+            <li key={h.title} className="site-card site-card--pad site-card--hover">
+              <div className="mb-4 h-1 w-10 rounded-full bg-gradient-to-r from-orange-500 to-orange-600" />
               <h3 className="text-lg font-bold text-slate-900">{h.title}</h3>
               <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">{h.body}</p>
             </li>

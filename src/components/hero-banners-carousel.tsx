@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { BTN_PRIMARY, BTN_SECONDARY, SITE_CONTAINER } from "@/lib/site-ui";
+import { SITE_CONTAINER } from "@/lib/site-ui";
 import { cn } from "@/lib/cn";
+import { REGION } from "@/lib/league";
 
 export type HeroBannerDTO = {
   id: string;
@@ -13,6 +14,20 @@ export type HeroBannerDTO = {
   ctaLabel: string | null;
   ctaHref: string | null;
 };
+
+function ChevronIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
+      <path
+        d={direction === "left" ? "M14 6l-6 6 6 6" : "M10 6l6 6-6 6"}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export function HeroBannersCarousel({ banners }: { banners: HeroBannerDTO[] }) {
   const [index, setIndex] = useState(0);
@@ -30,77 +45,75 @@ export function HeroBannersCarousel({ banners }: { banners: HeroBannerDTO[] }) {
   if (n === 0) return null;
 
   const b = banners[index]!;
+  const slideLabel = String(index + 1).padStart(2, "0");
+  const slideTotal = String(n).padStart(2, "0");
 
   return (
-    <section className="relative border-b border-slate-200 bg-white" aria-roledescription="carousel">
-      <div className="relative w-full min-h-[min(68vh,560px)] sm:min-h-[min(72vh,640px)] lg:min-h-[min(78vh,820px)] max-h-[92vh]">
+    <section className="site-hero" aria-roledescription="carousel" aria-label="Featured highlights">
+      <div className="site-hero__frame">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={b.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 top-[38%] bg-gradient-to-t from-white/92 via-white/45 to-transparent sm:top-[42%]"
-          aria-hidden
+        <img
+          key={b.id}
+          src={b.imageUrl}
+          alt={b.title ?? "Future Star Under-15 cricket"}
+          className="site-hero__img"
         />
+        <div className="site-hero__scrim" aria-hidden />
+        <div className="site-hero__accent" aria-hidden />
 
-        <div className="absolute inset-0 flex flex-col justify-end pb-8 pt-24 sm:pb-12 sm:pt-28">
-          <div className={cn(SITE_CONTAINER, "w-full")}>
-            {b.title ? (
-              <h2 className="max-w-4xl font-[family-name:var(--font-barlow)] text-3xl font-bold italic leading-[1.05] tracking-tight text-slate-900 drop-shadow-[0_1px_3px_rgba(255,255,255,0.85)] sm:text-5xl lg:text-6xl">
-                {b.title}
-              </h2>
-            ) : null}
-            {b.subtitle ? (
-              <p className="mt-3 max-w-2xl text-base font-medium leading-relaxed text-slate-800 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] sm:text-lg">
-                {b.subtitle}
+        <div className="site-hero__content">
+          <div className={cn(SITE_CONTAINER, "site-hero__container")}>
+            <div className="site-hero__panel">
+              <p className="site-hero__eyebrow">
+                <span className="site-hero__eyebrow-mark" aria-hidden />
+                Future Star · Under-15 · {REGION}
               </p>
-            ) : null}
-            {b.ctaHref && b.ctaLabel ? (
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <Link href={b.ctaHref} className={`${BTN_PRIMARY} w-full sm:w-auto`}>
-                  {b.ctaLabel}
-                </Link>
-                <Link href="/about" className={`${BTN_SECONDARY} w-full sm:w-auto`}>
-                  About the league
-                </Link>
-              </div>
-            ) : null}
+              {b.title ? <h2 className="site-hero__title">{b.title}</h2> : null}
+              {b.subtitle ? <p className="site-hero__subtitle">{b.subtitle}</p> : null}
+              {b.ctaHref && b.ctaLabel ? (
+                <div className="site-hero__actions">
+                  <Link href={b.ctaHref} className="site-hero__btn site-hero__btn--primary">
+                    {b.ctaLabel}
+                  </Link>
+                  <Link href="/about" className="site-hero__btn site-hero__btn--ghost">
+                    About the league
+                  </Link>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 
-        {n > 1 && (
+        {n > 1 ? (
           <>
-            <button
-              type="button"
-              onClick={prev}
-              className="absolute left-3 top-1/2 z-10 flex min-h-12 min-w-12 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white/90 text-xl text-slate-800 shadow-md transition hover:bg-white sm:left-6"
-              aria-label="Previous slide"
-            >
-              ‹
+            <button type="button" onClick={prev} className="site-hero__nav site-hero__nav--prev" aria-label="Previous slide">
+              <ChevronIcon direction="left" />
             </button>
-            <button
-              type="button"
-              onClick={next}
-              className="absolute right-3 top-1/2 z-10 flex min-h-12 min-w-12 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white/90 text-xl text-slate-800 shadow-md transition hover:bg-white sm:right-6"
-              aria-label="Next slide"
-            >
-              ›
+            <button type="button" onClick={next} className="site-hero__nav site-hero__nav--next" aria-label="Next slide">
+              <ChevronIcon direction="right" />
             </button>
-            <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-2 sm:bottom-7">
-              {banners.map((_, i) => (
-                <button
-                  key={banners[i]!.id}
-                  type="button"
-                  onClick={() => setIndex(i)}
-                  className={cn(
-                    "min-h-2.5 rounded-full transition-all",
-                    i === index ? "w-10 bg-orange-500" : "w-2.5 bg-slate-400/60 hover:bg-slate-500",
-                  )}
-                  aria-label={`Go to slide ${i + 1}`}
-                  aria-current={i === index}
-                />
-              ))}
+            <div className={cn(SITE_CONTAINER, "site-hero__meta")}>
+              <span className="site-hero__counter" aria-live="polite">
+                {slideLabel}
+                <span className="site-hero__counter-sep">/</span>
+                {slideTotal}
+              </span>
+              <div className="site-hero__dots" role="tablist" aria-label="Choose slide">
+                {banners.map((slide, i) => (
+                  <button
+                    key={slide.id}
+                    type="button"
+                    role="tab"
+                    onClick={() => setIndex(i)}
+                    className={cn("site-hero__dot", i === index && "is-active")}
+                    aria-label={`Go to slide ${i + 1}`}
+                    aria-selected={i === index}
+                  />
+                ))}
+              </div>
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </section>
   );

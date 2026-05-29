@@ -20,7 +20,14 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "Registration not found." }, { status: 404 });
   }
 
-  const result = await resendRegistrationConfirmationEmail(registration);
+  let result: { sent: boolean; error?: string };
+  try {
+    result = await resendRegistrationConfirmationEmail(registration);
+  } catch (e) {
+    console.error("[resend-confirmation]", e);
+    const message = e instanceof Error ? e.message : "Could not resend confirmation email.";
+    return NextResponse.json({ ok: false, emailSent: false, error: message }, { status: 500 });
+  }
 
   await logAdminAudit({
     action: "resend_email",

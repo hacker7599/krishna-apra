@@ -76,7 +76,7 @@ model EmailLog {
   toEmail        String
   registrationId String?
   success        Boolean  @default(false)
-  provider       String   @default("msg91")
+  provider       String   @default("smtp")
   providerMsgId  String?
   error          String?  @db.Text
   metadata       String?  @db.Text

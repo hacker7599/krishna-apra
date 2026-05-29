@@ -11,10 +11,17 @@ type Props = {
 
 export function SectionHeader({ eyebrow, title, lead, align = "left", className }: Props) {
   return (
-    <header className={cn(align === "center" && "mx-auto max-w-3xl text-center", className)}>
+    <header
+      className={cn(
+        "site-section-header",
+        align === "center" && "site-section-header--center mx-auto max-w-3xl text-center",
+        className,
+      )}
+    >
       {eyebrow ? <p className={EYEBROW}>{eyebrow}</p> : null}
       <h2 className={cn("mt-3", SECTION_TITLE)}>{title}</h2>
-      {lead ? <p className={cn(PAGE_LEAD, align === "center" && "mx-auto")}>{lead}</p> : null}
+      <div className="site-section-header__rule" aria-hidden />
+      {lead ? <p className={cn(PAGE_LEAD, "mt-4", align === "center" && "mx-auto")}>{lead}</p> : null}
     </header>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./admin.css";
 
 export const metadata: Metadata = {
   title: {
@@ -9,9 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50/40 font-[family-name:var(--font-dm)] text-slate-800 antialiased">
-      {children}
-    </div>
-  );
+  return children;
 }

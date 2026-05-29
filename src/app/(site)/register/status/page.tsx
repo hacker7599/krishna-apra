@@ -14,6 +14,7 @@ export default function RegisterStatusPage() {
     <>
       <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-12">
         <SitePageHero
+          variant="light"
           title="Check registration & payment"
           lead="Enter the email and registration code from your confirmation email or receipt (FSU15-R-XXXXXX)."
           breadcrumb={[{ label: "Register", href: "/register" }, { label: "Check status" }]}

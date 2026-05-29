@@ -1,6 +1,8 @@
 /** Public paths for league & partner marks in /public/branding */
 
 export const LEAGUE_LOGO_SRC = "/branding/logo.png";
+/** Public SVG logo URL (served from `/branding/logo.svg`). */
+export const LEAGUE_LOGO_SVG_SRC = "/branding/logo.svg";
 export const KRISHNA_APRA_LOGO_SRC = "/branding/krishna-apra.png";
 
 /** Krishna Apra brand palette (from official logo) */

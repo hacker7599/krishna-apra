@@ -17,6 +17,7 @@ export default function RegisterSuccessPage() {
       <div className="print-only-hide">
         <SiteSection width="content" tone="white" innerClassName="!py-10 sm:!py-14">
           <SitePageHero
+            variant="light"
             title="Registration confirmed"
             lead="Your trial registration and payment are recorded. Print or save this acknowledgement below (A4). A confirmation email is sent when delivery is configured."
             breadcrumb={[{ label: "Register", href: "/register" }, { label: "Confirmation" }]}

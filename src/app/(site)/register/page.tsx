@@ -32,7 +32,8 @@ export default async function RegisterPage() {
     <>
       <SiteSection width="content" tone="white" innerClassName="register-page-section !pb-8">
         <SitePageHero
-          className="register-page-hero"
+          variant="light"
+          className="register-page-hero site-page-hero--compact"
           title="Trial registration"
           lead={`Official sign-up for the ${TITLE_SPONSOR} Future Star Under-15 Cricket League. Complete the form below.`}
           breadcrumb={[{ label: "Register" }]}

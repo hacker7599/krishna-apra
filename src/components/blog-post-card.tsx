@@ -17,10 +17,10 @@ export function BlogPostCard({ post }: Props) {
   const date = formatDate(post.publishedAt);
 
   return (
-    <li className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
-      <Link href={href} className="block">
+    <li className="blog-card group">
+      <Link href={href} className="blog-card__link">
         {post.coverImageUrl ? (
-          <div className="relative aspect-[16/9] w-full bg-slate-100">
+          <div className="blog-card__media">
             <Image
               src={post.coverImageUrl}
               alt=""
@@ -31,18 +31,16 @@ export function BlogPostCard({ post }: Props) {
             />
           </div>
         ) : (
-          <div className="flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-[#1B365D] to-slate-800">
-            <span className="font-[family-name:var(--font-bebas)] text-3xl tracking-wide text-white/90">Future Star</span>
+          <div className="blog-card__media blog-card__media--placeholder">
+            <span className="blog-card__placeholder-text">Future Star</span>
           </div>
         )}
-        <div className="p-5">
-          {date ? <p className="text-[10px] font-bold uppercase tracking-wider text-orange-700">{date}</p> : null}
-          <h2 className="mt-1 font-[family-name:var(--font-bebas)] text-2xl tracking-wide text-slate-900 group-hover:text-orange-800">
-            {post.title}
-          </h2>
-          {post.excerpt ? <p className="prose-league mt-2 line-clamp-3 text-sm font-medium">{post.excerpt}</p> : null}
-          {post.authorName ? <p className="mt-3 text-xs font-semibold text-slate-500">By {post.authorName}</p> : null}
-          <span className="mt-4 inline-block text-sm font-bold text-[#1B365D] group-hover:text-orange-700">Read article →</span>
+        <div className="blog-card__body">
+          {date ? <p className="blog-card__date">{date}</p> : null}
+          <h2 className="blog-card__title">{post.title}</h2>
+          {post.excerpt ? <p className="blog-card__excerpt">{post.excerpt}</p> : null}
+          {post.authorName ? <p className="blog-card__author">By {post.authorName}</p> : null}
+          <span className="blog-card__read">Read article →</span>
         </div>
       </Link>
     </li>
