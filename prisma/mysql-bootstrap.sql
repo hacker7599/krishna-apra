@@ -238,7 +238,7 @@ CREATE TABLE `BlogPost` (
     `updatedAt` DATETIME(3) NOT NULL,
     `slug` VARCHAR(191) NOT NULL,
     `title` VARCHAR(191) NOT NULL,
-    `excerpt` TEXT NOT NULL DEFAULT '',
+    `excerpt` VARCHAR(500) NOT NULL DEFAULT '',
     `content` TEXT NOT NULL,
     `coverImageUrl` VARCHAR(191) NULL,
     `authorName` VARCHAR(191) NOT NULL DEFAULT '',
