@@ -187,7 +187,7 @@ model TrialZone {
   trialPlace     String
   zone           String
   address        String   @db.Text
-  navigationUrl  String?
+  navigationUrl  String?  @db.VarChar(2048)
   contactDetails String?  @db.Text
   sortOrder      Int             @default(0)
   published      Boolean         @default(true)

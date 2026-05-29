@@ -107,7 +107,7 @@ export const bannerPatchSchema = z.object({
 const mapsUrlMessage = "Navigation link must be a Google Maps URL (https://maps.google.com, maps.app.goo.gl, goo.gl, …).";
 
 const optionalNavigationUrl = z
-  .union([z.string(), z.null()])
+  .union([z.string().max(2048), z.null()])
   .optional()
   .transform((v) => {
     if (v == null || v === undefined) return null;

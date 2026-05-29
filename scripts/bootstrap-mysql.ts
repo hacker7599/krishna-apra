@@ -53,15 +53,28 @@ if (createDb.status !== 0) {
   process.exit(1);
 }
 
+const existingTables = spawnSync(
+  mysqlBin,
+  [...baseArgs, database, "-N", "-e", "SHOW TABLES LIKE 'PaymentOrder';"],
+  { encoding: "utf8" },
+);
+if (existingTables.stdout?.trim()) {
+  console.error("\nMySQL already has app tables (e.g. PaymentOrder).");
+  console.error("db:bootstrap is only for an empty database.");
+  console.error("Use instead:  npm run db:push");
+  console.error("Then import:  npm run db:migrate-from-sqlite");
+  process.exit(1);
+}
+
 const apply = spawnSync(mysqlBin, [...baseArgs, database], {
   input: diff.stdout,
   stdio: ["pipe", "inherit", "inherit"],
 });
 
 if (apply.status !== 0) {
-  console.error("\nIf mysql is not in PATH, start XAMPP MySQL or add mysql to PATH.");
-  console.error("Permanent fix for db:push:");
-  console.error("  sudo /Applications/XAMPP/xamppfiles/bin/mysql_upgrade -u root --force");
+  console.error("\nIf you see ERROR 1050 (table already exists), the schema is already there — use npm run db:push.");
+  console.error("If mysql is not in PATH, start MySQL or install the mysql client.");
+  console.error("On XAMPP/macOS only, db:push may need: sudo .../mysql_upgrade -u root --force");
   process.exit(1);
 }
 
