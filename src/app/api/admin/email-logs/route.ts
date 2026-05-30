@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     ...(templateKey ? { templateKey } : {}),
   };
 
-  const [items, total] = await Promise.all([
+  const [items, total, sentCount, failedCount] = await Promise.all([
     prisma.emailLog.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -28,7 +28,13 @@ export async function GET(req: NextRequest) {
       skip: offset,
     }),
     prisma.emailLog.count({ where }),
+    prisma.emailLog.count({ where: { ...where, success: true } }),
+    prisma.emailLog.count({ where: { ...where, success: false } }),
   ]);
 
-  return NextResponse.json({ items, ...paginationMeta(total, limit, offset) });
+  return NextResponse.json({
+    items,
+    summary: { total, sentCount, failedCount },
+    ...paginationMeta(total, limit, offset),
+  });
 }
