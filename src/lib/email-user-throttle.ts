@@ -6,7 +6,8 @@ export const EMAIL_USER_THROTTLE_MS = 60_000;
 export type EmailUserThrottleKind =
   | "registration_confirmation"
   | "registration_otp"
-  | "registration_completion_invite";
+  | "registration_completion_invite"
+  | "registration_payment_reminder";
 
 function normalizeEmail(email: string): string {
   return email.toLowerCase().trim();

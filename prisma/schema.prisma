@@ -110,6 +110,18 @@ model RegistrationCompletionInvite {
   @@index([usedAt])
 }
 
+model RegistrationPaymentInvite {
+  id             String       @id @default(cuid())
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime
+  tokenHash      String       @unique
+  registrationId String       @unique
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  email          String
+
+  @@index([expiresAt])
+}
+
 model RegistrationAccessOtp {
   id             String    @id @default(cuid())
   createdAt      DateTime  @default(now())
@@ -155,6 +167,7 @@ model Registration {
   razorpayOrderId       String?       @unique
   razorpayPaymentId     String?
   paymentOrder          PaymentOrder?
+  paymentInvite         RegistrationPaymentInvite?
 }
 
 model Team {

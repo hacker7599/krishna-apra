@@ -3,6 +3,7 @@
 export type AdminNavIcon =
   | "dashboard"
   | "registrations"
+  | "zoneExport"
   | "payments"
   | "activity"
   | "emails"
@@ -37,6 +38,12 @@ export const ADMIN_NAV_MODULES: AdminNavModule[] = [
         icon: "registrations",
         description: "Players, proofs, receipts",
       },
+      {
+        href: "/admin/zone-export",
+        label: "Zone export",
+        icon: "zoneExport",
+        description: "Paid players by trial zone — Excel export",
+      },
       { href: "/admin/payments", label: "Payment logs", icon: "payments", description: "Orders & Razorpay events" },
       { href: "/admin/activity", label: "Activity log", icon: "activity", description: "Admin audit trail" },
       { href: "/admin/emails", label: "Email log", icon: "emails", description: "SMTP delivery log" },
@@ -66,9 +73,14 @@ export const ADMIN_PAGE_META: Record<string, { title: string; subtitle: string; 
     subtitle: "Review sign-ups, verify payments, and manage player records",
     module: "Operations",
   },
+  "/admin/zone-export": {
+    title: "Export by trial zone",
+    subtitle: "Paid registrations only — filter by zone and download Excel",
+    module: "Operations",
+  },
   "/admin/payments": {
     title: "Payment logs",
-    subtitle: "Razorpay orders, webhooks, and checkout events",
+    subtitle: "Razorpay orders, pending payment reminders, and checkout events",
     module: "Operations",
   },
   "/admin/activity": {

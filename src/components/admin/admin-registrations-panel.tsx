@@ -77,7 +77,9 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
-  const [applied, setApplied] = useState({ q: "", from: "", to: "", paymentStatus: "" });
+  const [trialZoneId, setTrialZoneId] = useState("");
+  const [applied, setApplied] = useState({ q: "", from: "", to: "", paymentStatus: "", trialZoneId: "" });
+  const [exporting, setExporting] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -117,6 +119,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     if (applied.from) p.set("from", applied.from);
     if (applied.to) p.set("to", applied.to);
     if (applied.paymentStatus) p.set("paymentStatus", applied.paymentStatus);
+    if (applied.trialZoneId) p.set("trialZoneId", applied.trialZoneId);
     p.set("limit", String(PAGE_SIZE));
     p.set("offset", String(offset));
     return `?${p.toString()}`;
@@ -181,7 +184,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   function applyFilters(e: React.FormEvent) {
     e.preventDefault();
     setOffset(0);
-    setApplied({ q: q.trim(), from, to, paymentStatus });
+    setApplied({ q: q.trim(), from, to, paymentStatus, trialZoneId });
   }
 
   function clearFilters() {
@@ -189,8 +192,9 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     setFrom("");
     setTo("");
     setPaymentStatus("");
+    setTrialZoneId("");
     setOffset(0);
-    setApplied({ q: "", from: "", to: "", paymentStatus: "" });
+    setApplied({ q: "", from: "", to: "", paymentStatus: "", trialZoneId: "" });
   }
 
   async function saveCreate(e: React.FormEvent) {
@@ -365,42 +369,41 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     void load();
   }
 
-  function exportCsv() {
-    if (!rows?.length) return;
-    const headers = [
-      "id",
-      "createdAt",
-      "playerName",
-      "academyName",
-      "email",
-      "phone",
-      "paymentStatus",
-      "razorpayPaymentId",
-    ];
-    const lines = [
-      headers.join(","),
-      ...rows.map((r) =>
-        [
-          r.id,
-          r.createdAt,
-          r.playerName,
-          r.academyName,
-          r.email,
-          r.phone,
-          r.paymentStatus ?? "",
-          r.razorpayPaymentId ?? "",
-        ]
-          .map((c) => `"${String(c).replace(/"/g, '""')}"`)
-          .join(","),
-      ),
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  async function exportCsv() {
+    setExporting(true);
+    setError("");
+    const p = new URLSearchParams();
+    if (applied.q) p.set("q", applied.q);
+    if (applied.from) p.set("from", applied.from);
+    if (applied.to) p.set("to", applied.to);
+    if (applied.paymentStatus) p.set("paymentStatus", applied.paymentStatus);
+    if (applied.trialZoneId) p.set("trialZoneId", applied.trialZoneId);
+    const res = await adminFetch(`/api/admin/registrations/export?${p.toString()}`);
+    setExporting(false);
+    if (res.status === 401) {
+      routerRef.current.replace("/admin/login");
+      return;
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(humanErrorFromResponse(data, "Could not export registrations."));
+      return;
+    }
+    const blob = await res.blob();
+    const truncated = res.headers.get("X-Export-Truncated") === "true";
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `registrations-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    if (truncated) {
+      await showAlert({
+        variant: "info",
+        title: "Export limited",
+        message: "The export was capped at 25,000 rows. Narrow your filters for a complete file.",
+      });
+    }
   }
 
   function startEdit(r: Row) {
@@ -473,11 +476,11 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
             </button>
             <button
               type="button"
-              onClick={exportCsv}
-              disabled={!rows?.length}
+              onClick={() => void exportCsv()}
+              disabled={exporting || total === 0}
               className="admin-btn admin-btn--secondary"
             >
-              Export CSV
+              {exporting ? "Exporting…" : "Export CSV"}
             </button>
           </>
         }
@@ -599,7 +602,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       </details>
 
       <form onSubmit={applyFilters} className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <label className="block min-w-[200px] flex-1">
           <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Search</span>
           <input
@@ -621,6 +624,21 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
             <option value="paid">Approved</option>
             <option value="refunded">Disapproved</option>
             <option value="manual">Manual</option>
+          </select>
+        </label>
+        <label className="block min-w-[180px] sm:col-span-2 lg:col-span-1">
+          <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Trial zone</span>
+          <select
+            value={trialZoneId}
+            onChange={(e) => setTrialZoneId(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900"
+          >
+            <option value="">All zones</option>
+            {trialZones.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.trialPlace} — {z.zone}
+              </option>
+            ))}
           </select>
         </label>
         <label className="block w-full sm:w-40">

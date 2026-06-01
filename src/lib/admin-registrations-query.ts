@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   AWAITING_VERIFICATION_PAYMENT_STATUSES,
+  ENROLLED_PAYMENT_STATUSES,
   REGISTRATION_PAYMENT_PENDING,
 } from "@/lib/registration-payment-status";
 
@@ -44,24 +45,39 @@ export function buildDateFilter(from?: string, to?: string) {
   return where;
 }
 
-export async function listRegistrationsForAdmin(opts: {
-  q?: string;
-  from?: string;
-  to?: string;
-  paymentStatus?: string;
-  limit: number;
-  offset: number;
-}) {
-  const where: Prisma.RegistrationWhereInput = buildDateFilter(opts.from, opts.to);
+function applyPaymentStatusFilter(
+  where: Prisma.RegistrationWhereInput,
+  paymentStatus?: string,
+): void {
   const normalizedPaymentStatus =
-    opts.paymentStatus === "pending" ? REGISTRATION_PAYMENT_PENDING : opts.paymentStatus;
+    paymentStatus === "pending" ? REGISTRATION_PAYMENT_PENDING : paymentStatus;
   if (normalizedPaymentStatus === REGISTRATION_PAYMENT_PENDING) {
     where.paymentStatus = { in: [...AWAITING_VERIFICATION_PAYMENT_STATUSES] };
+  } else if (normalizedPaymentStatus === "enrolled") {
+    where.paymentStatus = { in: [...ENROLLED_PAYMENT_STATUSES] };
   } else if (
     normalizedPaymentStatus &&
     ["paid", "manual", "refunded"].includes(normalizedPaymentStatus)
   ) {
     where.paymentStatus = normalizedPaymentStatus;
+  }
+}
+
+export const ADMIN_REGISTRATIONS_EXPORT_MAX = 25_000;
+
+export async function listRegistrationsForAdmin(opts: {
+  q?: string;
+  from?: string;
+  to?: string;
+  paymentStatus?: string;
+  trialZoneId?: string;
+  limit: number;
+  offset: number;
+}) {
+  const where: Prisma.RegistrationWhereInput = buildDateFilter(opts.from, opts.to);
+  applyPaymentStatusFilter(where, opts.paymentStatus);
+  if (opts.trialZoneId) {
+    where.trialZoneId = opts.trialZoneId;
   }
 
   let rows = await prisma.registration.findMany({
@@ -79,6 +95,38 @@ export async function listRegistrationsForAdmin(opts: {
   const items = await attachPaymentOrderStatus(page);
 
   return { items, total, limit: opts.limit, offset: opts.offset };
+}
+
+/** All rows matching filters (for CSV export), capped at ADMIN_REGISTRATIONS_EXPORT_MAX. */
+export async function listRegistrationsForAdminExport(opts: {
+  q?: string;
+  from?: string;
+  to?: string;
+  paymentStatus?: string;
+  trialZoneId?: string;
+}) {
+  const where: Prisma.RegistrationWhereInput = buildDateFilter(opts.from, opts.to);
+  applyPaymentStatusFilter(where, opts.paymentStatus);
+  if (opts.trialZoneId) {
+    where.trialZoneId = opts.trialZoneId;
+  }
+
+  let rows = await prisma.registration.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: { trialZone: { select: { trialPlace: true, zone: true } } },
+  });
+
+  if (opts.q) {
+    rows = rows.filter((row) => registrationMatchesQuery(row, opts.q!));
+  }
+
+  const truncated = rows.length > ADMIN_REGISTRATIONS_EXPORT_MAX;
+  if (truncated) {
+    rows = rows.slice(0, ADMIN_REGISTRATIONS_EXPORT_MAX);
+  }
+
+  return { rows, total: rows.length, truncated };
 }
 
 export type RegistrationAdminListItem = RegistrationListRow & {

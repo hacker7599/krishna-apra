@@ -7,6 +7,7 @@ import {
   type RazorpayPaymentProof,
 } from "@/lib/confirm-razorpay-payment";
 import { prisma } from "@/lib/prisma";
+import { revokePaymentInvitesForRegistration } from "@/lib/registration-payment-invite";
 import { REGISTRATION_PAYMENT_PAID, REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { attachRegistrationReceiptCookie } from "@/lib/registration-receipt-cookie";
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
@@ -104,6 +105,7 @@ export async function finalizeRegistrationAfterPayment(
   }
 
   const updated = await markRegistrationPaid(registrationId, proof.razorpayOrderId, proof.razorpayPaymentId);
+  await revokePaymentInvitesForRegistration(registrationId);
   const email = await sendConfirmationIfNeeded(updated);
 
   return { ok: true, registration: updated, emailSent: email.sent, emailError: email.error };
@@ -138,6 +140,7 @@ export async function finalizeRegistrationFromCapturedPayment(
   }
 
   const updated = await markRegistrationPaid(registration.id, razorpayOrderId, razorpayPaymentId);
+  await revokePaymentInvitesForRegistration(updated.id);
   await sendConfirmationIfNeeded(updated);
 
   return { ok: true, registrationId: updated.id };

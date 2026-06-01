@@ -24,6 +24,13 @@ const icons: Record<AdminNavIcon, ReactNode> = {
       <path strokeLinecap="round" d="M9 12h6M9 16h6" />
     </Svg>
   ),
+  zoneExport: (
+    <Svg>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14 3v4a1 1 0 001 1h4" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
+      <path strokeLinecap="round" d="M8 13h8M8 17h5" />
+    </Svg>
+  ),
   payments: (
     <Svg>
       <rect x="2" y="5" width="20" height="14" rx="2" />

@@ -16,3 +16,7 @@ export function registrationReceiptUrl(token: string): string {
 export function registrationStatusUrl(): string {
   return `${getAppBaseUrl()}/register/status`;
 }
+
+export function registrationPayUrl(): string {
+  return `${getAppBaseUrl()}/register`;
+}

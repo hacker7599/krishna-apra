@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { adminFetch } from "@/components/admin/admin-session-provider";
 import { AdminOrphanPaymentCompleteModal, type OrphanPaymentRow } from "@/components/admin/admin-orphan-payment-complete-modal";
+import { AdminPendingPaymentsTab } from "@/components/admin/admin-pending-payments-tab";
 import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
 import { AdminBadge } from "@/components/admin/ui/admin-badge";
 import { AdminStatCard } from "@/components/admin/ui/admin-stat-card";
@@ -61,7 +62,7 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState(orphanFromUrl ? "paid" : "");
   const [orphanOnly, setOrphanOnly] = useState(orphanFromUrl);
-  const [tab, setTab] = useState<"orders" | "logs">("orders");
+  const [tab, setTab] = useState<"orders" | "logs" | "pending">("orders");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [completeOrder, setCompleteOrder] = useState<OrphanPaymentRow | null>(null);
@@ -257,43 +258,47 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="search"
-          placeholder="Search order id, email, phone, player…"
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setOrdersOffset(0);
-          }}
-          className="min-w-[200px] flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#1B365D] focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
-        />
-        <select
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setOrdersOffset(0);
-          }}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
-        >
-          <option value="">All statuses</option>
-          <option value="created">Created (not paid)</option>
-          <option value="failed">Cancelled / failed</option>
-          <option value="paid">Paid</option>
-        </select>
-        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-          <input
-            type="checkbox"
-            checked={orphanOnly}
-            onChange={(e) => {
-              setOrphanOnly(e.target.checked);
-              if (e.target.checked) setStatus("paid");
-              setOrdersOffset(0);
-            }}
-            className="h-4 w-4 rounded border-slate-300 text-[#1B365D]"
-          />
-          Orphans only
-        </label>
-        <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+        {tab !== "pending" ? (
+          <>
+            <input
+              type="search"
+              placeholder="Search order id, email, phone, player…"
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setOrdersOffset(0);
+              }}
+              className="min-w-[200px] flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#1B365D] focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
+            />
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setOrdersOffset(0);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
+            >
+              <option value="">All statuses</option>
+              <option value="created">Created (not paid)</option>
+              <option value="failed">Cancelled / failed</option>
+              <option value="paid">Paid</option>
+            </select>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+              <input
+                type="checkbox"
+                checked={orphanOnly}
+                onChange={(e) => {
+                  setOrphanOnly(e.target.checked);
+                  if (e.target.checked) setStatus("paid");
+                  setOrdersOffset(0);
+                }}
+                className="h-4 w-4 rounded border-slate-300 text-[#1B365D]"
+              />
+              Orphans only
+            </label>
+          </>
+        ) : null}
+        <div className="ml-auto flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
           <button
             type="button"
             onClick={() => setTab("orders")}
@@ -308,6 +313,13 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
           >
             Event log
           </button>
+          <button
+            type="button"
+            onClick={() => setTab("pending")}
+            className={`rounded-md px-3 py-1.5 text-xs font-semibold ${tab === "pending" ? "bg-[#1B365D] text-white" : "text-slate-600"}`}
+          >
+            Pending payment
+          </button>
         </div>
       </div>
 
@@ -315,7 +327,9 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
       {linkNotice ? (
         <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-950">{linkNotice}</p>
       ) : null}
-      {loading ? <p className="text-sm text-slate-600">Loading…</p> : null}
+      {loading && tab !== "pending" ? <p className="text-sm text-slate-600">Loading…</p> : null}
+
+      {tab === "pending" ? <AdminPendingPaymentsTab trialZones={trialZones} /> : null}
 
       {!loading && tab === "orders" ? (
         <>

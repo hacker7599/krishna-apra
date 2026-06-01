@@ -9,10 +9,27 @@ const globalForPrisma = globalThis as typeof globalThis & {
   prismaRecreating?: boolean;
 };
 
+function modelDelegateReady(
+  client: PrismaClient,
+  model: "trialSchedule" | "registrationPaymentInvite",
+  method: "findMany" | "deleteMany",
+): boolean {
+  const delegate = (client as unknown as Record<string, Record<string, unknown> | undefined>)[model];
+  return typeof delegate?.[method] === "function";
+}
+
 /** True when the generated client includes the TrialSchedule model delegate. */
 export function trialScheduleDelegateReady(client: PrismaClient): boolean {
-  const delegate = (client as unknown as { trialSchedule?: { findMany?: unknown } }).trialSchedule;
-  return typeof delegate?.findMany === "function";
+  return modelDelegateReady(client, "trialSchedule", "findMany");
+}
+
+/** True when the generated client includes RegistrationPaymentInvite (payment link emails). */
+export function registrationPaymentInviteDelegateReady(client: PrismaClient): boolean {
+  return modelDelegateReady(client, "registrationPaymentInvite", "deleteMany");
+}
+
+function prismaClientDelegatesReady(client: PrismaClient): boolean {
+  return trialScheduleDelegateReady(client) && registrationPaymentInviteDelegateReady(client);
 }
 
 function createPrismaClient(): PrismaClient {
@@ -45,8 +62,8 @@ function recreatePrismaClient(): void {
 
 export function getPrisma(): PrismaClient {
   const existing = globalForPrisma.prisma;
-  // Dev/HMR can keep a PrismaClient from before `prisma generate` added TrialSchedule.
-  if (existing && !trialScheduleDelegateReady(existing)) {
+  // Dev/HMR can keep a PrismaClient from before `prisma generate` added new models.
+  if (existing && !prismaClientDelegatesReady(existing)) {
     recreatePrismaClient();
   }
 

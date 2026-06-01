@@ -30,10 +30,11 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get("from")?.trim() || undefined;
   const to = searchParams.get("to")?.trim() || undefined;
   const paymentStatus = searchParams.get("paymentStatus")?.trim() || undefined;
+  const trialZoneId = searchParams.get("trialZoneId")?.trim() || undefined;
   const limit = Math.min(MAX_LIMIT, Math.max(1, Number(searchParams.get("limit")) || DEFAULT_LIMIT));
   const offset = Math.max(0, Number(searchParams.get("offset")) || 0);
 
-  const result = await listRegistrationsForAdmin({ q, from, to, paymentStatus, limit, offset });
+  const result = await listRegistrationsForAdmin({ q, from, to, paymentStatus, trialZoneId, limit, offset });
   return NextResponse.json(result);
 }
 

@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPaymentsPage() {
   const trialZones = await prisma.trialZone.findMany({
-    where: { published: true },
     orderBy: { sortOrder: "asc" },
     select: { id: true, trialPlace: true, zone: true },
   });
