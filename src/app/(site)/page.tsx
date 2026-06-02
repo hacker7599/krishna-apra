@@ -3,6 +3,7 @@ import { HeroBannersCarousel, type HeroBannerDTO } from "@/components/hero-banne
 import { HomeIntroBand } from "@/components/home-intro-band";
 import { HomeStatsStrip } from "@/components/home-stats-strip";
 import { HomeEstimatedReach } from "@/components/home-estimated-reach";
+import { HomeBroadcastLeadership } from "@/components/home-broadcast-leadership";
 import { LeagueProtectionSection } from "@/components/league-protection-section";
 import { TournamentFormatSplit } from "@/components/tournament-format-split";
 import { SectionHeader } from "@/components/section-header";
@@ -66,6 +67,7 @@ export default async function Home() {
       </SiteSection>
 
       <LeagueProtectionSection compact />
+      <HomeBroadcastLeadership />
 
       <SiteSection tone="white" width="content" className="!border-b-0">
         <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">

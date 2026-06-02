@@ -99,9 +99,7 @@ export function HomeBroadcastLeadership() {
               >
                 YouTube channel
               </Link>
-            ) : (
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">YouTube link · add in league config</p>
-            )}
+            ) : null}
           </div>
         </div>
       </section>

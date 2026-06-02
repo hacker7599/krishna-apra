@@ -40,8 +40,10 @@ export function playerDateOfBirthMaxIso(): string {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
-export const VENUE =
-  "Nawab Mansur Ali Khan Pataudi Sports Complex (Jamia Millia Islamia Cricket Ground), New Delhi";
+export const VENUE = "Jawaharlal Nehru Stadium, Ghaziabad, Uttar Pradesh";
+
+/** Shown in footer visitor counter = baseline + real unique browsers tracked in DB. */
+export const VISITOR_COUNT_BASELINE = 50_000;
 /** Public trial window copy (homepage, schedule, offline form, announcement bar). */
 export const SEASON_START = "6 June to 12 June 2026";
 

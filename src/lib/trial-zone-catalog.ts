@@ -70,10 +70,10 @@ export const OFFICIAL_TRIAL_VENUES: OfficialTrialVenue[] = [
     contactDetails: "Report to on-site league desk on trial day.",
   },
   {
-    trialPlace: "Nawab Mansur Ali Khan Pataudi Sports Complex",
-    zone: "New Delhi",
-    address: "Nawab Mansur Ali Khan Pataudi Sports Complex (Jamia Millia Islamia Cricket Ground), New Delhi",
-    navigationUrl: mapsSearch("Nawab Mansur Ali Khan Pataudi Sports Complex New Delhi"),
+    trialPlace: "Jawaharlal Nehru Stadium",
+    zone: "Ghaziabad, Uttar Pradesh",
+    address: "Jawaharlal Nehru Stadium, Ghaziabad, Uttar Pradesh",
+    navigationUrl: mapsSearch("Jawaharlal Nehru Stadium Ghaziabad Uttar Pradesh"),
     contactDetails: "Report to on-site league desk on trial day.",
   },
   {

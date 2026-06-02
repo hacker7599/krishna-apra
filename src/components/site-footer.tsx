@@ -4,6 +4,7 @@ import { COPYRIGHT_HOLDER, LEGAL_ENTITY } from "@/lib/site-legal";
 import { TitleSponsorMark } from "@/components/title-sponsor-mark";
 import { LEAGUE_LOGO_SRC } from "@/lib/branding";
 import { SocialMediaLinks } from "@/components/social-media-links";
+import { FooterVisitorCounter } from "@/components/footer-visitor-counter";
 import { SITE_FOOTER_EXPLORE, SITE_FOOTER_LEGAL } from "@/lib/site-navigation";
 import { SITE_CONTAINER } from "@/lib/site-ui";
 import { LEAGUE_NAME, REGISTRATION_SUPPORT_PHONES, REGION, TAGLINE, VENUE } from "@/lib/league";
@@ -81,7 +82,10 @@ export function SiteFooter() {
               </p>
               <p>{LEGAL_ENTITY.registeredAddress}</p>
             </div>
-            <p className="shrink-0">© {year} {COPYRIGHT_HOLDER}. All rights reserved.</p>
+            <div className="flex items-center gap-4">
+              <FooterVisitorCounter />
+              <p className="shrink-0">© {year} {COPYRIGHT_HOLDER}. All rights reserved.</p>
+            </div>
           </div>
         </div>
       </div>
