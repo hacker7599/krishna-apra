@@ -472,15 +472,15 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-700">Public payment</p>
               <p className="mt-1 text-sm font-medium text-slate-600">
-                Checkout mode is set in server <code className="text-xs">.env</code> (
-                <code className="text-xs">PUBLIC_PAYMENT_MODE</code>).{" "}
+                Current checkout on{" "}
                 <Link href="/register" target="_blank" className="font-bold text-orange-700 underline">
                   /register
                 </Link>
-                {" · "}
+                . View history in{" "}
                 <Link href="/admin/payments" className="font-bold text-[#1B365D] underline">
                   Payment logs
                 </Link>
+                .
               </p>
             </div>
             <span
@@ -494,16 +494,10 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         </summary>
 
         <div className="mt-4 space-y-4">
-          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
-            To change mode: set <code className="font-mono">PUBLIC_PAYMENT_MODE=razorpay</code> or{" "}
-            <code className="font-mono">qr_upload</code> in <code className="font-mono">.env</code>, then{" "}
-            <code className="font-mono">npm run build</code> and restart the app.
-          </p>
-
           {!razorpayConfigured && paymentMode === "razorpay" ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
-              Razorpay mode is on but API keys are missing in <code className="font-mono">.env</code> (
-              RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, NEXT_PUBLIC_RAZORPAY_KEY_ID).
+              Razorpay is selected but payment gateway keys are not configured on the server. Contact your developer or
+              hosting team.
             </p>
           ) : null}
 
