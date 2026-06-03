@@ -102,7 +102,6 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
   const [qrUploading, setQrUploading] = useState(false);
   const [paymentMode, setPaymentMode] = useState<"razorpay" | "qr_upload">("razorpay");
   const [razorpayConfigured, setRazorpayConfigured] = useState(false);
-  const [modeSaving, setModeSaving] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const qrFileRef = useRef<HTMLInputElement>(null);
@@ -161,25 +160,6 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
     }, 0);
     return () => window.clearTimeout(id);
   }, [load, loadPaymentSettings]);
-
-  async function switchPaymentMode(mode: "razorpay" | "qr_upload") {
-    setModeSaving(true);
-    setError("");
-    const res = await adminFetch("/api/admin/payment-settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentMode: mode }),
-    });
-    setModeSaving(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(humanErrorFromResponse(data, "Could not change payment mode."));
-      return;
-    }
-    const data = (await res.json()) as { paymentMode?: "razorpay" | "qr_upload"; qrImageUrl?: string | null };
-    setPaymentMode(data.paymentMode === "qr_upload" ? "qr_upload" : "razorpay");
-    setQrImageUrl(data.qrImageUrl ?? null);
-  }
 
   function applyFilters(e: React.FormEvent) {
     e.preventDefault();
@@ -486,21 +466,21 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
         }
       />
 
-      <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" open>
+      <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <summary className="cursor-pointer list-none">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">Public payment settings</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-700">Public payment</p>
               <p className="mt-1 text-sm font-medium text-slate-600">
-                Switch Razorpay checkout or QR upload on{" "}
+                Checkout mode is set in server <code className="text-xs">.env</code> (
+                <code className="text-xs">PUBLIC_PAYMENT_MODE</code>).{" "}
                 <Link href="/register" target="_blank" className="font-bold text-orange-700 underline">
                   /register
                 </Link>
-                . View full history in{" "}
+                {" · "}
                 <Link href="/admin/payments" className="font-bold text-[#1B365D] underline">
                   Payment logs
                 </Link>
-                .
               </p>
             </div>
             <span
@@ -508,43 +488,22 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
                 paymentMode === "razorpay" ? "bg-emerald-50 text-emerald-700" : "bg-sky-50 text-sky-800"
               }`}
             >
-              {paymentMode === "razorpay" ? "Razorpay live" : "QR upload live"}
+              {paymentMode === "razorpay" ? "Razorpay" : "QR upload"}
             </span>
           </div>
         </summary>
 
         <div className="mt-4 space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={modeSaving || paymentMode === "razorpay"}
-              onClick={() => void switchPaymentMode("razorpay")}
-              className={`rounded-lg px-4 py-2 text-sm font-bold ${
-                paymentMode === "razorpay"
-                  ? "bg-[#1B365D] text-white"
-                  : "border border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
-              } disabled:opacity-60`}
-            >
-              Razorpay online
-            </button>
-            <button
-              type="button"
-              disabled={modeSaving || paymentMode === "qr_upload"}
-              onClick={() => void switchPaymentMode("qr_upload")}
-              className={`rounded-lg px-4 py-2 text-sm font-bold ${
-                paymentMode === "qr_upload"
-                  ? "bg-[#1B365D] text-white"
-                  : "border border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
-              } disabled:opacity-60`}
-            >
-              QR + screenshot
-            </button>
-            {modeSaving ? <span className="self-center text-xs font-medium text-slate-500">Saving…</span> : null}
-          </div>
+          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
+            To change mode: set <code className="font-mono">PUBLIC_PAYMENT_MODE=razorpay</code> or{" "}
+            <code className="font-mono">qr_upload</code> in <code className="font-mono">.env</code>, then{" "}
+            <code className="font-mono">npm run build</code> and restart the app.
+          </p>
 
           {!razorpayConfigured && paymentMode === "razorpay" ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
-              Razorpay API keys are missing in server .env. Add keys or switch to QR mode.
+              Razorpay mode is on but API keys are missing in <code className="font-mono">.env</code> (
+              RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, NEXT_PUBLIC_RAZORPAY_KEY_ID).
             </p>
           ) : null}
 

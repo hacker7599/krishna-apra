@@ -72,7 +72,7 @@ export function RegisterPaymentResume({ token, initialPaymentConfig }: Props) {
         if (cancelled) return;
         setPaymentConfig({
           paymentMode: data.paymentMode === "qr_upload" ? "qr_upload" : "razorpay",
-          razorpayEnabled: data.enabled === true || data.paymentMode === "razorpay",
+          razorpayEnabled: data.enabled === true,
           keyId: data.keyId,
           amountPaise: data.amountPaise,
           amountInr: data.amountInr ?? initialPaymentConfig.amountInr,

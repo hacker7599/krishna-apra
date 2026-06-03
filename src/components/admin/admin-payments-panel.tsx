@@ -192,7 +192,7 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
           <Link href="/admin/registrations" className="font-bold text-[#1B365D] underline">
             Registrations
           </Link>
-          ; switch Razorpay vs QR on that page too.
+          .
         </p>
       </div>
 
