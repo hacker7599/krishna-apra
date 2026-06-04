@@ -349,7 +349,7 @@ export function AdminTrialScheduleManager() {
           setAppliedQ(q.trim());
         }}
       >
-        <label className="min-w-[200px] flex-1">
+        <label className="w-full min-w-0 flex-1">
           <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Search</span>
           <input value={q} onChange={(e) => setQ(e.target.value)} className={inputClass} placeholder="Title, notes, venue…" />
         </label>

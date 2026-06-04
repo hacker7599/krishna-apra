@@ -555,8 +555,8 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
       </details>
 
       <form onSubmit={applyFilters} className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-        <label className="block min-w-[200px] flex-1">
+        <div className="admin-filter-grid admin-filter-grid--6 gap-3">
+        <label className="block w-full min-w-0">
           <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Search</span>
           <input
             value={q}
@@ -579,7 +579,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
             <option value="manual">Manual</option>
           </select>
         </label>
-        <label className="block min-w-[180px] sm:col-span-2 lg:col-span-1">
+        <label className="block w-full min-w-0 sm:col-span-2 lg:col-span-1">
           <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Trial zone</span>
           <select
             value={trialZoneId}
@@ -611,7 +611,7 @@ export function AdminRegistrationsPanel({ trialZones }: PanelProps) {
           </button>
         </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="admin-chip-row">
           <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
             Paid: {statusSummary.paid}
           </span>

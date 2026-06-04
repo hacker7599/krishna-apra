@@ -483,8 +483,8 @@ export function AdminTrialZonesManager() {
           </p>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="admin-table min-w-[880px] w-full text-left text-sm">
+            <div className="admin-table-wrap">
+              <table className="admin-table admin-table--stack w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                     <th className="px-4 py-3">#</th>
@@ -499,8 +499,8 @@ export function AdminTrialZonesManager() {
                 <tbody>
                   {rows.map((z, index) => (
                     <tr key={z.id} className="border-b border-slate-100 align-top hover:bg-slate-50/80">
-                      <td className="px-4 py-3 tabular-nums font-semibold text-slate-900">{offset + index + 1}</td>
-                      <td className="px-4 py-3">
+                      <td data-label="#" className="px-4 py-3 tabular-nums font-semibold text-slate-900">{offset + index + 1}</td>
+                      <td data-label="Venue" className="px-4 py-3">
                         <p className="font-semibold text-slate-900">{z.trialPlace}</p>
                         {z.navigationUrl ? (
                           <a
@@ -516,22 +516,22 @@ export function AdminTrialZonesManager() {
                           <p className="mt-0.5 text-[11px] text-slate-400">No maps link</p>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Zone" className="px-4 py-3">
                         <span className="inline-flex rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-orange-800 ring-1 ring-orange-200">
                           {z.zone}
                         </span>
                       </td>
-                      <td className="max-w-[220px] px-4 py-3 text-slate-700">
+                      <td data-label="Address" className="max-w-none px-4 py-3 text-slate-700 sm:max-w-[220px]">
                         <p className="line-clamp-3 whitespace-pre-wrap text-xs leading-relaxed">{z.address}</p>
                       </td>
-                      <td className="max-w-[180px] px-4 py-3 text-slate-700">
+                      <td data-label="Contact" className="max-w-none px-4 py-3 text-slate-700 sm:max-w-[180px]">
                         {z.contactDetails ? (
                           <p className="line-clamp-3 whitespace-pre-wrap text-xs leading-relaxed">{z.contactDetails}</p>
                         ) : (
                           <p className="text-xs text-slate-400">—</p>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Status" className="px-4 py-3">
                         {z.published ? (
                           <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-200">
                             Live
@@ -542,7 +542,7 @@ export function AdminTrialZonesManager() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Actions" className="admin-table__cell-actions px-4 py-3">
                         <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap">
                           <button type="button" onClick={() => openEdit(z)} className={btnSecondary}>
                             Edit

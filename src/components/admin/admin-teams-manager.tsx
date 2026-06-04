@@ -487,8 +487,8 @@ export function AdminTeamsManager() {
           <p className="p-8 text-sm text-slate-600">Loading teams…</p>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="admin-table min-w-[800px] w-full text-left text-sm">
+            <div className="admin-table-wrap">
+              <table className="admin-table admin-table--stack w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                     <th className="px-4 py-3">Order</th>
@@ -501,8 +501,8 @@ export function AdminTeamsManager() {
                 </thead>
                 <tbody>
                   {sortedTeams.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
+                    <tr className="admin-table__empty-row">
+                      <td colSpan={6} className="px-4 py-10 text-center text-slate-500" data-label="">
                         No teams found. Use <span className="font-semibold">Add team</span> or run{" "}
                         <code className="rounded bg-slate-100 px-1 text-xs">npm run db:seed</code> for defaults.
                       </td>
@@ -512,7 +512,7 @@ export function AdminTeamsManager() {
                       const logoUrl = teamLogoPublicUrl(t.logoPath);
                       return (
                         <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50/80">
-                          <td className="px-4 py-3">
+                          <td data-label="Order" className="px-4 py-3">
                             <div className="flex items-center gap-1">
                               <span className="w-6 font-mono text-xs text-slate-500">{t.sortOrder}</span>
                               <button
@@ -535,7 +535,7 @@ export function AdminTeamsManager() {
                               </button>
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td data-label="Logo" className="px-4 py-3">
                             {logoUrl ? (
                               <Image
                                 src={logoUrl}
@@ -551,16 +551,16 @@ export function AdminTeamsManager() {
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3 font-semibold text-slate-900">{t.name}</td>
-                          <td className="px-4 py-3">{t.city}</td>
-                          <td className="px-4 py-3">
+                          <td data-label="Name" className="px-4 py-3 font-semibold text-slate-900">{t.name}</td>
+                          <td data-label="City" className="px-4 py-3">{t.city}</td>
+                          <td data-label="Site" className="px-4 py-3">
                             {t.published ? (
                               <span className="text-xs font-bold text-emerald-700">Live</span>
                             ) : (
                               <span className="text-xs font-bold text-slate-400">Hidden</span>
                             )}
                           </td>
-                          <td className="px-4 py-3">
+                          <td data-label="Actions" className="admin-table__cell-actions px-4 py-3">
                             <div className="flex flex-wrap gap-1">
                               <button type="button" onClick={() => startEdit(t)} className="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold hover:bg-slate-200">
                                 Edit

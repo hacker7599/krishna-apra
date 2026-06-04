@@ -147,7 +147,7 @@ export function AdminEmailsPanel() {
             type="search"
             value={draftEmail}
             onChange={(e) => setDraftEmail(e.target.value)}
-            className="admin-input w-full min-w-[12rem]"
+            className="admin-input w-full"
             placeholder="e.g. player@example.com"
             autoComplete="off"
           />
@@ -160,7 +160,7 @@ export function AdminEmailsPanel() {
             id="email-log-filter-template"
             value={draftTemplate}
             onChange={(e) => setDraftTemplate(e.target.value)}
-            className="admin-select min-w-[11rem]"
+            className="admin-select w-full"
           >
             {TEMPLATE_OPTIONS.map((o) => (
               <option key={o.value || "all"} value={o.value}>
@@ -208,7 +208,7 @@ export function AdminEmailsPanel() {
         </div>
 
         <div className="admin-table-wrap admin-email-log__table-wrap">
-          <table className="admin-table admin-email-log__table min-w-[52rem]">
+          <table className="admin-table admin-table--stack admin-email-log__table">
             <thead>
               <tr>
                 <th className="admin-email-log__col-time">Time</th>
@@ -220,14 +220,14 @@ export function AdminEmailsPanel() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="admin-email-log__empty">
+                <tr className="admin-table__empty-row">
+                  <td colSpan={5} className="admin-email-log__empty" data-label="">
                     Loading…
                   </td>
                 </tr>
               ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="admin-email-log__empty">
+                <tr className="admin-table__empty-row">
+                  <td colSpan={5} className="admin-email-log__empty" data-label="">
                     {hasFilters ? "No emails match these filters." : "No emails logged yet."}
                   </td>
                 </tr>
@@ -236,18 +236,18 @@ export function AdminEmailsPanel() {
                   const detail = detailText(row);
                   return (
                     <tr key={row.id}>
-                      <td className="admin-email-log__cell-time whitespace-nowrap">{formatDt(row.createdAt)}</td>
-                      <td className="admin-email-log__cell-template">
+                      <td data-label="Time" className="admin-email-log__cell-time whitespace-nowrap">{formatDt(row.createdAt)}</td>
+                      <td data-label="Template" className="admin-email-log__cell-template">
                         <span className="admin-email-log__template-pill" title={row.templateKey}>
                           {templateLabel(row.templateKey)}
                         </span>
                       </td>
-                      <td className="admin-email-log__cell-to">
-                        <span className="block max-w-[14rem] truncate font-medium" title={row.toEmail}>
+                      <td data-label="Recipient" className="admin-email-log__cell-to">
+                        <span className="block max-w-full truncate font-medium sm:max-w-[14rem]" title={row.toEmail}>
                           {row.toEmail}
                         </span>
                       </td>
-                      <td className="admin-email-log__cell-status">
+                      <td data-label="Status" className="admin-email-log__cell-status">
                         <span
                           className={`admin-email-log__status ${
                             row.success ? "admin-email-log__status--sent" : "admin-email-log__status--failed"
@@ -256,7 +256,7 @@ export function AdminEmailsPanel() {
                           {row.success ? "Sent" : "Failed"}
                         </span>
                       </td>
-                      <td className="admin-email-log__cell-detail">
+                      <td data-label="Detail" className="admin-email-log__cell-detail">
                         <p
                           className={`admin-email-log__detail-primary ${!row.success ? "admin-email-log__detail-primary--error" : ""}`}
                           title={detail.primary}

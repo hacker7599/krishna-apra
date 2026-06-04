@@ -38,7 +38,7 @@ export function AdminModal({ open, title, onClose, children, footer, size = "def
 
   return (
     <div
-      className={`fixed inset-0 flex items-center justify-center p-4 ${layer === "top" ? "z-[60]" : "z-50"}`}
+      className={`admin-modal fixed inset-0 flex items-center justify-center p-3 sm:p-4 ${layer === "top" ? "z-[60]" : "z-50"}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-modal-title"

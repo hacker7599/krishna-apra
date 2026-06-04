@@ -240,7 +240,7 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="admin-stat-grid admin-stat-grid--4">
         <AdminStatCard label="Paid orders" value={summary.paidCount} accent="green" />
         <AdminStatCard
           label="Revenue (paid)"
@@ -257,7 +257,7 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
         <AdminStatCard label="Fee per registration" value={TRIAL_FEE_INR} accent="orange" />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="admin-controls-row">
         {tab !== "pending" ? (
           <>
             <input
@@ -268,7 +268,7 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
                 setQ(e.target.value);
                 setOrdersOffset(0);
               }}
-              className="min-w-[200px] flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#1B365D] focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
+              className="admin-controls-row__grow rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#1B365D] focus:outline-none focus:ring-2 focus:ring-[#1B365D]/15"
             />
             <select
               value={status}
@@ -298,25 +298,31 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
             </label>
           </>
         ) : null}
-        <div className="ml-auto flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+        <div className="admin-tab-bar w-full sm:ml-auto sm:w-auto" role="tablist" aria-label="Payment views">
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === "orders"}
             onClick={() => setTab("orders")}
-            className={`rounded-md px-3 py-1.5 text-xs font-semibold ${tab === "orders" ? "bg-[#1B365D] text-white" : "text-slate-600"}`}
+            className={`admin-tab-bar__btn ${tab === "orders" ? "bg-[#1B365D] text-white" : "text-slate-600"}`}
           >
             Orders
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === "logs"}
             onClick={() => setTab("logs")}
-            className={`rounded-md px-3 py-1.5 text-xs font-semibold ${tab === "logs" ? "bg-[#1B365D] text-white" : "text-slate-600"}`}
+            className={`admin-tab-bar__btn ${tab === "logs" ? "bg-[#1B365D] text-white" : "text-slate-600"}`}
           >
             Event log
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === "pending"}
             onClick={() => setTab("pending")}
-            className={`rounded-md px-3 py-1.5 text-xs font-semibold ${tab === "pending" ? "bg-[#1B365D] text-white" : "text-slate-600"}`}
+            className={`admin-tab-bar__btn ${tab === "pending" ? "bg-[#1B365D] text-white" : "text-slate-600"}`}
           >
             Pending payment
           </button>
@@ -334,7 +340,7 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
       {!loading && tab === "orders" ? (
         <>
         <div className="admin-table-wrap">
-            <table className="admin-table min-w-[960px]">
+            <table className="admin-table admin-table--stack">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3">Date</th>
@@ -349,8 +355,8 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
               </thead>
               <tbody>
                 {orders.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
+                  <tr className="admin-table__empty-row">
+                    <td colSpan={8} className="px-4 py-8 text-center text-slate-500" data-label="">
                       {orphanOnly ? "No orphan payments — all paid orders are linked." : "No payment orders match your filters."}
                     </td>
                   </tr>
@@ -360,17 +366,17 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
                       key={o.id}
                       className={`border-b border-slate-100 hover:bg-slate-50/50 ${isOrphanRow(o) ? "bg-amber-50/40" : ""}`}
                     >
-                      <td className="px-4 py-3 text-xs text-slate-600">{formatDt(o.paidAt ?? o.createdAt)}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{o.playerName ?? "—"}</td>
-                      <td className="px-4 py-3 text-xs text-slate-600">
+                      <td data-label="Date" className="px-4 py-3 text-xs text-slate-600">{formatDt(o.paidAt ?? o.createdAt)}</td>
+                      <td data-label="Player" className="px-4 py-3 font-medium text-slate-900">{o.playerName ?? "—"}</td>
+                      <td data-label="Contact" className="px-4 py-3 text-xs text-slate-600">
                         <div>{o.email ?? "—"}</div>
                         <div className="text-slate-500">{o.phone ?? ""}</div>
                       </td>
-                      <td className="px-4 py-3 font-semibold">{formatInr(o.amountPaise)}</td>
-                      <td className="px-4 py-3">
+                      <td data-label="Amount" className="px-4 py-3 font-semibold">{formatInr(o.amountPaise)}</td>
+                      <td data-label="Status" className="px-4 py-3">
                         <AdminBadge status={o.status} />
                       </td>
-                      <td className="px-4 py-3 text-xs">
+                      <td data-label="Registration" className="px-4 py-3 text-xs">
                         {o.registrationId ? (
                           <Link
                             href="/admin/registrations"
@@ -384,7 +390,7 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
                           <span className="text-slate-400">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Actions" className="admin-table__cell-actions px-4 py-3">
                         <div className="flex flex-col gap-1.5">
                           {isOrphanRow(o) ? (
                             <>
@@ -424,12 +430,12 @@ export function AdminPaymentsPanel({ trialZones }: PanelProps) {
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-[10px] text-slate-500">
-                        <div className="max-w-[160px] truncate" title={o.razorpayOrderId}>
+                      <td data-label="Razorpay IDs" className="px-4 py-3 font-mono text-[10px] text-slate-500">
+                        <div className="max-w-full truncate sm:max-w-[160px]" title={o.razorpayOrderId}>
                           {o.razorpayOrderId}
                         </div>
                         {o.razorpayPaymentId ? (
-                          <div className="max-w-[160px] truncate" title={o.razorpayPaymentId}>
+                          <div className="max-w-full truncate sm:max-w-[160px]" title={o.razorpayPaymentId}>
                             {o.razorpayPaymentId}
                           </div>
                         ) : null}

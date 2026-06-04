@@ -1,4 +1,5 @@
 import { BackToTop } from "@/components/back-to-top";
+import { CelebrityWelcomeModal } from "@/components/celebrity-welcome-modal";
 import { SiteAnnouncementBar } from "@/components/site-announcement-bar";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -16,6 +17,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <div className="print-only-hide">
+        <CelebrityWelcomeModal />
         <SiteFooter />
         <SiteMobileCta />
         <BackToTop />

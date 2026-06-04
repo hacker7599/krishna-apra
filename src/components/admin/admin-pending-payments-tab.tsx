@@ -161,8 +161,8 @@ export function AdminPendingPaymentsTab({ trialZones }: Props) {
         </p>
       </div>
 
-      <form onSubmit={applyFilters} className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end">
-        <label className="block min-w-[180px] flex-1">
+      <form onSubmit={applyFilters} className="admin-filters flex-col !items-stretch sm:!flex-row sm:!items-end">
+        <label className="admin-filters__field admin-filters__field--grow block">
           <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Search</span>
           <input
             value={q}
@@ -171,7 +171,7 @@ export function AdminPendingPaymentsTab({ trialZones }: Props) {
             placeholder="Player, email, phone…"
           />
         </label>
-        <label className="block min-w-[200px] sm:w-56">
+        <label className="admin-filters__field block w-full sm:w-56">
           <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Trial zone</span>
           <select
             value={trialZoneId}
@@ -186,15 +186,15 @@ export function AdminPendingPaymentsTab({ trialZones }: Props) {
             ))}
           </select>
         </label>
-        <div className="flex gap-2">
-          <button type="submit" className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-700">
+        <div className="admin-filters__actions w-full sm:w-auto">
+          <button type="submit" className="admin-btn admin-btn--primary">
             Apply
           </button>
-          <button type="button" onClick={clearFilters} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-50">
+          <button type="button" onClick={clearFilters} className="admin-btn admin-btn--secondary">
             Clear
           </button>
         </div>
-        <p className="w-full text-xs font-semibold text-slate-600 sm:ml-auto sm:w-auto">
+        <p className="w-full text-xs font-semibold text-slate-600 sm:ml-auto sm:w-auto sm:text-right">
           {total} pending registration{total === 1 ? "" : "s"}
         </p>
       </form>
@@ -205,7 +205,7 @@ export function AdminPendingPaymentsTab({ trialZones }: Props) {
       {!loading ? (
         <>
           <div className="admin-table-wrap">
-            <table className="admin-table min-w-[880px]">
+            <table className="admin-table admin-table--stack">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3">Date</th>
@@ -218,23 +218,23 @@ export function AdminPendingPaymentsTab({ trialZones }: Props) {
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                  <tr className="admin-table__empty-row">
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500" data-label="">
                       No pending payment registrations match your filters.
                     </td>
                   </tr>
                 ) : (
                   rows.map((row) => (
                     <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50/50">
-                      <td className="px-4 py-3 text-xs text-slate-600">{formatDt(row.createdAt)}</td>
-                      <td className="px-4 py-3">
+                      <td data-label="Date" className="px-4 py-3 text-xs text-slate-600">{formatDt(row.createdAt)}</td>
+                      <td data-label="Player" className="px-4 py-3">
                         <div className="font-medium text-slate-900">{row.playerName}</div>
                         <div className="text-xs text-slate-500">{row.academyName}</div>
                         {row.registrationCode ? (
                           <div className="mt-0.5 font-mono text-[10px] text-slate-500">{row.registrationCode}</div>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-700">
+                      <td data-label="Trial zone" className="px-4 py-3 text-xs text-slate-700">
                         {row.trialZone ? (
                           <>
                             <div className="font-medium">{row.trialZone.trialPlace}</div>
@@ -244,11 +244,11 @@ export function AdminPendingPaymentsTab({ trialZones }: Props) {
                           "—"
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-600">
+                      <td data-label="Contact" className="px-4 py-3 text-xs text-slate-600">
                         <div>{row.email}</div>
                         <div className="text-slate-500">{row.phone}</div>
                       </td>
-                      <td className="px-4 py-3 text-xs">
+                      <td data-label="Checkout" className="px-4 py-3 text-xs">
                         {row.paymentOrderStatus === "failed" ? (
                           <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 font-bold text-rose-800">
                             Razorpay cancelled
@@ -263,13 +263,13 @@ export function AdminPendingPaymentsTab({ trialZones }: Props) {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Actions" className="admin-table__cell-actions px-4 py-3">
                         <div className="flex flex-col gap-1.5">
                           <button
                             type="button"
                             disabled={sendingId === row.id}
                             onClick={() => void sendPaymentLink(row)}
-                            className="whitespace-nowrap rounded-lg bg-[#1B365D] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#152a4a] disabled:opacity-50"
+                            className="w-full rounded-lg bg-[#1B365D] px-3 py-2 text-xs font-bold text-white hover:bg-[#152a4a] disabled:opacity-50 sm:w-auto sm:py-1.5"
                           >
                             {sendingId === row.id ? "Sending…" : "Send payment link"}
                           </button>

@@ -161,7 +161,7 @@ export function AdminZoneExportPanel({ trialZones }: PanelProps) {
         onSubmit={applyFilters}
         className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="admin-filter-grid admin-filter-grid--2">
           <label className="block">
             <span className="mb-1 block text-xs font-bold uppercase text-slate-700">Trial zone</span>
             <select
@@ -211,7 +211,7 @@ export function AdminZoneExportPanel({ trialZones }: PanelProps) {
       ) : (
         <>
           <div className="admin-table-wrap">
-            <table className="admin-table min-w-[960px]">
+            <table className="admin-table admin-table--stack">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3">Code</th>
@@ -223,22 +223,22 @@ export function AdminZoneExportPanel({ trialZones }: PanelProps) {
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
+                  <tr className="admin-table__empty-row">
+                    <td colSpan={5} className="px-4 py-10 text-center text-slate-500" data-label="">
                       No paid players match these filters. Try another trial zone.
                     </td>
                   </tr>
                 ) : (
                   rows.map((row) => (
                     <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50/50">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-700">
+                      <td data-label="Code" className="px-4 py-3 font-mono text-xs text-slate-700">
                         {row.registrationCode ?? "—"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Player" className="px-4 py-3">
                         <div className="font-medium text-slate-900">{row.playerName}</div>
                         <div className="text-xs text-slate-500">{row.academyName}</div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-700">
+                      <td data-label="Trial zone" className="px-4 py-3 text-xs text-slate-700">
                         {row.trialZone ? (
                           <>
                             <div className="font-medium">{row.trialZone.trialPlace}</div>
@@ -248,11 +248,11 @@ export function AdminZoneExportPanel({ trialZones }: PanelProps) {
                           "—"
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-600">
+                      <td data-label="Contact" className="px-4 py-3 text-xs text-slate-600">
                         <div>{row.email}</div>
                         <div className="text-slate-500">{row.phone}</div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-600">{formatDt(row.createdAt)}</td>
+                      <td data-label="Paid on" className="px-4 py-3 text-xs text-slate-600">{formatDt(row.createdAt)}</td>
                     </tr>
                   ))
                 )}

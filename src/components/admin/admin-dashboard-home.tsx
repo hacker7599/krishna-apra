@@ -67,7 +67,7 @@ export function AdminDashboardHome() {
     return (
       <div className="admin-panel mx-auto max-w-7xl space-y-6 animate-pulse">
         <div className="h-10 w-48 rounded-lg bg-slate-200" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="admin-stat-grid admin-stat-grid--4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-24 rounded-xl bg-slate-200" />
           ))}
@@ -88,7 +88,7 @@ export function AdminDashboardHome() {
 
       <section>
         <h2 className="admin-section-title">Registrations & revenue</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="admin-stat-grid admin-stat-grid--4">
           <AdminStatCard label="Total registrations" value={s.registrations} href="/admin/registrations" accent="navy" />
           <AdminStatCard label="Approved payments" value={p.paidOnline} accent="green" />
           <AdminStatCard label="Pending verification / manual" value={p.manualRegistrations} accent="orange" />
@@ -110,7 +110,7 @@ export function AdminDashboardHome() {
 
       <section>
         <h2 className="admin-section-title">Site content</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="admin-stat-grid admin-stat-grid--4">
           <AdminStatCard label="Teams" value={s.teams} hint={`${s.publishedTeams} published`} href="/admin/teams" />
           <AdminStatCard label="Hero banners" value={s.banners} hint={`${s.publishedBanners} live`} href="/admin/banners" />
           <AdminStatCard label="Trial schedule" value={s.trialSchedules} hint={`${s.publishedTrialSchedules} live`} href="/admin/schedule" />

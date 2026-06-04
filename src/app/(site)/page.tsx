@@ -3,6 +3,7 @@ import { HeroBannersCarousel, type HeroBannerDTO } from "@/components/hero-banne
 import { HomeIntroBand } from "@/components/home-intro-band";
 import { HomeStatsStrip } from "@/components/home-stats-strip";
 import { HomeEstimatedReach } from "@/components/home-estimated-reach";
+import { CelebritySupportSection } from "@/components/celebrity-support-section";
 import { HomeBroadcastLeadership } from "@/components/home-broadcast-leadership";
 import { LeagueProtectionSection } from "@/components/league-protection-section";
 import { TournamentFormatSplit } from "@/components/tournament-format-split";
@@ -45,6 +46,7 @@ export default async function Home() {
       <HeroBannersCarousel key={banners.map((b) => b.id).join("|")} banners={banners} />
       <HomeIntroBand teamsStat={teamsStat} />
       <HomeStatsStrip teamsStat={teamsStat} />
+      <CelebritySupportSection />
 
       <TournamentFormatSplit showAboutLink imagePriority />
       <HomeEstimatedReach />

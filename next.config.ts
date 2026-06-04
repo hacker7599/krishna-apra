@@ -6,6 +6,8 @@ import type { NextConfig } from "next";
 const turbopackRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  /** Allow phone/LAN testing against dev server (e.g. http://192.168.x.x:3000). */
+  allowedDevOrigins: ["192.168.1.17", "localhost", "127.0.0.1"],
   turbopack: {
     root: turbopackRoot,
   },
@@ -48,6 +50,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
+              "media-src 'self' blob:",
               "font-src 'self' data:",
               "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com",
               "frame-src https://api.razorpay.com https://checkout.razorpay.com",
