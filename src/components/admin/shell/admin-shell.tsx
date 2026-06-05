@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/shell/admin-sidebar";
 import { AdminTopbar } from "@/components/admin/shell/admin-topbar";
 import { AdminAlertProvider } from "@/components/admin/ui/admin-alert-provider";
+import { cn } from "@/lib/cn";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,7 +16,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className={`admin-app${sidebarOpen ? " admin-sidebar-open" : ""}`}>
+    <div className={cn("admin-app", sidebarOpen && "admin-sidebar-open")}>
       <AdminAlertProvider>
         <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="admin-main">

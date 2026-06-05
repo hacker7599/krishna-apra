@@ -7,6 +7,7 @@ import { AdminNavIconView } from "@/components/admin/icons/admin-nav-icons";
 import { adminFetch } from "@/components/admin/admin-session-provider";
 import { ADMIN_NAV_MODULES, isAdminNavActive } from "@/lib/admin-navigation";
 import { KRISHNA_APRA_LOGO_SRC, LEAGUE_LOGO_SRC } from "@/lib/branding";
+import { cn } from "@/lib/cn";
 
 type Props = {
   open: boolean;
@@ -27,11 +28,11 @@ export function AdminSidebar({ open, onClose }: Props) {
     <>
       <button
         type="button"
-        className={`admin-sidebar-backdrop ${open ? "is-open" : ""}`}
+        className={cn("admin-sidebar-backdrop", open && "is-open")}
         aria-label="Close menu"
         onClick={onClose}
       />
-      <aside className={`admin-sidebar ${open ? "is-open" : ""}`} aria-label="Admin navigation">
+      <aside className={cn("admin-sidebar", open && "is-open")} aria-label="Admin navigation">
         <div className="admin-sidebar__brand">
           <div className="admin-sidebar__brand-row">
             <div className="admin-sidebar__logo">
@@ -68,7 +69,7 @@ export function AdminSidebar({ open, onClose }: Props) {
                         href={item.href}
                         prefetch={true}
                         onClick={onClose}
-                        className={`admin-sidebar__link${active ? " is-active" : ""}`}
+                        className={cn("admin-sidebar__link", active && "is-active")}
                         title={item.description}
                       >
                         <AdminNavIconView name={item.icon} />

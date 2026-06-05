@@ -7,6 +7,7 @@ export type AdminNavIcon =
   | "payments"
   | "activity"
   | "emails"
+  | "bulkEmail"
   | "teams"
   | "banners"
   | "schedule"
@@ -47,6 +48,12 @@ export const ADMIN_NAV_MODULES: AdminNavModule[] = [
       { href: "/admin/payments", label: "Payment logs", icon: "payments", description: "Orders & Razorpay events" },
       { href: "/admin/activity", label: "Activity log", icon: "activity", description: "Admin audit trail" },
       { href: "/admin/emails", label: "Email log", icon: "emails", description: "SMTP delivery log" },
+      {
+        href: "/admin/bulk-email",
+        label: "Bulk email",
+        icon: "bulkEmail",
+        description: "Trial zone updates & document reminders",
+      },
     ],
   },
   {
@@ -91,6 +98,11 @@ export const ADMIN_PAGE_META: Record<string, { title: string; subtitle: string; 
   "/admin/emails": {
     title: "Email log",
     subtitle: "Confirmation and notification delivery history",
+    module: "Operations",
+  },
+  "/admin/bulk-email": {
+    title: "Bulk email",
+    subtitle: "Send trial zone and document instructions to registered players",
     module: "Operations",
   },
   "/admin/teams": {

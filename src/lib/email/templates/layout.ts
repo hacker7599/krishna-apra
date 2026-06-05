@@ -10,11 +10,24 @@ export type EmailLayoutOptions = {
   preheader?: string;
   title: string;
   bodyHtml: string;
+  /** default = 600px card on gray; wide = full-width white (bulk / long-form) */
+  layout?: "default" | "wide";
 };
 
-export function renderEmailLayout({ preheader, title, bodyHtml }: EmailLayoutOptions): string {
+export function renderEmailLayout({ preheader, title, bodyHtml, layout = "default" }: EmailLayoutOptions): string {
   const siteUrl = escapeHtml(getAppBaseUrl());
   const preheaderText = escapeHtml(preheader ?? title);
+  const isWide = layout === "wide";
+
+  const bodyBg = isWide ? "#ffffff" : "#e2e8f0";
+  const outerPad = isWide ? "0" : "32px 16px";
+  const containerWidth = isWide ? "100%" : "600";
+  const containerStyle = isWide
+    ? "max-width:100%;width:100%;background-color:#ffffff;"
+    : "max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(12,31,61,0.12);";
+  const headerPad = isWide ? "padding:24px 28px 20px;" : "padding:28px 40px 24px;";
+  const bodyPad = isWide ? "padding:20px 28px 24px;" : "padding:36px 40px 32px;";
+  const footerPad = isWide ? "padding:20px 28px 28px;" : "padding:24px 40px 32px;";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -27,23 +40,23 @@ export function renderEmailLayout({ preheader, title, bodyHtml }: EmailLayoutOpt
   <style>
     @media only screen and (max-width: 620px) {
       .email-container { width: 100% !important; }
-      .email-pad { padding-left: 20px !important; padding-right: 20px !important; }
+      .email-pad { padding-left: 16px !important; padding-right: 16px !important; }
       .btn-stack td { display: block !important; width: 100% !important; padding-bottom: 10px !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+<body style="margin:0;padding:0;background-color:${bodyBg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${preheaderText}</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#e2e8f0;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${bodyBg};">
     <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(12,31,61,0.12);">
+      <td align="center" style="padding:${outerPad};">
+        <table role="presentation" class="email-container" width="${containerWidth}" cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg, ${BRAND_NAVY} 0%, #1a3358 100%);padding:0;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td class="email-pad" style="padding:28px 40px 24px;">
+                  <td class="email-pad" style="${headerPad}">
                     <p style="margin:0 0 6px;font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#fdba74;">${escapeHtml(REGION)} · Season 1</p>
                     <h1 style="margin:0;font-size:26px;font-weight:800;font-style:italic;letter-spacing:-0.02em;text-transform:uppercase;color:#ffffff;line-height:1.1;">${escapeHtml(LEAGUE_NAME)}</h1>
                     <p style="margin:6px 0 0;font-size:13px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.75);">${escapeHtml(LEAGUE_SUBTITLE)}</p>
@@ -57,13 +70,13 @@ export function renderEmailLayout({ preheader, title, bodyHtml }: EmailLayoutOpt
           </tr>
           <!-- Body -->
           <tr>
-            <td class="email-pad" style="padding:36px 40px 32px;">
+            <td class="email-pad" style="${bodyPad}">
               ${bodyHtml}
             </td>
           </tr>
           <!-- Footer -->
           <tr>
-            <td class="email-pad" style="padding:24px 40px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;">
+            <td class="email-pad" style="${footerPad}background-color:#f8fafc;border-top:1px solid #e2e8f0;">
               <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#64748b;line-height:1.5;">
                 ${escapeHtml(TITLE_SPONSOR)} presents ${escapeHtml(LEAGUE_NAME)} ${escapeHtml(LEAGUE_SUBTITLE)} · ${escapeHtml(REGION)}
               </p>

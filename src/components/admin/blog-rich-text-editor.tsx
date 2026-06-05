@@ -4,12 +4,15 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 type Props = {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
+  /** Editor content area min-height in pixels */
+  minHeight?: number;
+  proseClassName?: string;
 };
 
 function ToolbarBtn({
@@ -37,11 +40,18 @@ function ToolbarBtn({
   );
 }
 
-export function BlogRichTextEditor({ value, onChange, placeholder = "Write your article here — use the toolbar for headings, lists, and links." }: Props) {
-  const editor = useEditor({
-    extensions: [
+export function BlogRichTextEditor({
+  value,
+  onChange,
+  placeholder = "Write your article here — use the toolbar for headings, lists, and links.",
+  minHeight = 300,
+  proseClassName = "blog-editor-prose",
+}: Props) {
+  const extensions = useMemo(
+    () => [
       StarterKit.configure({
         heading: { levels: [2, 3] },
+        link: false,
       }),
       Link.configure({
         openOnClick: false,
@@ -52,12 +62,18 @@ export function BlogRichTextEditor({ value, onChange, placeholder = "Write your 
       }),
       Placeholder.configure({ placeholder }),
     ],
+    [placeholder],
+  );
+
+  const editor = useEditor({
+    extensions,
     content: value || "<p></p>",
     immediatelyRender: false,
     onUpdate: ({ editor: ed }) => onChange(ed.getHTML()),
     editorProps: {
       attributes: {
-        class: "blog-editor-prose min-h-[300px] max-w-none px-4 py-3 focus:outline-none",
+        class: `${proseClassName} max-w-none px-4 py-3 focus:outline-none`,
+        style: `min-height:${minHeight}px`,
       },
     },
   });
@@ -75,7 +91,7 @@ export function BlogRichTextEditor({ value, onChange, placeholder = "Write your 
     return (
       <div className="rounded-lg border border-slate-300 bg-white">
         <div className="h-12 animate-pulse border-b border-slate-200 bg-slate-50" />
-        <div className="min-h-[300px] animate-pulse bg-slate-50/50" />
+        <div className="animate-pulse bg-slate-50/50" style={{ minHeight }} />
       </div>
     );
   }

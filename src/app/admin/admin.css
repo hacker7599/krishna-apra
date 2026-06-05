@@ -1139,6 +1139,61 @@
   box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
 }
 
+/* ——— Rich text editor (bulk email, shared with blog patterns) ——— */
+.admin-editor-prose .tiptap {
+  min-height: inherit;
+  outline: none;
+}
+
+.admin-editor-prose .tiptap p.is-editor-empty:first-child::before {
+  color: var(--admin-muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.admin-editor-prose h2 {
+  margin: 1rem 0 0.5rem;
+  font-family: var(--font-barlow), ui-sans-serif, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--admin-navy);
+}
+
+.admin-editor-prose h3 {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-navy-mid);
+}
+
+.admin-editor-prose ul,
+.admin-editor-prose ol {
+  margin: 0.5rem 0;
+  padding-left: 1.35rem;
+}
+
+.admin-editor-prose blockquote {
+  margin: 0.75rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--admin-orange);
+  color: var(--admin-muted);
+}
+
+.admin-editor-prose a {
+  color: var(--admin-orange);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.admin-editor-prose p {
+  margin: 0.35rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--admin-text);
+}
+
 /* ——— Responsive layout (mobile-first enhancements) ——— */
 
 .admin-app.admin-sidebar-open {

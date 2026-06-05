@@ -31,12 +31,14 @@ const TEMPLATE_OPTIONS = [
   { value: "registration_confirmation", label: "Registration confirmation" },
   { value: "registration_otp", label: "OTP verification" },
   { value: "registration_completion_invite", label: "Completion invite" },
+  { value: "admin_bulk_trial_info", label: "Bulk trial zone email" },
 ] as const;
 
 const TEMPLATE_LABELS: Record<string, string> = {
   registration_confirmation: "Registration confirmation",
   registration_otp: "OTP verification",
   registration_completion_invite: "Completion invite",
+  admin_bulk_trial_info: "Bulk trial zone email",
 };
 
 function formatDt(iso: string) {
