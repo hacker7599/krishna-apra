@@ -102,7 +102,7 @@ export const ADMIN_PAGE_META: Record<string, { title: string; subtitle: string; 
   },
   "/admin/bulk-email": {
     title: "Bulk email",
-    subtitle: "Send trial zone and document instructions to registered players",
+    subtitle: "Send trial zone and document instructions to paid registrations",
     module: "Operations",
   },
   "/admin/teams": {

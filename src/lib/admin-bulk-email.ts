@@ -1,8 +1,10 @@
+import type { Prisma } from "@prisma/client";
 import { logAdminAudit } from "@/lib/admin-audit";
 import { renderAdminBulkTrialInfoEmail } from "@/lib/email/templates/admin-bulk-trial-info";
 import { sendHtmlEmail } from "@/lib/email/smtp-send";
 import { prisma } from "@/lib/prisma";
 import { emailBodyTextLength } from "@/lib/sanitize-email-body-html";
+import { REGISTRATION_PAYMENT_PAID } from "@/lib/registration-payment-status";
 
 export const ADMIN_BULK_EMAIL_TEMPLATE_KEY = "admin_bulk_trial_info";
 export const ADMIN_BULK_EMAIL_MAX_RECIPIENTS = 5_000;
@@ -31,13 +33,20 @@ export function validateBulkEmailInput(input: {
   return { ok: true, trialZoneId, subject, body };
 }
 
+function bulkEmailRecipientWhere(trialZoneId: string): Prisma.RegistrationWhereInput {
+  return {
+    trialZoneId,
+    paymentStatus: REGISTRATION_PAYMENT_PAID,
+  };
+}
+
 export async function countBulkEmailRecipients(trialZoneId: string) {
-  return prisma.registration.count({ where: { trialZoneId } });
+  return prisma.registration.count({ where: bulkEmailRecipientWhere(trialZoneId) });
 }
 
 export async function listBulkEmailRecipients(trialZoneId: string) {
   return prisma.registration.findMany({
-    where: { trialZoneId },
+    where: bulkEmailRecipientWhere(trialZoneId),
     select: {
       id: true,
       email: true,
@@ -84,7 +93,7 @@ export async function sendBulkTrialZoneEmails(params: {
   const recipients = await listBulkEmailRecipients(params.trialZoneId);
 
   if (recipients.length === 0) {
-    return { error: "No registrations found for this trial zone." };
+    return { error: "No paid registrations found for this trial zone." };
   }
 
   if (recipients.length > ADMIN_BULK_EMAIL_MAX_RECIPIENTS) {

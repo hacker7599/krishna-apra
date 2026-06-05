@@ -1,37 +1,16 @@
 import { PrismaClient } from "@prisma/client";
+import { syncOfficialTrialSchedule } from "../src/lib/sync-official-trial-schedule";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const title = "U-15 Open Trials";
-  const scheduledAt = new Date("2026-06-06T09:00:00+05:30");
-  const endAt = new Date("2026-06-12T18:00:00+05:30");
-  const existing = await prisma.trialSchedule.findFirst({ where: { title } });
-  if (existing) {
-    await prisma.trialSchedule.update({
-      where: { id: existing.id },
-      data: {
-        scheduledAt,
-        endAt,
-        published: true,
-        sortOrder: 0,
-        notes: "Report 30 minutes early with ID proof and registration confirmation.",
-      },
-    });
-    console.log("Updated trial schedule:", title);
-  } else {
-    await prisma.trialSchedule.create({
-      data: {
-        title,
-        scheduledAt,
-        endAt,
-        notes: "Report 30 minutes early with ID proof and registration confirmation.",
-        sortOrder: 0,
-        published: true,
-      },
-    });
-    console.log("Created trial schedule:", title);
-  }
+  const result = await syncOfficialTrialSchedule(prisma);
+  console.log(
+    "Synced official trial schedule:",
+    result.officialCount,
+    "entries",
+    result.linkedZones > 0 ? `(${result.linkedZones} linked to trial zones)` : "",
+  );
 }
 
 main()

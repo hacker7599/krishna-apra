@@ -1333,6 +1333,8 @@
 }
 
 .schedule-list__item {
+  position: relative;
+  overflow: hidden;
   display: flex;
   gap: 1rem;
   border-radius: var(--site-radius-lg);
@@ -1340,6 +1342,33 @@
   background: #fff;
   padding: 1.25rem 1.25rem 1.25rem 0;
   box-shadow: var(--site-shadow);
+}
+
+.schedule-list__item--done {
+  opacity: 0.78;
+}
+
+.schedule-list__item--done .schedule-list__body {
+  text-decoration: line-through;
+  text-decoration-color: rgba(100, 116, 139, 0.45);
+}
+
+.schedule-list__watermark {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(1.25rem, 3.5vw, 1.875rem);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(27, 54, 93, 0.12);
+  transform: rotate(-10deg);
+  user-select: none;
 }
 
 .schedule-list__index {

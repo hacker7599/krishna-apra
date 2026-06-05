@@ -45,7 +45,7 @@ export function formatTrialScheduleTime(iso: string | Date): string {
   });
 }
 
-function calendarDayIst(iso: string | Date): string {
+export function calendarDayIst(iso: string | Date): string {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }

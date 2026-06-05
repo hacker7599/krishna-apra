@@ -148,7 +148,7 @@ export function AdminBulkEmailPanel({ trialZones }: PanelProps) {
   return (
     <div className="admin-panel space-y-6">
       <AdminPageHeader
-        description="Email all registered players in a trial zone. Each message includes your custom text plus venue, address, and map details for that zone."
+        description="Email paid registrations in a trial zone only. Each message includes your custom text plus venue, address, and map details for that zone."
       />
 
       <div className="admin-card">
@@ -179,7 +179,7 @@ export function AdminBulkEmailPanel({ trialZones }: PanelProps) {
           ) : preview ? (
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               <p className="font-bold text-slate-900">
-                {preview.total} registered player{preview.total === 1 ? "" : "s"} in this zone
+                {preview.total} paid player{preview.total === 1 ? "" : "s"} in this zone
               </p>
               {preview.sample.length > 0 ? (
                 <ul className="mt-2 space-y-1 text-xs text-slate-600">
