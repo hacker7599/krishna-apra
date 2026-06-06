@@ -23,6 +23,8 @@ export type RegistrationConfirmation = {
   idDocumentType: string | null;
   achievementsAndAwards: string | null;
   trialZone: string | null;
+  /** Admin print only — player passport photo URL. */
+  playerPhotoUrl?: string | null;
   payment: {
     status: string;
     method: string;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { adminRegistrationProofUrl } from "@/lib/admin-registration-proof-url";
 import { toRegistrationConfirmation } from "@/lib/registration-confirmation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
@@ -19,5 +20,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json(toRegistrationConfirmation(row));
+  const data = toRegistrationConfirmation(row);
+  return NextResponse.json({
+    ...data,
+    playerPhotoUrl: row.playerPhotoPath ? adminRegistrationProofUrl(row.id, "photo") : null,
+  });
 }

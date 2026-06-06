@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/components/admin/admin-session-provider";
 import { useAdminAlert } from "@/components/admin/ui/admin-alert-provider";
+import { AdminZoneExportBulkPrintModal } from "@/components/admin/admin-zone-export-bulk-print-modal";
 import { AdminPageHeader } from "@/components/admin/ui/admin-page-header";
 import { AdminPagination } from "@/components/admin/ui/admin-pagination";
 import { humanErrorFromResponse } from "@/lib/human-errors";
@@ -52,6 +53,7 @@ export function AdminZoneExportPanel({ trialZones }: PanelProps) {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
   const [error, setError] = useState("");
 
   const queryString = useMemo(() => {
@@ -146,14 +148,24 @@ export function AdminZoneExportPanel({ trialZones }: PanelProps) {
         title="Export by trial zone"
         description="Paid registrations only — filter by trial zone and download a spreadsheet for Excel (CSV)."
         actions={
-          <button
-            type="button"
-            onClick={() => void downloadExcel()}
-            disabled={exporting || total === 0}
-            className="admin-btn admin-btn--primary whitespace-nowrap"
-          >
-            {exporting ? "Preparing…" : `Download Excel (${total})`}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setPrintOpen(true)}
+              disabled={total === 0}
+              className="admin-btn admin-btn--secondary whitespace-nowrap"
+            >
+              Print all forms ({total})
+            </button>
+            <button
+              type="button"
+              onClick={() => void downloadExcel()}
+              disabled={exporting || total === 0}
+              className="admin-btn admin-btn--primary whitespace-nowrap"
+            >
+              {exporting ? "Preparing…" : `Download Excel (${total})`}
+            </button>
+          </div>
         }
       />
 
@@ -262,6 +274,13 @@ export function AdminZoneExportPanel({ trialZones }: PanelProps) {
           <AdminPagination total={total} limit={PAGE_SIZE} offset={offset} onChange={setOffset} />
         </>
       )}
+
+      <AdminZoneExportBulkPrintModal
+        open={printOpen}
+        filters={applied}
+        zoneLabel={zoneLabel}
+        onClose={() => setPrintOpen(false)}
+      />
     </div>
   );
 }

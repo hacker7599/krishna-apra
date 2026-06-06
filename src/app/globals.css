@@ -352,6 +352,16 @@ body {
     box-shadow: none !important;
   }
 
+  body.is-printing-receipt #registration-receipt-print-root .receipt-a4-sheet:not(:last-child) {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  body.is-printing-receipt #registration-receipt-print-root .receipt-player-photo img {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
   /* Offline blank form — full page without body class */
   body:not(.is-printing-receipt) .a4-form-sheet:not(#registration-receipt) {
     position: static;

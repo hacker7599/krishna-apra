@@ -67,13 +67,20 @@ function PaymentStatusBadge({ paid }: { paid: boolean }) {
   );
 }
 
-export function RegistrationSuccessDocument({ data }: { data: RegistrationConfirmation }) {
+type Props = {
+  data: RegistrationConfirmation;
+  /** Single-receipt print modal uses this id for printRegistrationReceipt(). */
+  /** Set for single-receipt print modal only. */
+  printTargetId?: string;
+};
+
+export function RegistrationSuccessDocument({ data, printTargetId = "registration-receipt" }: Props) {
   const paidOnline = data.payment.status === "paid";
   const amountDisplay = `₹${data.payment.amountInr.toLocaleString("en-IN")}`;
 
   return (
     <article
-      id="registration-receipt"
+      id={printTargetId || undefined}
       className="receipt-a4-sheet receipt-single-page mx-auto box-border w-full max-w-[210mm] bg-white text-slate-900 shadow-lg ring-1 ring-slate-200 print:mx-0 print:max-w-none print:shadow-none print:ring-0"
     >
       <div className="receipt-tricolor flex h-1.5 w-full" aria-hidden>
@@ -178,6 +185,17 @@ export function RegistrationSuccessDocument({ data }: { data: RegistrationConfir
           </dl>
 
           <SectionTitle index="02" title="Player & academy details" />
+          {data.playerPhotoUrl ? (
+            <div className="receipt-player-photo mt-3 flex flex-col items-center gap-2 print:mt-2">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Player photograph</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={data.playerPhotoUrl}
+                alt={`${data.playerName} — player photo`}
+                className="h-32 w-28 rounded-lg border-2 border-slate-300 object-cover bg-slate-50 print:h-28 print:w-24"
+              />
+            </div>
+          ) : null}
           <dl className="receipt-details mt-2">
             <DetailRow label="Academy / club name" value={data.academyName} />
             <DetailRow label="Player name (as on ID)" value={data.playerName} highlight />
