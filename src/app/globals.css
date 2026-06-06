@@ -1534,6 +1534,28 @@ html.receipt-standalone-page .print-only-hide {
   cursor: not-allowed;
 }
 
+.trial-venue-picker__option--closed {
+  cursor: not-allowed;
+  opacity: 0.72;
+  background: #f8fafc;
+  border-style: dashed;
+}
+
+.trial-venue-picker__marker--closed {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.trial-venue-picker__closed-tag {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b45309;
+}
+
 .trial-venue-picker__marker {
   flex-shrink: 0;
   width: 1.125rem;

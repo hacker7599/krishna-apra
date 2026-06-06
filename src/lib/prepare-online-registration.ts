@@ -8,7 +8,7 @@ import { LEAGUE_NAME } from "@/lib/league";
 import { withDbRetry } from "@/lib/db-resilience";
 import { allocateRegistrationCode } from "@/lib/registration-codes";
 import { resolveContactForRegistration, enrolledDuplicateMessage } from "@/lib/registration-contact-resolve";
-import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
+import { findRegistrationTrialZone } from "@/lib/validate-trial-zone";
 
 export async function prepareOnlineRegistration(
   parsed: ParsedRegistrationForm,
@@ -41,7 +41,7 @@ export async function prepareOnlineRegistration(
     return { ok: false, error: contact.message, status: 409, duplicate: true };
   }
 
-  const trialZone = await findPublishedTrialZone(data.trialZoneId);
+  const trialZone = await findRegistrationTrialZone(data.trialZoneId);
   if (!trialZone) {
     return { ok: false, error: "Please select a valid trial zone.", status: 400 };
   }

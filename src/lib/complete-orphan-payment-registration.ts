@@ -14,7 +14,7 @@ import { isEnrolledPaymentStatus, REGISTRATION_PAYMENT_PENDING } from "@/lib/reg
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
 import { withDbRetry } from "@/lib/db-resilience";
-import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
+import { findRegistrationTrialZone } from "@/lib/validate-trial-zone";
 
 export type OrphanPaymentOrder = PaymentOrder;
 
@@ -110,7 +110,7 @@ async function updatePendingRegistrationFromOrphanPayment(
   }
 
   if (input.trialZoneId?.trim()) {
-    const zone = await findPublishedTrialZone(input.trialZoneId.trim());
+    const zone = await findRegistrationTrialZone(input.trialZoneId.trim());
     if (!zone) return { ok: false, error: "Please select a valid published trial zone." };
   }
 
@@ -281,7 +281,7 @@ export async function createRegistrationFromOrphanPayment(
   }
 
   if (input.trialZoneId?.trim()) {
-    const zone = await findPublishedTrialZone(input.trialZoneId.trim());
+    const zone = await findRegistrationTrialZone(input.trialZoneId.trim());
     if (!zone) return { ok: false, error: "Please select a valid published trial zone." };
   }
 

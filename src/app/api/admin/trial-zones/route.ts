@@ -7,6 +7,7 @@ import { requireAdmin, requireAdminMutation } from "@/lib/require-admin";
 import { trialZoneCreateSchema } from "@/lib/admin-entity-schemas";
 import { revalidatePublicTrialZonePages } from "@/lib/revalidate-public-trial-zones";
 import { renumberTrialZoneSortOrders } from "@/lib/trial-zone-sort";
+import { attachTrialZoneRegistrationOpen } from "@/lib/trial-zone-registration-open";
 
 export const runtime = "nodejs";
 
@@ -40,7 +41,8 @@ export async function GET(req: NextRequest) {
     }),
     prisma.trialZone.count({ where }),
   ]);
-  return NextResponse.json({ items, ...paginationMeta(total, limit, offset) });
+  const enriched = await attachTrialZoneRegistrationOpen(items);
+  return NextResponse.json({ items: enriched, ...paginationMeta(total, limit, offset) });
 }
 
 export async function POST(req: NextRequest) {
@@ -72,6 +74,7 @@ export async function POST(req: NextRequest) {
       contactDetails: data.contactDetails,
       sortOrder,
       published: data.published ?? true,
+      registrationOpen: data.registrationOpen ?? true,
     },
   });
 

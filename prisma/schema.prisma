@@ -206,9 +206,11 @@ model TrialZone {
   address        String   @db.Text
   navigationUrl  String?  @db.VarChar(2048)
   contactDetails String?  @db.Text
-  sortOrder      Int             @default(0)
-  published      Boolean         @default(true)
-  registrations  Registration[]
+  sortOrder          Int             @default(0)
+  published          Boolean         @default(true)
+  // When false, zone stays on /trials but cannot be chosen on registration forms.
+  registrationOpen   Boolean         @default(true)
+  registrations      Registration[]
   trialSchedules TrialSchedule[]
 }
 

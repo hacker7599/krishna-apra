@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { RegistrationCompletionForm } from "@/components/registration-completion-form";
 import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
-import { getPublishedTrialZoneOptions } from "@/lib/public-queries";
+import { getRegistrationTrialZonePickerOptions } from "@/lib/public-queries";
 import { SupportContactLinks } from "@/components/support-contact-links";
 import { LEAGUE_NAME } from "@/lib/league";
 import { CARD } from "@/lib/site-ui";
@@ -20,7 +20,7 @@ type Props = {
 
 export default async function RegisterCompletePage({ searchParams }: Props) {
   const { token } = await searchParams;
-  const trialZones = await getPublishedTrialZoneOptions();
+  const trialZones = await getRegistrationTrialZonePickerOptions();
 
   if (!token?.trim()) {
     return (

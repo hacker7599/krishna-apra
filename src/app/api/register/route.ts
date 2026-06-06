@@ -16,7 +16,7 @@ import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email
 import { logPaymentEvent } from "@/lib/payment-log";
 import { REGISTRATION_PAYMENT_PENDING } from "@/lib/registration-payment-status";
 import { TRIAL_FEE_PAISE } from "@/lib/razorpay-config";
-import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
+import { findRegistrationTrialZone } from "@/lib/validate-trial-zone";
 import { withDbRetry } from "@/lib/db-resilience";
 
 export const runtime = "nodejs";
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
     const pendingId = contact.kind === "pending" ? contact.id : null;
 
-    const trialZone = await findPublishedTrialZone(data.trialZoneId);
+    const trialZone = await findRegistrationTrialZone(data.trialZoneId);
     if (!trialZone) {
       return NextResponse.json({ error: "Please select a valid trial zone." }, { status: 400 });
     }

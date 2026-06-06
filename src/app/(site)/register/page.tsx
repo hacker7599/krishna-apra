@@ -8,7 +8,7 @@ import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
 import { REGISTRATION_FAQ } from "@/lib/faq";
 import { getPublicPaymentConfig } from "@/lib/public-payment-config";
-import { getPublishedTrialZoneOptions } from "@/lib/public-queries";
+import { getRegistrationTrialZonePickerOptions } from "@/lib/public-queries";
 import { cricketTeamGame } from "@/lib/remote-images";
 import { CARD_PAD } from "@/lib/site-ui";
 import { LEAGUE_NAME, TITLE_SPONSOR } from "@/lib/league";
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 export default async function RegisterPage() {
   const [trialZones, paymentConfig] = await Promise.all([
-    getPublishedTrialZoneOptions(),
+    getRegistrationTrialZonePickerOptions(),
     getPublicPaymentConfig(),
   ]);
 

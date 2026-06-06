@@ -133,6 +133,7 @@ export const trialZoneCreateSchema = z.object({
   contactDetails: optionalContactDetails,
   sortOrder: z.number().int().optional(),
   published: z.boolean().optional().default(true),
+  registrationOpen: z.boolean().optional().default(true),
 });
 
 export const trialZonePatchSchema = z.object({
@@ -143,6 +144,7 @@ export const trialZonePatchSchema = z.object({
   contactDetails: optionalContactDetails.optional(),
   sortOrder: z.number().int().optional(),
   published: z.boolean().optional(),
+  registrationOpen: z.boolean().optional(),
 });
 
 const optionalTrialZoneId = z

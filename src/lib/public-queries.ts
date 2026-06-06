@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { sanitizeBannerCtaHrefForPublic, sanitizeTrialZoneNavUrl } from "@/lib/safe-public-href";
+import { attachTrialZoneRegistrationOpen } from "@/lib/trial-zone-registration-open";
 
 export function getPublishedTeams() {
   return prisma.team.findMany({
@@ -41,6 +42,30 @@ export async function getPublishedTrialZoneOptions() {
     select: { id: true, trialPlace: true, zone: true },
   });
   return rows;
+}
+
+/** All published zones for registration UI (open + closed). Closed zones are shown disabled. */
+export async function getRegistrationTrialZonePickerOptions() {
+  const rows = await prisma.trialZone.findMany({
+    where: { published: true },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, trialPlace: true, zone: true },
+  });
+  const enriched = await attachTrialZoneRegistrationOpen(rows);
+  return enriched.map((z) => ({
+    id: z.id,
+    trialPlace: z.trialPlace,
+    zone: z.zone,
+    registrationOpen: z.registrationOpen,
+  }));
+}
+
+/** Zones accepting new sign-ups (server validation). */
+export async function getRegistrationTrialZoneOptions() {
+  const zones = await getRegistrationTrialZonePickerOptions();
+  return zones
+    .filter((z) => z.registrationOpen !== false)
+    .map(({ id, trialPlace, zone }) => ({ id, trialPlace, zone }));
 }
 
 export async function getPublishedTrialSchedules() {

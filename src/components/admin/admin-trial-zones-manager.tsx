@@ -17,6 +17,7 @@ type TrialZone = {
   contactDetails: string | null;
   sortOrder: number;
   published: boolean;
+  registrationOpen: boolean;
 };
 
 type TrialZoneForm = {
@@ -26,6 +27,7 @@ type TrialZoneForm = {
   navigationUrl: string;
   contactDetails: string;
   published: boolean;
+  registrationOpen: boolean;
 };
 
 type ModalMode = null | "create" | "edit";
@@ -40,6 +42,7 @@ const emptyForm: TrialZoneForm = {
   navigationUrl: "",
   contactDetails: "",
   published: true,
+  registrationOpen: true,
 };
 
 const inputClass =
@@ -60,6 +63,7 @@ function rowToForm(z: TrialZone): TrialZoneForm {
     navigationUrl: z.navigationUrl ?? "",
     contactDetails: z.contactDetails ?? "",
     published: z.published,
+    registrationOpen: z.registrationOpen !== false,
   };
 }
 
@@ -170,6 +174,7 @@ export function AdminTrialZonesManager() {
       navigationUrl: form.navigationUrl.trim() || null,
       contactDetails: form.contactDetails.trim() || null,
       published: form.published,
+      registrationOpen: form.registrationOpen,
     };
   }
 
@@ -220,6 +225,25 @@ export function AdminTrialZonesManager() {
     void load();
   }
 
+  async function toggleRegistrationOpen(z: TrialZone) {
+    const currentlyOpen = z.registrationOpen !== false;
+    const res = await adminFetch(`/api/admin/trial-zones/${z.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registrationOpen: !currentlyOpen }),
+    });
+    if (res.status === 401) {
+      routerRef.current.replace("/admin/login");
+      return;
+    }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setErr(typeof d.error === "string" ? d.error : "Could not update registration status.");
+      return;
+    }
+    void load();
+  }
+
   async function togglePublished(z: TrialZone) {
     const res = await adminFetch(`/api/admin/trial-zones/${z.id}`, {
       method: "PATCH",
@@ -261,15 +285,15 @@ export function AdminTrialZonesManager() {
           <Link href="/trials" target="_blank" className="font-bold text-[#1B365D] underline hover:text-orange-700">
             /trials
           </Link>
-          ,{" "}
+          . <strong>Registration open</strong> controls whether players can pick the zone on{" "}
           <Link href="/register" target="_blank" className="font-bold text-[#1B365D] underline hover:text-orange-700">
             online registration
-          </Link>
-          , and the{" "}
+          </Link>{" "}
+          and the{" "}
           <Link href="/register/offline" target="_blank" className="font-bold text-[#1B365D] underline hover:text-orange-700">
-            printable offline form
+            offline form
           </Link>
-          . Hidden zones stay in admin only. Updates apply as soon as you save.
+          . You can keep a zone live on the site but close new sign-ups. Hidden zones stay in admin only.
         </p>
       </div>
 
@@ -296,15 +320,31 @@ export function AdminTrialZonesManager() {
         </label>
         <label className="block">
           <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Visibility</span>
-          <div className="flex h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3">
+          <div className="flex min-h-[42px] flex-col justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
             <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
               <input
                 type="checkbox"
                 className="h-4 w-4 rounded border-slate-300 text-[#1B365D] focus:ring-[#1B365D]"
                 checked={form.published}
-                onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    published: e.target.checked,
+                    registrationOpen: e.target.checked ? f.registrationOpen : false,
+                  }))
+                }
               />
-              Published (live on site)
+              Published (live on /trials)
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-slate-300 text-[#1B365D] focus:ring-[#1B365D]"
+                checked={form.registrationOpen}
+                disabled={!form.published}
+                onChange={(e) => setForm((f) => ({ ...f, registrationOpen: e.target.checked }))}
+              />
+              Registration open (selectable on register form)
             </label>
           </div>
         </label>
@@ -532,15 +572,26 @@ export function AdminTrialZonesManager() {
                         )}
                       </td>
                       <td data-label="Status" className="px-4 py-3">
-                        {z.published ? (
-                          <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-200">
-                            Live
-                          </span>
-                        ) : (
-                          <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200">
-                            Hidden
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {z.published ? (
+                            <span className="inline-flex w-fit rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-200">
+                              Live
+                            </span>
+                          ) : (
+                            <span className="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200">
+                              Hidden
+                            </span>
+                          )}
+                          {z.published && z.registrationOpen !== false ? (
+                            <span className="inline-flex w-fit rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-800 ring-1 ring-sky-200">
+                              Reg. open
+                            </span>
+                          ) : z.published ? (
+                            <span className="inline-flex w-fit rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900 ring-1 ring-amber-200">
+                              Reg. closed
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td data-label="Actions" className="admin-table__cell-actions px-4 py-3">
                         <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap">
@@ -558,6 +609,19 @@ export function AdminTrialZonesManager() {
                           >
                             {z.published ? "Hide" : "Publish"}
                           </button>
+                          {z.published ? (
+                            <button
+                              type="button"
+                              onClick={() => void toggleRegistrationOpen(z)}
+                              className={
+                                z.registrationOpen !== false
+                                  ? "rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+                                  : "rounded-lg border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-900 shadow-sm hover:bg-sky-100"
+                              }
+                            >
+                              {z.registrationOpen !== false ? "Close registration" : "Open registration"}
+                            </button>
+                          ) : null}
                           <button type="button" onClick={() => void removeZone(z)} className={btnDanger}>
                             Delete
                           </button>

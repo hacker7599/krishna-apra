@@ -5,7 +5,7 @@ import { OfflineTrialFormDocument } from "@/components/offline-trial-form-docume
 import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
 import { LEAGUE_NAME } from "@/lib/league";
-import { getPublishedTrialZoneOptions } from "@/lib/public-queries";
+import { getRegistrationTrialZoneOptions } from "@/lib/public-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RegisterOfflinePage() {
-  const trialZones = await getPublishedTrialZoneOptions();
+  const trialZones = await getRegistrationTrialZoneOptions();
 
   return (
     <SiteSection width="content" tone="muted" innerClassName="!py-10 sm:!py-12 print:!py-0 print:!bg-white">

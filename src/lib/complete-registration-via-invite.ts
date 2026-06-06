@@ -17,7 +17,7 @@ import { REGISTRATION_PAYMENT_PAID, REGISTRATION_PAYMENT_PENDING } from "@/lib/r
 import { signRegistrationConfirmationToken } from "@/lib/registration-confirm-token";
 import { sendRegistrationConfirmationEmail } from "@/lib/send-registration-email";
 import { withDbRetry } from "@/lib/db-resilience";
-import { findPublishedTrialZone } from "@/lib/validate-trial-zone";
+import { findRegistrationTrialZone } from "@/lib/validate-trial-zone";
 
 function registrationToPrefill(reg: Registration) {
   let roles: string[] = [];
@@ -232,7 +232,7 @@ export async function submitRegistrationViaCompletionInvite(
     return { ok: false, error: dobError, status: 400 };
   }
 
-  const trialZone = await findPublishedTrialZone(data.trialZoneId);
+  const trialZone = await findRegistrationTrialZone(data.trialZoneId);
   if (!trialZone) {
     return { ok: false, error: "Please select a valid trial zone.", status: 400 };
   }

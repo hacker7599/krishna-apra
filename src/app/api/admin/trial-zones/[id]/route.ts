@@ -6,6 +6,11 @@ import { requireAdminMutation } from "@/lib/require-admin";
 import { trialZonePatchSchema } from "@/lib/admin-entity-schemas";
 import { revalidatePublicTrialZonePages } from "@/lib/revalidate-public-trial-zones";
 import { renumberTrialZoneSortOrders } from "@/lib/trial-zone-sort";
+import {
+  attachTrialZoneRegistrationOpen,
+  getTrialZoneRegistrationMode,
+  setTrialZoneRegistrationOpen,
+} from "@/lib/trial-zone-registration-open";
 
 export const runtime = "nodejs";
 
@@ -43,14 +48,40 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   if (raw.sortOrder !== undefined) data.sortOrder = raw.sortOrder;
   if (raw.published !== undefined) data.published = raw.published;
 
+  const registrationOpen = raw.registrationOpen;
+
   try {
-    await prisma.trialZone.update({ where: { id }, data });
+    const exists = await prisma.trialZone.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (Object.keys(data).length > 0) {
+      await prisma.trialZone.update({ where: { id }, data });
+    }
+
+    if (registrationOpen !== undefined) {
+      const mode = await getTrialZoneRegistrationMode();
+      if (mode === "legacy") {
+        return NextResponse.json(
+          {
+            error:
+              "Registration toggle is not available yet. Run: npm run db:add-trial-zone-registration-open && npm run db:generate",
+          },
+          { status: 503 },
+        );
+      }
+      await setTrialZoneRegistrationOpen(id, registrationOpen);
+    }
+
     await renumberTrialZoneSortOrders(prisma);
     revalidatePublicTrialZonePages();
     const row = await prisma.trialZone.findUniqueOrThrow({ where: { id } });
-    return NextResponse.json(row);
-  } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const [enriched] = await attachTrialZoneRegistrationOpen([row]);
+    return NextResponse.json(enriched);
+  } catch (error) {
+    console.error("[trial-zones] PATCH failed:", error);
+    return NextResponse.json({ error: "Could not update trial zone." }, { status: 500 });
   }
 }
 

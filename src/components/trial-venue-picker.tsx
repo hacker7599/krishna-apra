@@ -12,15 +12,48 @@ type Props = {
   name?: string;
 };
 
-/** Radio cards — easier to scan than a long native &lt;select&gt;. */
+function isZoneSelectable(z: TrialZoneOption): boolean {
+  return z.registrationOpen !== false;
+}
+
+/** Radio cards — open venues selectable; closed venues visible but disabled. */
 export function TrialVenuePicker({ trialZones, value, onChange, hasError, disabled, name = "trialZoneId" }: Props) {
+  const selectable = trialZones.filter(isZoneSelectable);
+
   if (trialZones.length === 0) {
     return (
       <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">
-        No trial venues are available right now. Please contact the league desk.
+        No trial venues are listed right now. Please contact the league desk.
       </p>
     );
   }
+
+  if (selectable.length === 0) {
+    return (
+      <div className="space-y-3">
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">
+          Registration is closed for all listed venues right now. Please check back later or contact the league desk.
+        </p>
+        <div
+          className={`trial-venue-picker trial-venue-picker--readonly${hasError ? " trial-venue-picker--error" : ""}`}
+          role="list"
+          aria-label="Trial venues (registration closed)"
+        >
+          {trialZones.map((z) => (
+            <div key={z.id} className="trial-venue-picker__option trial-venue-picker__option--closed" role="listitem">
+              <span className="trial-venue-picker__marker trial-venue-picker__marker--closed" aria-hidden />
+              <span className="trial-venue-picker__text">
+                {trialZoneSelectLabel(z)}
+                <span className="trial-venue-picker__closed-tag">Registration closed</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  let firstSelectableMarked = false;
 
   return (
     <div
@@ -29,13 +62,34 @@ export function TrialVenuePicker({ trialZones, value, onChange, hasError, disabl
       aria-label="Select trial venue"
     >
       {trialZones.map((z) => {
+        const selectableZone = isZoneSelectable(z);
+        const optionDisabled = disabled || !selectableZone;
         const checked = value === z.id;
         const label = trialZoneSelectLabel(z);
+        const markRequired = selectableZone && !firstSelectableMarked;
+        if (markRequired) firstSelectableMarked = true;
+
+        if (!selectableZone) {
+          return (
+            <div
+              key={z.id}
+              className="trial-venue-picker__option trial-venue-picker__option--closed"
+              aria-disabled="true"
+            >
+              <span className="trial-venue-picker__marker trial-venue-picker__marker--closed" aria-hidden />
+              <span className="trial-venue-picker__text">
+                {label}
+                <span className="trial-venue-picker__closed-tag">Registration closed</span>
+              </span>
+            </div>
+          );
+        }
+
         return (
           <label
             key={z.id}
             className={`trial-venue-picker__option${checked ? " trial-venue-picker__option--checked" : ""}${
-              disabled ? " trial-venue-picker__option--disabled" : ""
+              optionDisabled ? " trial-venue-picker__option--disabled" : ""
             }`}
           >
             <input
@@ -43,8 +97,8 @@ export function TrialVenuePicker({ trialZones, value, onChange, hasError, disabl
               name={name}
               value={z.id}
               checked={checked}
-              disabled={disabled}
-              required={!value}
+              disabled={optionDisabled}
+              required={markRequired && !value}
               className="sr-only"
               onChange={() => onChange(z.id)}
             />
