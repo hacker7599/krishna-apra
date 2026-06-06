@@ -97,21 +97,33 @@ type TrialZoneRow = {
   registrationOpen?: boolean | null;
 };
 
-/** Admin list: ensure registrationOpen is always a boolean (defaults to true). */
+/** Attach registrationOpen from DB (callers often omit the field in Prisma select). */
 export async function attachTrialZoneRegistrationOpen<T extends TrialZoneRow>(items: T[]): Promise<Array<T & { registrationOpen: boolean }>> {
   const mode = await getTrialZoneRegistrationMode();
   if (mode === "legacy") {
     return items.map((z) => ({ ...z, registrationOpen: true }));
   }
-  if (mode === "prisma") {
-    return items.map((z) => ({ ...z, registrationOpen: normalizeRegistrationOpen(z.registrationOpen) }));
-  }
   if (items.length === 0) return [];
-  const placeholders = items.map(() => "?").join(", ");
-  const flags = await prisma.$queryRawUnsafe<Array<{ id: string; registrationOpen: number }>>(
-    `SELECT id, registrationOpen FROM TrialZone WHERE id IN (${placeholders})`,
-    ...items.map((z) => z.id),
-  );
-  const map = new Map(flags.map((f) => [f.id, f.registrationOpen === 1]));
+
+  const ids = items.map((z) => z.id);
+  const map =
+    mode === "prisma"
+      ? new Map(
+          (
+            await prisma.trialZone.findMany({
+              where: { id: { in: ids } },
+              select: { id: true, registrationOpen: true },
+            })
+          ).map((f) => [f.id, normalizeRegistrationOpen(f.registrationOpen)]),
+        )
+      : new Map(
+          (
+            await prisma.$queryRawUnsafe<Array<{ id: string; registrationOpen: number }>>(
+              `SELECT id, registrationOpen FROM TrialZone WHERE id IN (${ids.map(() => "?").join(", ")})`,
+              ...ids,
+            )
+          ).map((f) => [f.id, f.registrationOpen === 1]),
+        );
+
   return items.map((z) => ({ ...z, registrationOpen: map.get(z.id) ?? true }));
 }
