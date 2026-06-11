@@ -1,3 +1,5 @@
+import { CO_POWERED_BY_SPONSOR } from "@/lib/league";
+
 export type SponsorshipRow = {
   label: string;
   /** Shown right-aligned; omit for bullet-style inclusions (renders as included). */
@@ -58,7 +60,7 @@ export const SPONSORSHIP_TIERS: SponsorshipTier[] = [
           { label: "Image rights of cricketers", value: "Yes" },
           { label: "Stock footage of tournament", value: "6" },
           { label: "Match images", value: "25" },
-          { label: "LIT20 promotional activities (physical / on-ground)" },
+          { label: "Future Star promotional activities (physical / on-ground)" },
           { label: "Sponsor shout-out posts" },
           { label: "Mention on website" },
           { label: "Cross-promotional activations" },
@@ -98,7 +100,7 @@ export const SPONSORSHIP_TIERS: SponsorshipTier[] = [
           { label: "Image rights of cricketers", value: "Yes" },
           { label: "Stock footage of tournament", value: "3" },
           { label: "Match images", value: "25" },
-          { label: "LIT20 promotional activities (physical / on-ground)" },
+          { label: "Future Star promotional activities (physical / on-ground)" },
           { label: "Sponsor shout-out posts" },
           { label: "Mention on website" },
           { label: "Cross-promotional activations" },
@@ -108,9 +110,9 @@ export const SPONSORSHIP_TIERS: SponsorshipTier[] = [
     ],
   },
   {
-    id: "powered-by-20",
-    headlineAmber: "Powered by",
-    headlineWhite: "sponsor",
+    id: "co-powered-by",
+    headlineAmber: "Co powered by",
+    headlineWhite: CO_POWERED_BY_SPONSOR,
     price: "INR 20 lakhs",
     columns: [
       {
@@ -136,7 +138,7 @@ export const SPONSORSHIP_TIERS: SponsorshipTier[] = [
           { label: "Image rights of cricketers", value: "Yes" },
           { label: "Stock footage of tournament", value: "2" },
           { label: "Match images", value: "25" },
-          { label: "LIT20 promotional activities (physical / on-ground)" },
+          { label: "Future Star promotional activities (physical / on-ground)" },
           { label: "Sponsor shout-out posts" },
           { label: "Mention on website" },
           { label: "Cross-promotional activations" },

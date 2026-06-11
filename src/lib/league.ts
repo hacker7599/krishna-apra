@@ -1,6 +1,7 @@
 import { LEGAL_ENTITY } from "@/lib/site-legal";
 
 export const TITLE_SPONSOR = "Krishna Apra";
+export const CO_POWERED_BY_SPONSOR = "Tenxu";
 export const LEAGUE_NAME = "Future Star";
 export const LEAGUE_SUBTITLE = "Under-15 Cricket League";
 export const REGION = "Delhi NCR";
