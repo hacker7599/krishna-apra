@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { CelebritySupportVideoGrid } from "@/components/celebrity-support-video-grid";
+import { RegisterCtaLink } from "@/components/register-cta-link";
 import { SectionHeader } from "@/components/section-header";
 import { SiteSection } from "@/components/site-section";
-import { BTN_PRIMARY } from "@/lib/site-ui";
+import { isRegistrationOpen } from "@/lib/registration-gate";
+import { BTN_SECONDARY } from "@/lib/site-ui";
 
 export function CelebritySupportSection() {
   return (
@@ -21,11 +23,17 @@ export function CelebritySupportSection() {
 
         <div className="celebrity-support-section__cta">
           <p className="celebrity-support-section__cta-text">
-            Inspired? Secure your player&apos;s trial slot while registrations are open.
+            {isRegistrationOpen()
+              ? "Inspired? Secure your player\u2019s trial slot while registrations are open."
+              : "Trial registration is closed for Season 1. Follow the schedule and check back for league updates."}
           </p>
-          <Link href="/register" className={BTN_PRIMARY}>
-            Start registration
-          </Link>
+          {isRegistrationOpen() ? (
+            <RegisterCtaLink openLabel="Start registration" />
+          ) : (
+            <Link href="/schedule" className={BTN_SECONDARY}>
+              View schedule
+            </Link>
+          )}
         </div>
       </div>
     </SiteSection>

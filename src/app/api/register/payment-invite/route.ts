@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { assertRegistrationOpenApi } from "@/lib/registration-api-guard";
 import { loadValidPaymentInvite } from "@/lib/registration-payment-invite";
 import { TRIAL_FEE_INR } from "@/lib/league";
 import type { RoleId } from "@/lib/league";
@@ -7,6 +8,9 @@ import type { RoleId } from "@/lib/league";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  const closed = assertRegistrationOpenApi();
+  if (closed) return closed;
+
   const token = new URL(req.url).searchParams.get("token")?.trim();
   if (!token) {
     return NextResponse.json({ error: "Token is required." }, { status: 400 });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { assertRegistrationOpenApi } from "@/lib/registration-api-guard";
 import { getClientIp } from "@/lib/get-client-ip";
 import { parseRegistrationFormFields, saveRegistrationUploads } from "@/lib/parse-registration-form-data";
 import { prepareOnlineRegistration } from "@/lib/prepare-online-registration";
@@ -10,6 +11,9 @@ import { isRazorpayConfigured } from "@/lib/razorpay-config";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  const closed = assertRegistrationOpenApi();
+  if (closed) return closed;
+
   if (!isRazorpayConfigured()) {
     return NextResponse.json(
       { error: "Online payment is not available. Submit the form without Razorpay or contact the league desk." },

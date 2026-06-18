@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RegistrationClosedPage } from "@/components/registration-closed-page";
 import { FaqAccordion } from "@/components/faq-accordion";
 import { RegisterForm } from "@/components/register-form";
 import { RegisterPageAside } from "@/components/register-page-aside";
@@ -9,6 +10,7 @@ import { SiteSection } from "@/components/site-section";
 import { REGISTRATION_FAQ } from "@/lib/faq";
 import { getPublicPaymentConfig } from "@/lib/public-payment-config";
 import { getRegistrationTrialZonePickerOptions } from "@/lib/public-queries";
+import { isRegistrationOpen } from "@/lib/registration-gate";
 import { cricketTeamGame } from "@/lib/remote-images";
 import { CARD_PAD } from "@/lib/site-ui";
 import { LEAGUE_NAME, TITLE_SPONSOR } from "@/lib/league";
@@ -23,6 +25,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RegisterPage() {
+  if (!isRegistrationOpen()) {
+    return <RegistrationClosedPage />;
+  }
+
   const [trialZones, paymentConfig] = await Promise.all([
     getRegistrationTrialZonePickerOptions(),
     getPublicPaymentConfig(),

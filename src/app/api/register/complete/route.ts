@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { assertRegistrationOpenApi } from "@/lib/registration-api-guard";
 import { getCompletionInvitePayload, submitRegistrationViaCompletionInvite } from "@/lib/complete-registration-via-invite";
 import { getClientIp } from "@/lib/get-client-ip";
 import { checkRegisterPostRate } from "@/lib/register-rate-limit";
@@ -38,6 +39,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const closed = assertRegistrationOpenApi();
+  if (closed) return closed;
+
   const ip = getClientIp(req);
   const limited = await checkRegisterPostRate(ip);
   if (!limited.allowed) {

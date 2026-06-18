@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RegistrationClosedPage } from "@/components/registration-closed-page";
 import {
   RegisterPaymentPhoneLookup,
   RegisterPaymentResume,
@@ -7,6 +8,7 @@ import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
 import { getPublicPaymentConfig } from "@/lib/public-payment-config";
 import { LEAGUE_NAME } from "@/lib/league";
+import { isRegistrationOpen } from "@/lib/registration-gate";
 import { CARD } from "@/lib/site-ui";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +24,10 @@ type Props = {
 };
 
 export default async function RegisterPayPage({ searchParams }: Props) {
+  if (!isRegistrationOpen()) {
+    return <RegistrationClosedPage breadcrumb={[{ label: "Register", href: "/register" }, { label: "Pay" }]} />;
+  }
+
   const { token } = await searchParams;
   const paymentConfig = await getPublicPaymentConfig();
   const trimmed = token?.trim();

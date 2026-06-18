@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isRegistrationOpen } from "@/lib/registration-gate";
 import { BTN_PRIMARY, BTN_SECONDARY } from "@/lib/site-ui";
 
 const HIDDEN_ON = ["/register", "/register/offline"];
@@ -19,9 +20,15 @@ export function SiteMobileCta() {
         <Link href="/trials" className={`${BTN_SECONDARY} flex-1 !min-h-11`}>
           Trial zones
         </Link>
-        <Link href="/register" className={`${BTN_PRIMARY} flex-[1.15] !min-h-11`}>
-          Register
-        </Link>
+        {isRegistrationOpen() ? (
+          <Link href="/register" className={`${BTN_PRIMARY} flex-[1.15] !min-h-11`}>
+            Register
+          </Link>
+        ) : (
+          <Link href="/register/status" className={`${BTN_PRIMARY} flex-[1.15] !min-h-11`}>
+            Check status
+          </Link>
+        )}
       </div>
     </div>
   );

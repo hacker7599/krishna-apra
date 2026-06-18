@@ -1,7 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
+import { RegisterCtaLink } from "@/components/register-cta-link";
 import { TitleSponsorMark } from "@/components/title-sponsor-mark";
-import { BTN_PRIMARY, BTN_SECONDARY, SITE_CONTAINER } from "@/lib/site-ui";
+import { BTN_SECONDARY, SITE_CONTAINER } from "@/lib/site-ui";
 import { LEAGUE_LOGO_SRC } from "@/lib/branding";
 import { LEAGUE_INITIATIVE_BY, LEAGUE_NAME, REGION, TAGLINE } from "@/lib/league";
 import { cricketMatchWide, cricketTeamGame } from "@/lib/remote-images";
@@ -33,9 +34,7 @@ export function HomeIntroBand({ teamsStat }: Props) {
             match days designed for school-age cricketers to shine on camera and on the scoreboard.
           </p>
           <div className="home-intro__actions">
-            <Link href="/register" className={BTN_PRIMARY}>
-              Book trial slot
-            </Link>
+            <RegisterCtaLink className="inline-flex" />
             <Link href="/teams" className={BTN_SECONDARY}>
               Meet the {teamsStat} teams
             </Link>

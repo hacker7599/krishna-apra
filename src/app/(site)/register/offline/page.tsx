@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { RegistrationClosedPage } from "@/components/registration-closed-page";
 import Link from "next/link";
 import { OfflineFormPrintActions } from "@/components/offline-form-print-actions";
 import { OfflineTrialFormDocument } from "@/components/offline-trial-form-document";
 import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
 import { LEAGUE_NAME } from "@/lib/league";
+import { isRegistrationOpen } from "@/lib/registration-gate";
 import { getRegistrationTrialZoneOptions } from "@/lib/public-queries";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +17,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RegisterOfflinePage() {
+  if (!isRegistrationOpen()) {
+    return <RegistrationClosedPage breadcrumb={[{ label: "Register", href: "/register" }, { label: "Offline form" }]} />;
+  }
+
   const trialZones = await getRegistrationTrialZoneOptions();
 
   return (

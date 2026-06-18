@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { RegistrationClosedPage } from "@/components/registration-closed-page";
 import { RegistrationCompletionForm } from "@/components/registration-completion-form";
 import { SitePageHero } from "@/components/site-page-hero";
 import { SiteSection } from "@/components/site-section";
 import { getRegistrationTrialZonePickerOptions } from "@/lib/public-queries";
 import { SupportContactLinks } from "@/components/support-contact-links";
 import { LEAGUE_NAME } from "@/lib/league";
+import { isRegistrationOpen } from "@/lib/registration-gate";
 import { CARD } from "@/lib/site-ui";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +21,10 @@ type Props = {
 };
 
 export default async function RegisterCompletePage({ searchParams }: Props) {
+  if (!isRegistrationOpen()) {
+    return <RegistrationClosedPage breadcrumb={[{ label: "Register", href: "/register" }, { label: "Complete" }]} />;
+  }
+
   const { token } = await searchParams;
   const trialZones = await getRegistrationTrialZonePickerOptions();
 
